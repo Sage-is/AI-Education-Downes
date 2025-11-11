@@ -29,18 +29,77 @@ class Agent:
         tool_descriptions = "\n".join([f"- {t.name}: {t.description}" for t in TOOLS])
         prompt = f"""
         Given the user query: "{query}",
-        Create a list of tasks to be completed.
-        Example: {{"tasks": [{{"id": 1, "description": "some task", "done": false}}]}}
+        Create a list of curriculum development tasks to be completed.
+        Return a JSON object: {{"tasks": [{{"id": 1, "description": "some task", "done": false}}]}}
+        Keep tasks atomic and aligned to available tools.
         """
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
+        def _coerce_tasks(resp) -> List[Task]:
+            import json
+            if not resp:
+                return []
+            # Pydantic model
+            if hasattr(resp, "tasks"):
+                return [Task(**t.dict()) if hasattr(t, "dict") else Task(**t) for t in resp.tasks]  # type: ignore
+            # Dict form
+            if isinstance(resp, dict):
+                tasks_field = resp.get("tasks")
+                if isinstance(tasks_field, str):
+                    try:
+                        tasks_json = json.loads(tasks_field)
+                        if isinstance(tasks_json, list):
+                            return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(tasks_json)]
+                    except Exception:
+                        pass
+                if isinstance(tasks_field, list):
+                    return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(tasks_field)]
+            # AIMessage/content JSON
+            if hasattr(resp, "content") and isinstance(resp.content, str):  # type: ignore[attr-defined]
+                try:
+                    data = json.loads(resp.content)
+                    if isinstance(data, dict) and isinstance(data.get("tasks"), list):
+                        return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(data["tasks"])]
+                except Exception:
+                    pass
+            # No luck
+            return []
+
+        def _coerce_task_dict(item, fallback_id: int) -> dict:
+            if isinstance(item, dict):
+                # Normalize common key variants
+                desc = item.get("description") or item.get("desc") or item.get("task") or str(item)
+                idv = item.get("id") or fallback_id
+                done = item.get("done", False)
+                return {"id": int(idv) if str(idv).isdigit() else fallback_id, "description": str(desc), "done": bool(done)}
+            return {"id": fallback_id, "description": str(item), "done": False}
+
         try:
             response = call_llm(
                 prompt, system_prompt=system_prompt, output_schema=TaskList
             )
-            tasks = response.tasks
+            tasks = _coerce_tasks(response)
+            if not tasks:
+                raise ValueError("Empty or invalid task list from LLM")
         except Exception as e:
             this.logger._log(f"Planning failed: {e}")
-            tasks = [Task(id=1, description=query, done=False)]
+            # Retry once with a clarified prompt to handle typos/ambiguous requests
+            retry_prompt = f"""
+            The user's request may contain typos or be ambiguous.
+            First, rewrite it as a clear curriculum-development request with topic, audience, and level if implied.
+            Then produce a JSON object with 3-6 atomic tasks aligned to available tools.
+
+            Original request: "{query}"
+            """
+            try:
+                response = call_llm(
+                    retry_prompt, system_prompt=system_prompt, output_schema=TaskList
+                )
+                tasks = _coerce_tasks(response)
+                if not tasks:
+                    raise ValueError("Empty or invalid task list from retry")
+            except Exception as e2:
+                this.logger._log(f"Planning retry failed: {e2}")
+                tasks = [Task(id=1, description=query, done=False)]
 
         task_dicts = [task.dict() for task in tasks]
         this.logger.log_task_list(task_dicts)
@@ -139,6 +198,8 @@ class Agent:
                 output_schema=OptimizedToolArgs,
             )
             # Handle case where LLM returns dict directly instead of OptimizedToolArgs
+            if response is None:
+                return initial_args
             if isinstance(response, dict):
                 return response if response else initial_args
             return response.arguments
@@ -241,6 +302,22 @@ class Agent:
                     tool_name = tool_call["name"]
                     initial_args = tool_call["args"]
 
+                    # Basic arg normalization: convert stringified lists to real lists
+                    def _normalize_arg_value(v):
+                        if isinstance(v, str) and v.startswith("[") and v.endswith("]"):
+                            try:
+                                import json, ast
+                                try:
+                                    parsed = json.loads(v)
+                                except Exception:
+                                    parsed = ast.literal_eval(v)
+                                if isinstance(parsed, list):
+                                    return parsed
+                            except Exception:
+                                return v
+                        return v
+                    initial_args = {k: _normalize_arg_value(v) for k, v in initial_args.items()}
+
                     # Refine tool arguments for better performance.
                     optimized_args = this.optimize_tool_args(
                         tool_name, initial_args, task.description
@@ -312,16 +389,37 @@ class Agent:
         {all_results}
         
         Based on the data above, provide a comprehensive answer to the user's query.
-        Include specific numbers, calculations, and insights. Be precise in math. 
-
-        *Note: Be precise when reporting percentage changes.*
-        - *Example a change from 150 to 120 is an absolute change of -30, which is a 20% decrease.*
-        - *Example a change from 50 to 75 is an absolute change of +25, which is a 50% increase.*
-        *Always state both the absolute change and the percentage change for clarity.*
+        Organize the output for curriculum use: summary, objectives, modules, assessments, pacing, resources (if any).
         """
         answer_obj = call_llm(
             answer_prompt,
             system_prompt=get_answer_system_prompt(),
             output_schema=Answer,
         )
-        return answer_obj.answer
+        # Be robust to different return types
+        try:
+            if answer_obj is None:
+                raise ValueError("Empty answer from LLM")
+            if isinstance(answer_obj, dict):
+                txt = answer_obj.get("answer")
+                if not txt:
+                    raise ValueError("Missing 'answer' in dict response")
+                return txt
+            # Pydantic model with .answer
+            if hasattr(answer_obj, "answer"):
+                return answer_obj.answer  # type: ignore[attr-defined]
+            # Fallback to AIMessage-like content
+            if hasattr(answer_obj, "content") and answer_obj.content:
+                return str(answer_obj.content)
+            # Last resort string conversion
+            return str(answer_obj)
+        except Exception:
+            # Final fallback: return a synthesized summary from collected outputs
+            fallback = [
+                "Summary:",
+                f"- Query: {query}",
+                f"- Collected {len(task_outputs)} tool outputs.",
+                "\nKey Outputs:",
+            ]
+            fallback.extend([f"- {o[:200]}" for o in task_outputs[-5:]])
+            return "\n".join(fallback)

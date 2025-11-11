@@ -1,76 +1,116 @@
 """
-Quick test to verify the new provider system works correctly.
+Education tools sanity tests.
+
+Verifies core curriculum-development tools respond and return
+expected structures without relying on external APIs.
 """
 
-from downes.tools.finance.providers.config import ProviderFactory
-from downes.tools.finance.providers.yahoo_finance import YahooFinanceProvider
+from downes.tools.education.objectives import generate_learning_objectives
+from downes.tools.education.syllabus import draft_syllabus
+from downes.tools.education.assessments import design_assessments
+from downes.tools.education.pacing import create_pacing_guide
+from downes.tools.education.taxonomy import map_to_blooms_taxonomy
+from downes.tools.education.resources import curate_learning_resources
 
-def test_yahoo_finance_provider():
-    """Test Yahoo Finance provider with a simple price snapshot."""
-    print("Testing Yahoo Finance Provider...")
-    provider = YahooFinanceProvider()
-    
-    # Test price snapshot
-    try:
-        snapshot = provider.get_price_snapshot("AAPL")
-        print(f"✓ Price snapshot for AAPL: ${snapshot.get('price', 'N/A')}")
-    except Exception as e:
-        print(f"✗ Price snapshot failed: {e}")
-    
-    # Test financial statements
-    try:
-        statements = provider.get_income_statements("AAPL", "quarterly", limit=2)
-        print(f"✓ Income statements retrieved: {len(statements)} periods")
-    except Exception as e:
-        print(f"✗ Income statements failed: {e}")
-    
-    print()
 
-def test_provider_factory():
-    """Test the provider factory auto-selection."""
-    print("Testing Provider Factory...")
-    
-    # Should auto-select Yahoo Finance (free default)
-    provider = ProviderFactory.create_provider()
-    print(f"✓ Auto-selected provider: {provider.__class__.__name__}")
-    
-    # Test composite provider
-    composite = ProviderFactory.get_composite_provider()
-    print(f"✓ Composite provider created: {composite.__class__.__name__}")
-    
-    print()
+def test_objectives():
+    print("Testing: generate_learning_objectives …")
+    out = generate_learning_objectives.run({
+        "topic": "Data Visualization",
+        "audience": "undergraduate beginners",
+        "level": "beginner",
+        "duration_weeks": 6,
+        "outcomes_count": 4,
+    })
+    assert isinstance(out, list) and len(out) >= 4
+    print(f"✓ Objectives generated: {len(out)}")
 
-def test_sec_edgar_provider():
-    """Test SEC EDGAR provider."""
-    print("Testing SEC EDGAR Provider...")
-    from downes.tools.finance.providers.sec_edgar import SECEdgarProvider
-    
-    provider = SECEdgarProvider()
-    
-    try:
-        filings = provider.get_filings("AAPL", filing_type="10-K", limit=2)
-        print(f"✓ SEC filings retrieved: {len(filings)} 10-K filings")
-        if filings:
-            print(f"  Latest filing date: {filings[0].get('filing_date', 'N/A')}")
-    except Exception as e:
-        print(f"✗ SEC filings failed: {e}")
-    
-    print()
+
+def test_syllabus():
+    print("Testing: draft_syllabus …")
+    objs = [
+        "Identify basic chart types",
+        "Apply design principles to visual encodings",
+        "Analyze datasets to select appropriate visuals",
+        "Create static and interactive charts",
+    ]
+    syl = draft_syllabus.run({
+        "course_title": "Foundations of Data Visualization",
+        "learning_objectives": objs,
+        "duration_weeks": 6,
+        "modality": "online",
+        "modules_count": 3,
+    })
+    assert isinstance(syl, dict) and "modules" in syl and len(syl["modules"]) == 3
+    print(f"✓ Syllabus modules: {len(syl['modules'])}")
+
+
+def test_assessments():
+    print("Testing: design_assessments …")
+    objs = [
+        "Identify basic chart types",
+        "Apply design principles to visual encodings",
+        "Create static and interactive charts",
+    ]
+    assessments = design_assessments.run({
+        "learning_objectives": objs,
+        "assessment_types": ["quiz", "project", "presentation"],
+    })
+    assert isinstance(assessments, list) and len(assessments) == len(objs)
+    print(f"✓ Assessments aligned: {len(assessments)}")
+
+
+def test_pacing():
+    print("Testing: create_pacing_guide …")
+    weeks = create_pacing_guide.run({
+        "duration_weeks": 6,
+        "modules_count": 3,
+        "hours_per_week": 5,
+    })
+    assert isinstance(weeks, list) and len(weeks) == 6
+    print(f"✓ Weeks planned: {len(weeks)}")
+
+
+def test_taxonomy():
+    print("Testing: map_to_blooms_taxonomy …")
+    objs = [
+        "Describe data types",
+        "Apply color theory",
+        "Analyze dashboard usability",
+        "Design an infographic",
+    ]
+    mapping = map_to_blooms_taxonomy.run({"learning_objectives": objs})
+    assert isinstance(mapping, list) and len(mapping) == len(objs)
+    print(f"✓ Objectives mapped: {len(mapping)}")
+
+
+def test_resources():
+    print("Testing: curate_learning_resources …")
+    res = curate_learning_resources.run({
+        "topic": "Data Visualization",
+        "max_items": 5,
+    })
+    assert isinstance(res, list) and len(res) == 5
+    print(f"✓ Resources curated: {len(res)}")
+
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Testing Downes Provider System")
+    print("Testing Downes Education Tools")
     print("=" * 60)
     print()
-    
-    test_provider_factory()
-    test_yahoo_finance_provider()
-    test_sec_edgar_provider()
-    
+
+    test_objectives()
+    test_syllabus()
+    test_assessments()
+    test_pacing()
+    test_taxonomy()
+    test_resources()
+
+    print()
     print("=" * 60)
     print("Tests Complete!")
     print("=" * 60)
-    print("\n✓ The provider system is working correctly!")
-    print("  - No API keys required for basic functionality")
-    print("  - Using free Yahoo Finance and SEC EDGAR data sources")
-    print("  - You can now run: uv run downes-agent")
+    print("\n✓ Education tools are working correctly!")
+    print("  - Deterministic scaffolds, no external APIs required")
+    print("  - Ready to use via: uv run downes-agent")
