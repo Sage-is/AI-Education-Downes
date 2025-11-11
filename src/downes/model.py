@@ -79,9 +79,12 @@ def call_llm(
         AIMessage with the response
     """
     final_system_prompt = system_prompt if system_prompt else DEFAULT_SYSTEM_PROMPT
+    # Escape braces in system prompt to avoid ChatPromptTemplate variable parsing
+    # for literal JSON examples or instructional text.
+    sp_escaped = final_system_prompt.replace("{", "{{").replace("}", "}}")
 
     prompt_template = ChatPromptTemplate.from_messages(
-        [("system", final_system_prompt), ("user", "{prompt}")]
+        [("system", sp_escaped), ("user", "{prompt}")]
     )
 
     # Get LLM configuration

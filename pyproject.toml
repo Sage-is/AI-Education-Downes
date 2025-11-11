@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "downes"
 version = "0.1.0"
-description = "AI agent for financial analysis."
+description = "AI agent for education analysis."
 authors = []
 license = {text = "AGPL-3.0-or-later"}
 requires-python = ">=3.10"

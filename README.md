@@ -104,12 +104,31 @@ OPENAI_BASE_URL=https://your-provider.com/v1
 LLM_MODEL=your-model-name
 ```
 
+### Optional: SearXNG for Search
+
+You can enable a SearXNG instance for broader education/OER discovery:
+
+```bash
+# Example public instance (change as needed)
+export SEARXNG_INSTANCE_URL=https://searx.tiekoetter.com
+```
+
+The agent exposes a `searx_search` tool that queries your instance with an education bias by default (curriculum, syllabus, lesson plan, rubric, OER).
+
 ### Usage
 
 Run Downes in interactive mode:
 ```bash
 uv run downes-agent
 ```
+
+When prompted, enter a curriculum request. For example:
+
+```text
+>> intro to art techniques grade 9
+```
+
+Downes will plan tasks (objectives, syllabus, assessments, pacing, resources), execute tools, and produce a structured curriculum plan.
 
 ### Example Queries
 
@@ -120,10 +139,77 @@ Try asking Downes to develop curriculum like:
 - "Build a comprehensive bootcamp curriculum for web development"
 
 Downes will automatically:
+
 1. Break down your request into curriculum development tasks
 2. Define clear learning objectives and outcomes
 3. Structure modules, lessons, and assessments
 4. Provide a comprehensive, pedagogically-sound curriculum plan
+
+### Programmatic Usage
+
+You can also call the education tools directly in Python to build custom flows:
+
+```python
+from downes.tools.education.objectives import generate_learning_objectives
+from downes.tools.education.syllabus import draft_syllabus
+from downes.tools.education.assessments import design_assessments
+from downes.tools.education.pacing import create_pacing_guide
+from downes.tools.education.taxonomy import map_to_blooms_taxonomy
+from downes.tools.education.resources import curate_learning_resources
+
+topic = "Intro to Art Techniques"
+audience = "Grade 9 students"
+
+# 1) Objectives
+objectives = generate_learning_objectives.run({
+  "topic": topic,
+  "audience": audience,
+  "level": "beginner",
+  "duration_weeks": 10,
+  "outcomes_count": 5,
+})
+
+# 2) Syllabus aligned to objectives
+syllabus = draft_syllabus.run({
+  "course_title": topic,
+  "learning_objectives": objectives,
+  "duration_weeks": 10,
+  "modality": "in-person",
+  "modules_count": 5,
+})
+
+# 3) Assessments + rubrics
+assessments = design_assessments.run({
+  "learning_objectives": objectives,
+  "assessment_types": ["quiz", "project", "presentation"],
+})
+
+# 4) Pacing guide
+pacing = create_pacing_guide.run({
+  "duration_weeks": 10,
+  "modules_count": 5,
+  "hours_per_week": 4,
+})
+
+# 5) Bloom's taxonomy mapping
+taxonomy = map_to_blooms_taxonomy.run({
+  "learning_objectives": objectives
+})
+
+# 6) Curated resources
+resources = curate_learning_resources.run({
+  "topic": topic,
+  "resource_types": ["article", "video"],
+  "max_items": 6,
+})
+
+print(len(objectives), "objectives")
+print(len(syllabus["modules"]), "modules in syllabus")
+print(len(assessments), "assessments")
+print(len(pacing), "weeks in pacing guide")
+print(len(taxonomy), "taxonomy mappings")
+print(len(resources), "resources")
+```
 
 ## Architecture
 
@@ -136,7 +222,7 @@ Downes uses a multi-agent architecture with specialized components:
 
 ## Project Structure
 
-```
+```text
 downes/
 ├── src/
 │   ├── downes/
@@ -145,6 +231,7 @@ downes/
 │   │   ├── prompts.py            # System prompts for each component
 │   │   ├── schemas.py            # Pydantic models
 │   │   ├── tools/
+│   │   │   ├── education/        # Curriculum tools (objectives, syllabus, assessments, pacing, taxonomy, resources)
 │   │   │   ├── search/           # Search and research tools
 │   │   │   └── ...               # Additional curriculum development tools
 │   │   ├── utils/                # Utility functions
