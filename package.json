@@ -1,0 +1,16 @@
+{
+  "name": "downes-agent",
+  "version": "0.1.0",
+  "description": "Downes: An autonomous financial research agent that performs deep analysis using task planning, introspection, and real-time market data. Inspired by Claude Code, but built specifically for financial research.",
+  "main": "index.js",
+  "bin": {
+    "downes-agent": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "uv pip install ."
+  },
+  "keywords": [],
+  "author": "Startr LLC",
+  "license": "AGPL"
+}
