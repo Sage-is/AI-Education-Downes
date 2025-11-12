@@ -52,7 +52,7 @@ def searx_search(
     - Respects categories if provided
 
     Configuration:
-    - Set SEARXNG_INSTANCE_URL env var to e.g. https://searx.tiekoetter.com
+    - Set SEARXNG_INSTANCE_URL env var to.
     - Tool parameter instance_url overrides the environment variable
     """
     base = instance_url or os.getenv("SEARXNG_INSTANCE_URL")

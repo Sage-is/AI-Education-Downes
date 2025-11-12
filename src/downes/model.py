@@ -2,8 +2,7 @@ import os
 import time
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from pydantic import BaseModel
-from typing import Type, List, Optional
+from typing import List, Optional
 from langchain_core.tools import BaseTool
 from langchain_core.messages import AIMessage
 from openai import APIConnectionError
@@ -59,7 +58,6 @@ def call_llm(
     prompt: str,
     model: Optional[str] = None,
     system_prompt: Optional[str] = None,
-    output_schema: Optional[Type[BaseModel]] = None,
     tools: Optional[List[BaseTool]] = None,
 ) -> AIMessage:
     """
@@ -72,11 +70,10 @@ def call_llm(
         prompt: The user prompt
         model: Model name (overrides LLM_MODEL env var)
         system_prompt: System prompt (default: DEFAULT_SYSTEM_PROMPT)
-        output_schema: Pydantic model for structured output
         tools: List of tools to bind to the LLM
 
     Returns:
-        AIMessage with the response
+        AIMessage with the response (text content or tool calls)
     """
     final_system_prompt = system_prompt if system_prompt else DEFAULT_SYSTEM_PROMPT
     # Escape braces in system prompt to avoid ChatPromptTemplate variable parsing
@@ -95,12 +92,8 @@ def call_llm(
     # Initialize the LLM with configuration
     llm = ChatOpenAI(**config)
 
-    # Add structured output or tools to the LLM.
-    runnable = llm
-    if output_schema:
-        runnable = llm.with_structured_output(output_schema, method="function_calling")
-    elif tools:
-        runnable = llm.bind_tools(tools)
+    # Bind tools if provided
+    runnable = llm.bind_tools(tools) if tools else llm
 
     chain = prompt_template | runnable
 

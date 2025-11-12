@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 
@@ -28,40 +28,68 @@ def draft_syllabus(
     modality: str = "online",
     prerequisites: Optional[List[str]] = None,
     modules_count: int = 6,
-) -> Dict[str, Any]:
+) -> str:
     """
     Produces a structured syllabus outline with modules mapped to learning objectives,
     each including a description and suggested instructional strategies.
-    Returns a dictionary with metadata and module breakdown.
+    Returns a Markdown formatted syllabus.
     """
-    modules: List[Dict[str, Any]] = []
-    # Simple even distribution of objectives.
+    # Simple even distribution of objectives
     obj_per_module = max(1, len(learning_objectives) // modules_count or 1)
+    
+    lines = [
+        f"# {course_title} - Syllabus",
+        "",
+        "## Course Information",
+        "",
+        f"- **Duration:** {duration_weeks} weeks",
+        f"- **Modality:** {modality.capitalize()}",
+    ]
+    
+    if prerequisites:
+        lines.extend([
+            "",
+            "### Prerequisites",
+            "",
+        ])
+        for prereq in prerequisites:
+            lines.append(f"- {prereq}")
+    
+    lines.extend([
+        "",
+        "## Course Modules",
+        "",
+    ])
+    
     for i in range(modules_count):
         start = i * obj_per_module
         end = start + obj_per_module
         aligned = learning_objectives[start:end]
         if not aligned:
             aligned = learning_objectives[-obj_per_module:]
-        modules.append(
-            {
-                "module_number": i + 1,
-                "title": f"Module {i + 1}: Core Concepts",
-                "summary": f"Introduces foundational elements of {course_title} with focus on applied understanding.",
-                "aligned_objectives": aligned,
-                "suggested_activities": [
-                    "Micro-lecture",
-                    "Guided discussion",
-                    "Hands-on exercise",
-                ],
-                "formative_assessment": "Short quiz or reflective prompt",
-            }
-        )
-
-    return {
-        "course_title": course_title,
-        "modality": modality,
-        "duration_weeks": duration_weeks,
-        "prerequisites": prerequisites or [],
-        "modules": modules,
-    }
+        
+        lines.extend([
+            f"### Module {i + 1}: Core Concepts",
+            "",
+            f"**Summary:** Introduces foundational elements of {course_title} with focus on applied understanding.",
+            "",
+            "**Aligned Learning Objectives:**",
+            "",
+        ])
+        
+        for obj in aligned:
+            lines.append(f"- {obj}")
+        
+        lines.extend([
+            "",
+            "**Suggested Activities:**",
+            "",
+            "- Micro-lecture",
+            "- Guided discussion",
+            "- Hands-on exercise",
+            "",
+            "**Formative Assessment:** Short quiz or reflective prompt",
+            "",
+        ])
+    
+    return "\n".join(lines)

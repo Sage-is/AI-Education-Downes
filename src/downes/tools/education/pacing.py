@@ -16,27 +16,36 @@ def create_pacing_guide(
     duration_weeks: int,
     modules_count: int,
     hours_per_week: int = 6,
-) -> List[Dict[str, Any]]:
+) -> str:
     """
     Creates a week-by-week pacing guide allocating time to content, practice,
     and assessment across modules.
-    Returns a list of week plans with suggested focus areas.
+    Returns a Markdown formatted pacing guide.
     """
-    weeks: List[Dict[str, Any]] = []
     module_span = max(1, duration_weeks // modules_count or 1)
+    
+    lines = [
+        "## Pacing Guide",
+        "",
+        f"**Total Duration:** {duration_weeks} weeks",
+        f"**Modules:** {modules_count}",
+        f"**Hours per Week:** {hours_per_week}",
+        "",
+        "### Weekly Schedule",
+        "",
+        "| Week | Module | Total Hours | Content | Practice | Assessment | Focus |",
+        "|------|--------|-------------|---------|----------|------------|-------|",
+    ]
+    
     for w in range(1, duration_weeks + 1):
         module_idx = (w - 1) // module_span + 1
-        weeks.append(
-            {
-                "week": w,
-                "module": min(module_idx, modules_count),
-                "hours": hours_per_week,
-                "distribution": {
-                    "content": round(hours_per_week * 0.4, 1),
-                    "practice": round(hours_per_week * 0.4, 1),
-                    "assessment": round(hours_per_week * 0.2, 1),
-                },
-                "focus": "Advance core concepts and apply through practice.",
-            }
+        module = min(module_idx, modules_count)
+        content_hours = round(hours_per_week * 0.4, 1)
+        practice_hours = round(hours_per_week * 0.4, 1)
+        assessment_hours = round(hours_per_week * 0.2, 1)
+        
+        lines.append(
+            f"| {w} | {module} | {hours_per_week}h | {content_hours}h | {practice_hours}h | {assessment_hours}h | Core concepts + practice |"
         )
-    return weeks
+    
+    return "\n".join(lines)
