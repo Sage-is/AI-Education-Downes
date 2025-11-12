@@ -2,6 +2,8 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 
+from .utils import MarkdownBuilder
+
 
 class GenerateObjectivesInput(BaseModel):
     topic: str = Field(description="High-level subject or course title.")
@@ -34,8 +36,6 @@ def generate_learning_objectives(
     observable outcomes tailored to the audience and level.
     Returns objectives in clean Markdown format.
     """
-    # For now, provide a deterministic scaffold; LLM can refine.
-    # Keep side-effect free; agent composes with LLM for improvements.
     base_verbs = {
         "beginner": ["identify", "describe", "apply"],
         "intermediate": ["analyze", "compare", "implement"],
@@ -43,23 +43,21 @@ def generate_learning_objectives(
     }
     verbs = base_verbs.get(level.lower(), base_verbs["beginner"])
 
-    lines = [
-        "## Learning Objectives",
-        "",
-        f"**Course:** {topic}",
-        f"**Audience:** {audience}",
-        f"**Level:** {level.capitalize()}",
+    md = MarkdownBuilder()
+    md.add_heading("Learning Objectives", level=2)
+    md.add_metadata(
+        course=topic,
+        audience=audience,
+        level=level.capitalize(),
+        duration=f"{duration_weeks} weeks" if duration_weeks else None
+    )
+    md.add_heading("Objectives", level=3)
+    
+    objectives = [
+        f"By the end of this course, {audience} will be able to **{verbs[i % len(verbs)]}** key concepts in {topic} with appropriate accuracy."
+        for i in range(outcomes_count)
     ]
     
-    if duration_weeks:
-        lines.append(f"**Duration:** {duration_weeks} weeks")
+    md.add_numbered_list(objectives)
     
-    lines.extend(["", "### Objectives", ""])
-    
-    for i in range(outcomes_count):
-        verb = verbs[i % len(verbs)]
-        lines.append(
-            f"{i+1}. By the end of this course, {audience} will be able to **{verb}** key concepts in {topic} with appropriate accuracy."
-        )
-
-    return "\n".join(lines)
+    return md.build()
