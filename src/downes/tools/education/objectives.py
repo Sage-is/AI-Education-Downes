@@ -49,15 +49,15 @@ def generate_learning_objectives(
         course=topic,
         audience=audience,
         level=level.capitalize(),
-        duration=f"{duration_weeks} weeks" if duration_weeks else None
+        duration=f"{duration_weeks} weeks" if duration_weeks else None,
     )
     md.add_heading("Objectives", level=3)
-    
+
     objectives = [
         f"By the end of this course, {audience} will be able to **{verbs[i % len(verbs)]}** key concepts in {topic} with appropriate accuracy."
         for i in range(outcomes_count)
     ]
-    
+
     md.add_numbered_list(objectives)
-    
+
     return md.build()

@@ -25,16 +25,16 @@ def create_pacing_guide(
     Returns a Markdown formatted pacing guide.
     """
     module_span = max(1, duration_weeks // modules_count or 1)
-    
+
     md = MarkdownBuilder()
     md.add_heading("Pacing Guide", level=2)
     md.add_metadata(
         total_duration=f"{duration_weeks} weeks",
         modules=modules_count,
-        hours_per_week=hours_per_week
+        hours_per_week=hours_per_week,
     )
     md.add_heading("Weekly Schedule", level=3)
-    
+
     # Build table rows
     rows = []
     for w in range(1, duration_weeks + 1):
@@ -43,20 +43,22 @@ def create_pacing_guide(
         content_hours = round(hours_per_week * 0.4, 1)
         practice_hours = round(hours_per_week * 0.4, 1)
         assessment_hours = round(hours_per_week * 0.2, 1)
-        
-        rows.append([
-            w,
-            module,
-            f"{hours_per_week}h",
-            f"{content_hours}h",
-            f"{practice_hours}h",
-            f"{assessment_hours}h",
-            "Core concepts + practice"
-        ])
-    
+
+        rows.append(
+            [
+                w,
+                module,
+                f"{hours_per_week}h",
+                f"{content_hours}h",
+                f"{practice_hours}h",
+                f"{assessment_hours}h",
+                "Core concepts + practice",
+            ]
+        )
+
     md.add_table(
         ["Week", "Module", "Total Hours", "Content", "Practice", "Assessment", "Focus"],
-        rows
+        rows,
     )
-    
+
     return md.build()

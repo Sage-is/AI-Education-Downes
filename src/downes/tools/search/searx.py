@@ -64,12 +64,12 @@ def searx_search(
     expanded_query = query
     if education_bias:
         edu_terms = [
-            'curriculum',
-            'syllabus',
+            "curriculum",
+            "syllabus",
             '"learning objectives"',
             '"lesson plan"',
-            'rubric',
-            'OER',
+            "rubric",
+            "OER",
             '"open educational resources"',
         ]
         expanded_query = f"{query} (" + " OR ".join(edu_terms) + ")"
@@ -107,10 +107,14 @@ def searx_search(
         for key in ["publishedDate", "published", "date"]:
             if key in r and isinstance(r[key], str):
                 try:
-                    published_date = datetime.fromisoformat(r[key].replace("Z", "+00:00"))
+                    published_date = datetime.fromisoformat(
+                        r[key].replace("Z", "+00:00")
+                    )
                 except Exception:
                     published_date = None
-        results.append(SearchResult(title=title, url=url, published_date=published_date))
+        results.append(
+            SearchResult(title=title, url=url, published_date=published_date)
+        )
         if len(results) >= max_results:
             break
     return results
