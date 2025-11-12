@@ -15,6 +15,7 @@ from downes.schemas import Answer, IsDone, OptimizedToolArgs, Task, TaskList
 from downes.tools import TOOLS
 from downes.utils.logger import Logger
 from downes.utils.ui import show_progress
+from downes.utils.vault import Vault
 
 
 class Agent:
@@ -22,6 +23,7 @@ class Agent:
         this.logger = Logger()
         this.max_steps = max_steps  # global safety cap
         this.max_steps_per_task = max_steps_per_task
+        this.vault = Vault()
 
     # ---------- task planning ----------
     @show_progress("Planning tasks...", "Tasks planned")
@@ -246,6 +248,9 @@ class Agent:
         # Display the user's query
         this.logger.log_user_query(query)
 
+        # Create a directory for this run
+        this.vault.create_run_dir(query)
+
         # Initialize agent state for this run.
         step_count = 0
         last_actions = []
@@ -346,6 +351,11 @@ class Agent:
                                 tool_to_run, tool_name, optimized_args
                             )
                             this.logger.log_tool_run(optimized_args, result)
+                            this.vault.save_artifact(
+                                task_name=task.description,
+                                artifact_name=tool_name,
+                                content=result
+                            )
                             output = f"Output of {tool_name} with args {optimized_args}: {result}"
                             task_outputs.append(output)
                             task_step_outputs.append(output)
@@ -374,6 +384,7 @@ class Agent:
         # Generate the final answer from all collected tool outputs.
         answer = this._generate_answer(query, task_outputs)
         this.logger.log_summary(answer)
+        this.vault.save_artifact("summary", "final_answer", answer)
         return answer
 
     @show_progress("Generating answer...", "Answer ready")
