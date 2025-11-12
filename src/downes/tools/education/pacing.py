@@ -2,6 +2,8 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 
+from .utils import MarkdownBuilder
+
 
 class CreatePacingGuideInput(BaseModel):
     duration_weeks: int = Field(description="Total course duration in weeks.")
@@ -24,19 +26,17 @@ def create_pacing_guide(
     """
     module_span = max(1, duration_weeks // modules_count or 1)
     
-    lines = [
-        "## Pacing Guide",
-        "",
-        f"**Total Duration:** {duration_weeks} weeks",
-        f"**Modules:** {modules_count}",
-        f"**Hours per Week:** {hours_per_week}",
-        "",
-        "### Weekly Schedule",
-        "",
-        "| Week | Module | Total Hours | Content | Practice | Assessment | Focus |",
-        "|------|--------|-------------|---------|----------|------------|-------|",
-    ]
+    md = MarkdownBuilder()
+    md.add_heading("Pacing Guide", level=2)
+    md.add_metadata(
+        total_duration=f"{duration_weeks} weeks",
+        modules=modules_count,
+        hours_per_week=hours_per_week
+    )
+    md.add_heading("Weekly Schedule", level=3)
     
+    # Build table rows
+    rows = []
     for w in range(1, duration_weeks + 1):
         module_idx = (w - 1) // module_span + 1
         module = min(module_idx, modules_count)
@@ -44,8 +44,19 @@ def create_pacing_guide(
         practice_hours = round(hours_per_week * 0.4, 1)
         assessment_hours = round(hours_per_week * 0.2, 1)
         
-        lines.append(
-            f"| {w} | {module} | {hours_per_week}h | {content_hours}h | {practice_hours}h | {assessment_hours}h | Core concepts + practice |"
-        )
+        rows.append([
+            w,
+            module,
+            f"{hours_per_week}h",
+            f"{content_hours}h",
+            f"{practice_hours}h",
+            f"{assessment_hours}h",
+            "Core concepts + practice"
+        ])
     
-    return "\n".join(lines)
+    md.add_table(
+        ["Week", "Module", "Total Hours", "Content", "Practice", "Assessment", "Focus"],
+        rows
+    )
+    
+    return md.build()
