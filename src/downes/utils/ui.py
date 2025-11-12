@@ -70,12 +70,22 @@ class Spinner:
         this.message = message
 
 
-def show_progress(message: str, success_message: str = ""):
-    """Decorator to show progress spinner while a function executes."""
+def show_progress(message: str, success_message: str = "", enabled: bool = True):
+    """Decorator to show progress spinner while a function executes.
+    
+    Args:
+        message: The message to display while running
+        success_message: Optional message to display on success
+        enabled: Whether to actually show the spinner (for debug/verbose modes)
+    """
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if not enabled:
+                # Skip spinner entirely in debug mode
+                return func(*args, **kwargs)
+            
             spinner = Spinner(message, color=Colors.CYAN)
             spinner.start()
             try:
