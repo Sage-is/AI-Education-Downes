@@ -4,9 +4,10 @@ from downes.utils.ui import UI
 class Logger:
     """Logger that uses the new interactive UI system."""
 
-    def __init__(this):
+    def __init__(this, verbose: bool = False):
         this.ui = UI()
         this.log = []
+        this.verbose = verbose
 
     def _log(this, msg: str):
         """Print immediately and keep in log."""

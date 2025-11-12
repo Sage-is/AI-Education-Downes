@@ -59,6 +59,7 @@ def call_llm(
     model: Optional[str] = None,
     system_prompt: Optional[str] = None,
     tools: Optional[List[BaseTool]] = None,
+    verbose: bool = False,
 ) -> AIMessage:
     """
     Call the LLM with the given prompt.
@@ -100,8 +101,27 @@ def call_llm(
     # Retry logic for transient connection errors
     for attempt in range(3):
         try:
-            return chain.invoke({"prompt": prompt})
+            if verbose:
+                start_time = time.time()
+                print(f"\n[LLM] Calling {config['model']}...")
+            
+            response = chain.invoke({"prompt": prompt})
+            
+            if verbose:
+                elapsed = time.time() - start_time
+                print(f"[LLM] Response received in {elapsed:.2f}s")
+                if hasattr(response, 'response_metadata'):
+                    metadata = response.response_metadata
+                    if 'token_usage' in metadata:
+                        usage = metadata['token_usage']
+                        print(f"[LLM] Tokens - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                              f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                              f"Total: {usage.get('total_tokens', 'N/A')}")
+            
+            return response
         except APIConnectionError as e:
             if attempt == 2:  # Last attempt
                 raise
+            if verbose:
+                print(f"[LLM] Connection error (attempt {attempt + 1}/3), retrying...")
             time.sleep(0.5 * (2**attempt))  # 0.5s, 1s backoff

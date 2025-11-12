@@ -31,11 +31,13 @@ class Task:
 
 
 class Agent:
-    def __init__(this, max_steps: int = 20, max_steps_per_task: int = 5):
-        this.logger = Logger()
+    def __init__(this, max_steps: int = 20, max_steps_per_task: int = 5, verbose: bool = False, debug: bool = False):
+        this.logger = Logger(verbose=verbose)
         this.max_steps = max_steps  # global safety cap
         this.max_steps_per_task = max_steps_per_task
         this.vault = Vault()
+        this.verbose = verbose
+        this.debug = debug
 
     # ---------- helper methods ----------
     @staticmethod
@@ -71,10 +73,30 @@ class Agent:
         system_prompt: str,
         tools=None,
         error_msg: str = "LLM call failed",
+        operation_name: str = "LLM call",
     ):
         """Call LLM with error handling and logging."""
+        if this.debug:
+            this.logger._log(f"\n{'='*60}\n[DEBUG] {operation_name}")
+            this.logger._log(f"[SYSTEM PROMPT]\n{system_prompt[:200]}...\n")
+            this.logger._log(f"[USER PROMPT]\n{prompt[:500]}...\n")
+        
         try:
-            return call_llm(prompt, system_prompt=system_prompt, tools=tools)
+            response = call_llm(
+                prompt, 
+                system_prompt=system_prompt, 
+                tools=tools,
+                verbose=this.verbose or this.debug
+            )
+            
+            if this.debug and response:
+                content = this._extract_content(response)
+                this.logger._log(f"[RESPONSE]\n{content[:500]}...")
+                if hasattr(response, 'tool_calls') and response.tool_calls:
+                    this.logger._log(f"[TOOL CALLS] {len(response.tool_calls)} call(s)")
+                this.logger._log(f"{'='*60}\n")
+            
+            return response
         except Exception as e:
             this.logger._log(f"{error_msg}: {e}")
             return None
@@ -112,8 +134,14 @@ class Agent:
         return False
 
     # ---------- task planning ----------
-    @show_progress("Planning tasks...", "Tasks planned")
     def plan_tasks(this, query: str) -> List[Task]:
+        """Plan tasks for the given query with progress indication."""
+        @show_progress("Planning tasks...", "Tasks planned", enabled=not this.debug)
+        def _do_plan():
+            return this._plan_tasks_impl(query)
+        return _do_plan()
+    
+    def _plan_tasks_impl(this, query: str) -> List[Task]:
         tool_descriptions = "\n".join([f"- {t.name}: {t.description}" for t in TOOLS])
         prompt = f"""
         Given the user query: "{query}",
@@ -138,7 +166,7 @@ class Agent:
             return tasks
 
         response = this._call_llm_safe(
-            prompt, system_prompt, error_msg="Planning failed"
+            prompt, system_prompt, error_msg="Planning failed", operation_name="Task Planning"
         )
         if response:
             tasks = _parse_markdown_checklist(this._extract_content(response))
@@ -153,7 +181,7 @@ class Agent:
             Original request: "{query}"
             """
             response = this._call_llm_safe(
-                retry_prompt, system_prompt, error_msg="Planning retry failed"
+                retry_prompt, system_prompt, error_msg="Planning retry failed", operation_name="Task Planning (Retry)"
             )
             tasks = (
                 _parse_markdown_checklist(this._extract_content(response))
@@ -169,8 +197,14 @@ class Agent:
         return tasks
 
     # ---------- ask Model what to do ----------
-    @show_progress("Thinking...", "")
     def plan_next_actions(this, task_desc: str, last_outputs: str = "") -> AIMessage:
+        """Plan next actions with conditional progress display."""
+        @show_progress("Thinking...", "", enabled=not this.debug)
+        def _do_plan():
+            return this._plan_next_actions_impl(task_desc, last_outputs)
+        return _do_plan()
+    
+    def _plan_next_actions_impl(this, task_desc: str, last_outputs: str = "") -> AIMessage:
         # last_outputs = textual feedback of what we just tried
         prompt = f"""
         We are working on: "{task_desc}".
@@ -187,11 +221,18 @@ class Agent:
             ACTION_SYSTEM_PROMPT,
             tools=TOOLS,
             error_msg="plan_next_actions failed",
+            operation_name="Action Planning",
         )
         return response if response else AIMessage(content="Failed to get actions.")
 
-    @show_progress("Checking if task is complete...", "")
     def ask_if_done(this, task_desc: str, recent_results: str) -> bool:
+        """Check if task is done with conditional progress display."""
+        @show_progress("Checking if task is complete...", "", enabled=not this.debug)
+        def _do_check():
+            return this._ask_if_done_impl(task_desc, recent_results)
+        return _do_check()
+    
+    def _ask_if_done_impl(this, task_desc: str, recent_results: str) -> bool:
         prompt = f"""
         We are trying to complete task: "{task_desc}".
         Given the history of tool outputs so far: {recent_results}
@@ -199,14 +240,20 @@ class Agent:
         Is the task done?
         """
         response = this._call_llm_safe(
-            prompt, VALIDATION_SYSTEM_PROMPT, error_msg="Task validation failed"
+            prompt, VALIDATION_SYSTEM_PROMPT, error_msg="Task validation failed", operation_name="Task Validation"
         )
         return (
             this._is_affirmative(this._extract_content(response)) if response else False
         )
 
-    @show_progress("Checking if main goal is achieved...", "")
     def is_goal_achieved(this, query: str, task_outputs: list) -> bool:
+        """Check if goal is achieved with conditional progress display."""
+        @show_progress("Checking if main goal is achieved...", "", enabled=not this.debug)
+        def _do_check():
+            return this._is_goal_achieved_impl(query, task_outputs)
+        return _do_check()
+    
+    def _is_goal_achieved_impl(this, query: str, task_outputs: list) -> bool:
         """Check if the overall goal is achieved based on all session outputs."""
         all_results = "\n\n".join(task_outputs)
         prompt = f"""
@@ -218,14 +265,22 @@ class Agent:
         Based on the data above, is the original query answered well?
         """
         response = this._call_llm_safe(
-            prompt, META_VALIDATION_SYSTEM_PROMPT, error_msg="Meta-validation failed"
+            prompt, META_VALIDATION_SYSTEM_PROMPT, error_msg="Meta-validation failed", operation_name="Goal Validation"
         )
         return (
             this._is_affirmative(this._extract_content(response)) if response else False
         )
 
-    @show_progress("Optimizing tool call...", "")
     def optimize_tool_args(
+        this, tool_name: str, initial_args: dict, task_desc: str
+    ) -> dict:
+        """Optimize tool args with conditional progress display."""
+        @show_progress("Optimizing tool call...", "", enabled=not this.debug)
+        def _do_optimize():
+            return this._optimize_tool_args_impl(tool_name, initial_args, task_desc)
+        return _do_optimize()
+    
+    def _optimize_tool_args_impl(
         this, tool_name: str, initial_args: dict, task_desc: str
     ) -> dict:
         """Optimize tool arguments based on task requirements."""
@@ -255,6 +310,7 @@ class Agent:
             prompt,
             get_tool_args_system_prompt(),
             error_msg="Argument optimization failed",
+            operation_name="Argument Optimization",
         )
         if response:
             content = this._extract_content(response)
@@ -290,12 +346,15 @@ class Agent:
 
     def _execute_tool(this, tool, tool_name: str, inp_args):
         """Execute a tool with progress indication."""
-
-        # Create a dynamic decorator with the tool name
-        @show_progress(f"Executing {tool_name}...", "")
+        @show_progress(f"Executing {tool_name}...", "", enabled=not this.debug)
         def run_tool():
-            return tool.run(inp_args)
-
+            if this.debug:
+                this.logger._log(f"[TOOL EXECUTION] {tool_name} with args: {inp_args}")
+            result = tool.run(inp_args)
+            if this.debug:
+                result_preview = str(result)[:200] if result else "None"
+                this.logger._log(f"[TOOL RESULT] {result_preview}...")
+            return result
         return run_tool()
 
     def confirm_action(this, tool: str, input_str: str) -> bool:
@@ -445,8 +504,14 @@ class Agent:
         this.vault.save_artifact("summary", "final_answer", answer)
         return answer
 
-    @show_progress("Generating answer...", "Answer ready")
     def _generate_answer(this, query: str, task_outputs: list) -> str:
+        """Generate answer with conditional progress display."""
+        @show_progress("Generating answer...", "Answer ready", enabled=not this.debug)
+        def _do_generate():
+            return this._generate_answer_impl(query, task_outputs)
+        return _do_generate()
+    
+    def _generate_answer_impl(this, query: str, task_outputs: list) -> str:
         """Generate the final answer based on collected data."""
         all_results = (
             "\n\n".join(task_outputs) if task_outputs else "No data was collected."
@@ -464,6 +529,7 @@ class Agent:
             answer_prompt,
             get_answer_system_prompt(),
             error_msg="Answer generation failed, using fallback",
+            operation_name="Answer Generation",
         )
         if response:
             content = this._extract_content(response)
