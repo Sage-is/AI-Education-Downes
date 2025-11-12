@@ -7,7 +7,8 @@ class CurateResourcesInput(BaseModel):
     model_config = ConfigDict(extra="allow")
     topic: str = Field(description="Primary subject or focus area.")
     resource_types: Optional[List[str]] = Field(
-        default=None, description="Desired resource types (article, video, dataset, repo)."
+        default=None,
+        description="Desired resource types (article, video, dataset, repo).",
     )
     max_items: int = Field(default=8, description="Maximum number of resources.")
 
@@ -53,7 +54,7 @@ def curate_learning_resources(
     Returns Markdown formatted resource list.
     """
     types = resource_types or ["article", "video", "repository", "dataset"]
-    
+
     lines = [
         "## Curated Learning Resources",
         "",
@@ -63,20 +64,24 @@ def curate_learning_resources(
         "### Resources",
         "",
     ]
-    
+
     for i in range(max_items):
         kind = types[i % len(types)]
-        suggested_use = "Introduce concept" if kind == "article" else "Hands-on practice"
-        
-        lines.extend([
-            f"#### {i+1}. {topic} {kind.title()} Resource {i+1}",
-            "",
-            f"- **Type:** {kind.capitalize()}",
-            f"- **Source:** Placeholder",
-            f"- **URL:** TBD",
-            f"- **Suggested Use:** {suggested_use}",
-            f"- **Quality Notes:** Needs verification",
-            "",
-        ])
-    
+        suggested_use = (
+            "Introduce concept" if kind == "article" else "Hands-on practice"
+        )
+
+        lines.extend(
+            [
+                f"#### {i+1}. {topic} {kind.title()} Resource {i+1}",
+                "",
+                f"- **Type:** {kind.capitalize()}",
+                f"- **Source:** Placeholder",
+                f"- **URL:** TBD",
+                f"- **Suggested Use:** {suggested_use}",
+                f"- **Quality Notes:** Needs verification",
+                "",
+            ]
+        )
+
     return "\n".join(lines)

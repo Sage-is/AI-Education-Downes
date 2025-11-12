@@ -64,7 +64,12 @@ def search_google_news(
         terms.extend(extra_terms)
 
     # Default site filters suitable for education discovery
-    default_sites = ['site:.edu', 'site:oercommons.org', 'site:openstax.org', 'site:khanacademy.org']
+    default_sites = [
+        "site:.edu",
+        "site:oercommons.org",
+        "site:openstax.org",
+        "site:khanacademy.org",
+    ]
     sites = site_filters if site_filters is not None else default_sites
 
     # Build final query string

@@ -20,11 +20,12 @@ from downes.utils.vault import Vault
 
 class Task:
     """Simple task representation - no Pydantic complexity"""
+
     def __init__(self, id: int, description: str, done: bool = False):
         self.id = id
         self.description = description
         self.done = done
-    
+
     def dict(self):
         return {"id": self.id, "description": self.description, "done": self.done}
 
@@ -53,6 +54,7 @@ class Agent:
         if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
             try:
                 import json, ast
+
                 try:
                     parsed = json.loads(value)
                 except Exception:
@@ -63,7 +65,13 @@ class Agent:
                 pass
         return value
 
-    def _call_llm_safe(this, prompt: str, system_prompt: str, tools=None, error_msg: str = "LLM call failed"):
+    def _call_llm_safe(
+        this,
+        prompt: str,
+        system_prompt: str,
+        tools=None,
+        error_msg: str = "LLM call failed",
+    ):
         """Call LLM with error handling and logging."""
         try:
             return call_llm(prompt, system_prompt=system_prompt, tools=tools)
@@ -79,11 +87,15 @@ class Agent:
     def _check_step_limit(this, step_count: int, context: str = "Global") -> bool:
         """Check if step limit is reached and log if so."""
         if step_count >= this.max_steps:
-            this.logger._log(f"{context} max steps reached — aborting to avoid runaway loop.")
+            this.logger._log(
+                f"{context} max steps reached — aborting to avoid runaway loop."
+            )
             return True
         return False
 
-    def _format_output(this, tool_name: str, args: dict, result_or_error, is_error: bool = False) -> str:
+    def _format_output(
+        this, tool_name: str, args: dict, result_or_error, is_error: bool = False
+    ) -> str:
         """Format tool execution output or error message."""
         prefix = "Error from" if is_error else "Output of"
         return f"{prefix} {tool_name} with args {args}: {result_or_error}"
@@ -93,7 +105,7 @@ class Agent:
         last_actions.append(action_sig)
         if len(last_actions) > 4:
             last_actions[:] = last_actions[-4:]  # Modify in place
-        
+
         if len(set(last_actions)) == 1 and len(last_actions) == 4:
             this.logger._log("Detected repeating action — aborting to avoid loop.")
             return True
@@ -110,25 +122,27 @@ class Agent:
         Keep tasks atomic and aligned to available tools.
         """
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
-        
+
         def _parse_markdown_checklist(text: str) -> List[Task]:
             """Parse a Markdown checklist into Task objects"""
             tasks = []
             # Match checklist items: - [ ] Task description
-            pattern = r'-\s*\[\s*\]\s*(.+?)(?=\n-\s*\[|$)'
+            pattern = r"-\s*\[\s*\]\s*(.+?)(?=\n-\s*\[|$)"
             matches = re.findall(pattern, text, re.DOTALL)
-            
+
             for idx, match in enumerate(matches, start=1):
                 description = match.strip()
                 if description and not description.startswith("(none"):
                     tasks.append(Task(id=idx, description=description, done=False))
-            
+
             return tasks
 
-        response = this._call_llm_safe(prompt, system_prompt, error_msg="Planning failed")
+        response = this._call_llm_safe(
+            prompt, system_prompt, error_msg="Planning failed"
+        )
         if response:
             tasks = _parse_markdown_checklist(this._extract_content(response))
-        
+
         if not response or not tasks:
             # Retry once with a clarified prompt
             retry_prompt = f"""
@@ -138,9 +152,15 @@ class Agent:
 
             Original request: "{query}"
             """
-            response = this._call_llm_safe(retry_prompt, system_prompt, error_msg="Planning retry failed")
-            tasks = _parse_markdown_checklist(this._extract_content(response)) if response else []
-            
+            response = this._call_llm_safe(
+                retry_prompt, system_prompt, error_msg="Planning retry failed"
+            )
+            tasks = (
+                _parse_markdown_checklist(this._extract_content(response))
+                if response
+                else []
+            )
+
             if not tasks:
                 tasks = [Task(id=1, description=query, done=False)]
 
@@ -162,7 +182,12 @@ class Agent:
 
         Given the task and the outputs, our next step is to:
         """
-        response = this._call_llm_safe(prompt, ACTION_SYSTEM_PROMPT, tools=TOOLS, error_msg="plan_next_actions failed")
+        response = this._call_llm_safe(
+            prompt,
+            ACTION_SYSTEM_PROMPT,
+            tools=TOOLS,
+            error_msg="plan_next_actions failed",
+        )
         return response if response else AIMessage(content="Failed to get actions.")
 
     @show_progress("Checking if task is complete...", "")
@@ -173,8 +198,12 @@ class Agent:
 
         Is the task done?
         """
-        response = this._call_llm_safe(prompt, VALIDATION_SYSTEM_PROMPT, error_msg="Task validation failed")
-        return this._is_affirmative(this._extract_content(response)) if response else False
+        response = this._call_llm_safe(
+            prompt, VALIDATION_SYSTEM_PROMPT, error_msg="Task validation failed"
+        )
+        return (
+            this._is_affirmative(this._extract_content(response)) if response else False
+        )
 
     @show_progress("Checking if main goal is achieved...", "")
     def is_goal_achieved(this, query: str, task_outputs: list) -> bool:
@@ -188,8 +217,12 @@ class Agent:
         
         Based on the data above, is the original query answered well?
         """
-        response = this._call_llm_safe(prompt, META_VALIDATION_SYSTEM_PROMPT, error_msg="Meta-validation failed")
-        return this._is_affirmative(this._extract_content(response)) if response else False
+        response = this._call_llm_safe(
+            prompt, META_VALIDATION_SYSTEM_PROMPT, error_msg="Meta-validation failed"
+        )
+        return (
+            this._is_affirmative(this._extract_content(response)) if response else False
+        )
 
     @show_progress("Optimizing tool call...", "")
     def optimize_tool_args(
@@ -218,33 +251,38 @@ class Agent:
         Given the task, optimize the arguments to ensure all relevant parameters are used correctly.
         *Note:Pay special attention to filtering parameters that would help narrow down results to match the task.*
         """
-        response = this._call_llm_safe(prompt, get_tool_args_system_prompt(), error_msg="Argument optimization failed")
+        response = this._call_llm_safe(
+            prompt,
+            get_tool_args_system_prompt(),
+            error_msg="Argument optimization failed",
+        )
         if response:
             content = this._extract_content(response)
-            
+
             # Parse simple key-value format from Markdown code block
             optimized = {}
             # Look for code block first
-            code_block_match = re.search(r'```\s*\n(.*?)\n```', content, re.DOTALL)
+            code_block_match = re.search(r"```\s*\n(.*?)\n```", content, re.DOTALL)
             if code_block_match:
                 content = code_block_match.group(1)
-            
+
             # Parse key: value pairs
-            for line in content.split('\n'):
+            for line in content.split("\n"):
                 line = line.strip()
-                if ':' in line and not line.startswith('#'):
-                    key, value = line.split(':', 1)
+                if ":" in line and not line.startswith("#"):
+                    key, value = line.split(":", 1)
                     key = key.strip()
                     value = value.strip()
-                    
+
                     # Try to parse value as Python literal (handles lists, numbers, bools)
                     try:
                         import ast
+
                         optimized[key] = ast.literal_eval(value)
                     except:
                         # Keep as string if parsing fails
                         optimized[key] = value
-            
+
             # Merge with initial args (optimized takes precedence)
             return {**initial_args, **optimized} if optimized else initial_args
         else:
@@ -344,7 +382,9 @@ class Agent:
                     initial_args = tool_call["args"]
 
                     # Basic arg normalization: convert stringified lists to real lists
-                    initial_args = {k: this._normalize_arg_value(v) for k, v in initial_args.items()}
+                    initial_args = {
+                        k: this._normalize_arg_value(v) for k, v in initial_args.items()
+                    }
 
                     # Refine tool arguments for better performance.
                     optimized_args = this.optimize_tool_args(
@@ -369,14 +409,18 @@ class Agent:
                             this.vault.save_artifact(
                                 task_name=task.description,
                                 artifact_name=tool_name,
-                                content=result
+                                content=result,
                             )
-                            output = this._format_output(tool_name, optimized_args, result)
+                            output = this._format_output(
+                                tool_name, optimized_args, result
+                            )
                             task_outputs.append(output)
                             task_step_outputs.append(output)
                         except Exception as e:
                             this.logger._log(f"Tool execution failed: {e}")
-                            error_output = this._format_output(tool_name, optimized_args, e, is_error=True)
+                            error_output = this._format_output(
+                                tool_name, optimized_args, e, is_error=True
+                            )
                             task_outputs.append(error_output)
                             task_step_outputs.append(error_output)
                     else:
@@ -416,12 +460,16 @@ class Agent:
         Based on the data above, provide a comprehensive answer to the user's query.
         Organize the output for curriculum use: summary, objectives, modules, assessments, pacing, resources (if any).
         """
-        response = this._call_llm_safe(answer_prompt, get_answer_system_prompt(), error_msg="Answer generation failed, using fallback")
+        response = this._call_llm_safe(
+            answer_prompt,
+            get_answer_system_prompt(),
+            error_msg="Answer generation failed, using fallback",
+        )
         if response:
             content = this._extract_content(response)
             if content:
                 return content
-        
+
         # Fallback: return a synthesized summary from collected outputs
         fallback = [
             "# Summary",

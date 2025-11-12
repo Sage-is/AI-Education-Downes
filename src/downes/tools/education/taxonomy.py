@@ -17,12 +17,14 @@ class MapToBloomsInput(BaseModel):
             # Try JSON/Python-list string first, then comma-separated
             try:
                 import json
+
                 parsed = json.loads(v)
                 if isinstance(parsed, list):
                     return parsed
             except Exception:
                 try:
                     import ast
+
                     parsed = ast.literal_eval(v)
                     if isinstance(parsed, list):
                         return parsed
@@ -47,7 +49,7 @@ def map_to_blooms_taxonomy(learning_objectives: List[str]) -> str:
         "evaluate": ["evaluate", "critique", "justify"],
         "create": ["create", "design", "construct", "synthesize"],
     }
-    
+
     def classify(obj: str) -> str:
         low = obj.lower()
         for level, verbs in verb_map.items():
@@ -55,7 +57,7 @@ def map_to_blooms_taxonomy(learning_objectives: List[str]) -> str:
                 if v in low:
                     return level
         return "understand"
-    
+
     lines = [
         "## Bloom's Taxonomy Mapping",
         "",
@@ -64,9 +66,11 @@ def map_to_blooms_taxonomy(learning_objectives: List[str]) -> str:
         "| Objective | Bloom's Level |",
         "|-----------|---------------|",
     ]
-    
+
     for obj in learning_objectives:
         level = classify(obj)
-        lines.append(f"| {obj[:60]}{'...' if len(obj) > 60 else ''} | **{level.capitalize()}** |")
-    
+        lines.append(
+            f"| {obj[:60]}{'...' if len(obj) > 60 else ''} | **{level.capitalize()}** |"
+        )
+
     return "\n".join(lines)

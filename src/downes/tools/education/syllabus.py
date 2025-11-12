@@ -6,7 +6,8 @@ from langchain.tools import tool
 class DraftSyllabusInput(BaseModel):
     course_title: str = Field(description="Title of the course.")
     learning_objectives: List[str] = Field(
-        description="List of previously generated learning objectives to align modules.")
+        description="List of previously generated learning objectives to align modules."
+    )
     duration_weeks: int = Field(description="Total duration in weeks.")
     modality: str = Field(
         default="online",
@@ -36,7 +37,7 @@ def draft_syllabus(
     """
     # Simple even distribution of objectives
     obj_per_module = max(1, len(learning_objectives) // modules_count or 1)
-    
+
     lines = [
         f"# {course_title} - Syllabus",
         "",
@@ -45,51 +46,59 @@ def draft_syllabus(
         f"- **Duration:** {duration_weeks} weeks",
         f"- **Modality:** {modality.capitalize()}",
     ]
-    
+
     if prerequisites:
-        lines.extend([
-            "",
-            "### Prerequisites",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "### Prerequisites",
+                "",
+            ]
+        )
         for prereq in prerequisites:
             lines.append(f"- {prereq}")
-    
-    lines.extend([
-        "",
-        "## Course Modules",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "",
+            "## Course Modules",
+            "",
+        ]
+    )
+
     for i in range(modules_count):
         start = i * obj_per_module
         end = start + obj_per_module
         aligned = learning_objectives[start:end]
         if not aligned:
             aligned = learning_objectives[-obj_per_module:]
-        
-        lines.extend([
-            f"### Module {i + 1}: Core Concepts",
-            "",
-            f"**Summary:** Introduces foundational elements of {course_title} with focus on applied understanding.",
-            "",
-            "**Aligned Learning Objectives:**",
-            "",
-        ])
-        
+
+        lines.extend(
+            [
+                f"### Module {i + 1}: Core Concepts",
+                "",
+                f"**Summary:** Introduces foundational elements of {course_title} with focus on applied understanding.",
+                "",
+                "**Aligned Learning Objectives:**",
+                "",
+            ]
+        )
+
         for obj in aligned:
             lines.append(f"- {obj}")
-        
-        lines.extend([
-            "",
-            "**Suggested Activities:**",
-            "",
-            "- Micro-lecture",
-            "- Guided discussion",
-            "- Hands-on exercise",
-            "",
-            "**Formative Assessment:** Short quiz or reflective prompt",
-            "",
-        ])
-    
+
+        lines.extend(
+            [
+                "",
+                "**Suggested Activities:**",
+                "",
+                "- Micro-lecture",
+                "- Guided discussion",
+                "- Hands-on exercise",
+                "",
+                "**Formative Assessment:** Short quiz or reflective prompt",
+                "",
+            ]
+        )
+
     return "\n".join(lines)

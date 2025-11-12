@@ -20,7 +20,7 @@ def print_intro():
     print(f"{LIGHT_BLUE}{'═' * box_width}{RESET}")
     print()
 
-    # ASCII art 
+    # ASCII art
     downes_art = f"""{BOLD}{LIGHT_BLUE}
 
 
