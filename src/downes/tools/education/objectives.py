@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 
@@ -28,11 +28,11 @@ def generate_learning_objectives(
     level: str = "beginner",
     duration_weeks: Optional[int] = None,
     outcomes_count: int = 5,
-) -> List[str]:
+) -> str:
     """
     Drafts clear, measurable learning objectives using action verbs and
     observable outcomes tailored to the audience and level.
-    Returns a list of objective statements.
+    Returns objectives in clean Markdown format.
     """
     # For now, provide a deterministic scaffold; LLM can refine.
     # Keep side-effect free; agent composes with LLM for improvements.
@@ -43,15 +43,23 @@ def generate_learning_objectives(
     }
     verbs = base_verbs.get(level.lower(), base_verbs["beginner"])
 
-    objectives: List[str] = []
+    lines = [
+        "## Learning Objectives",
+        "",
+        f"**Course:** {topic}",
+        f"**Audience:** {audience}",
+        f"**Level:** {level.capitalize()}",
+    ]
+    
+    if duration_weeks:
+        lines.append(f"**Duration:** {duration_weeks} weeks")
+    
+    lines.extend(["", "### Objectives", ""])
+    
     for i in range(outcomes_count):
         verb = verbs[i % len(verbs)]
-        objectives.append(
-            f"By the end of this course, {audience} will be able to {verb} key concepts in {topic} with appropriate accuracy."
+        lines.append(
+            f"{i+1}. By the end of this course, {audience} will be able to **{verb}** key concepts in {topic} with appropriate accuracy."
         )
 
-    if duration_weeks:
-        objectives.append(
-            f"Learners will demonstrate progress toward these objectives over approximately {duration_weeks} weeks."
-        )
-    return objectives
+    return "\n".join(lines)

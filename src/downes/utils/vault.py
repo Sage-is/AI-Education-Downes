@@ -1,6 +1,5 @@
 import os
 import re
-import json
 from datetime import datetime
 
 def sanitize_for_filename(text: str) -> str:
@@ -16,6 +15,7 @@ def sanitize_for_filename(text: str) -> str:
 class Vault:
     """
     Manages the creation and organization of artifacts in a structured folder hierarchy.
+    All artifacts are saved as Markdown (.md) files for human readability.
     """
     def __init__(self, base_dir: str = "vault"):
         self.base_dir = base_dir
@@ -32,6 +32,7 @@ class Vault:
     def save_artifact(self, task_name: str, artifact_name: str, content: any):
         """
         Saves an artifact to the vault within a task-specific subfolder.
+        All artifacts are saved as Markdown (.md) files.
         """
         if not self.run_dir:
             print("Warning: Run directory not created. Call create_run_dir first.")
@@ -44,13 +45,16 @@ class Vault:
 
         artifact_slug = sanitize_for_filename(artifact_name)
         
-        # Determine file extension based on content type
-        if isinstance(content, dict) or isinstance(content, list):
-            ext = ".json"
-            content_str = json.dumps(content, indent=2)
+        # Everything is Markdown now!
+        ext = ".md"
+        
+        # Convert content to Markdown string
+        if isinstance(content, str):
+            content_str = content
         else:
-            ext = ".md"
-            content_str = str(content)
+            # For non-string content, wrap in code block
+            import json
+            content_str = f"```json\n{json.dumps(content, indent=2)}\n```"
 
         # Find a unique filename
         i = 1

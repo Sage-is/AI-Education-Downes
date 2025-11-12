@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 from langchain.tools import tool
 
@@ -46,24 +46,37 @@ class CurateResourcesInput(BaseModel):
 @tool(args_schema=CurateResourcesInput)
 def curate_learning_resources(
     topic: str, resource_types: Optional[List[str]] = None, max_items: int = 8, **kwargs
-) -> List[Dict[str, Any]]:
+) -> str:
     """
     Generates a curated placeholder set of learning resources (metadata only) for a topic.
     The agent can later refine or replace entries via external search tools.
-    Returns list of resource dicts.
+    Returns Markdown formatted resource list.
     """
     types = resource_types or ["article", "video", "repository", "dataset"]
-    results: List[Dict[str, Any]] = []
+    
+    lines = [
+        "## Curated Learning Resources",
+        "",
+        f"**Topic:** {topic}",
+        f"**Resource Count:** {max_items}",
+        "",
+        "### Resources",
+        "",
+    ]
+    
     for i in range(max_items):
         kind = types[i % len(types)]
-        results.append(
-            {
-                "title": f"{topic} {kind.title()} Resource {i+1}",
-                "type": kind,
-                "source": "placeholder",
-                "url": "TBD",
-                "suggested_use": "Introduce concept" if kind == "article" else "Hands-on practice",
-                "quality_notes": "Needs verification",
-            }
-        )
-    return results
+        suggested_use = "Introduce concept" if kind == "article" else "Hands-on practice"
+        
+        lines.extend([
+            f"#### {i+1}. {topic} {kind.title()} Resource {i+1}",
+            "",
+            f"- **Type:** {kind.capitalize()}",
+            f"- **Source:** Placeholder",
+            f"- **URL:** TBD",
+            f"- **Suggested Use:** {suggested_use}",
+            f"- **Quality Notes:** Needs verification",
+            "",
+        ])
+    
+    return "\n".join(lines)

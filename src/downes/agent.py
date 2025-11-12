@@ -1,4 +1,5 @@
 from typing import List
+import re
 
 from langchain_core.messages import AIMessage
 
@@ -11,11 +12,21 @@ from downes.prompts import (
     VALIDATION_SYSTEM_PROMPT,
     META_VALIDATION_SYSTEM_PROMPT,
 )
-from downes.schemas import Answer, IsDone, OptimizedToolArgs, Task, TaskList
 from downes.tools import TOOLS
 from downes.utils.logger import Logger
 from downes.utils.ui import show_progress
 from downes.utils.vault import Vault
+
+
+class Task:
+    """Simple task representation - no Pydantic complexity"""
+    def __init__(self, id: int, description: str, done: bool = False):
+        self.id = id
+        self.description = description
+        self.done = done
+    
+    def dict(self):
+        return {"id": self.id, "description": self.description, "done": self.done}
 
 
 class Agent:
@@ -32,71 +43,47 @@ class Agent:
         prompt = f"""
         Given the user query: "{query}",
         Create a list of curriculum development tasks to be completed.
-        Return a JSON object: {{"tasks": [{{"id": 1, "description": "some task", "done": false}}]}}
+        Return tasks as a Markdown checklist.
         Keep tasks atomic and aligned to available tools.
         """
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
-        def _coerce_tasks(resp) -> List[Task]:
-            import json
-            if not resp:
-                return []
-            # Pydantic model
-            if hasattr(resp, "tasks"):
-                return [Task(**t.dict()) if hasattr(t, "dict") else Task(**t) for t in resp.tasks]  # type: ignore
-            # Dict form
-            if isinstance(resp, dict):
-                tasks_field = resp.get("tasks")
-                if isinstance(tasks_field, str):
-                    try:
-                        tasks_json = json.loads(tasks_field)
-                        if isinstance(tasks_json, list):
-                            return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(tasks_json)]
-                    except Exception:
-                        pass
-                if isinstance(tasks_field, list):
-                    return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(tasks_field)]
-            # AIMessage/content JSON
-            if hasattr(resp, "content") and isinstance(resp.content, str):  # type: ignore[attr-defined]
-                try:
-                    data = json.loads(resp.content)
-                    if isinstance(data, dict) and isinstance(data.get("tasks"), list):
-                        return [Task(**_coerce_task_dict(i, idx+1)) for idx, i in enumerate(data["tasks"])]
-                except Exception:
-                    pass
-            # No luck
-            return []
-
-        def _coerce_task_dict(item, fallback_id: int) -> dict:
-            if isinstance(item, dict):
-                # Normalize common key variants
-                desc = item.get("description") or item.get("desc") or item.get("task") or str(item)
-                idv = item.get("id") or fallback_id
-                done = item.get("done", False)
-                return {"id": int(idv) if str(idv).isdigit() else fallback_id, "description": str(desc), "done": bool(done)}
-            return {"id": fallback_id, "description": str(item), "done": False}
+        
+        def _parse_markdown_checklist(text: str) -> List[Task]:
+            """Parse a Markdown checklist into Task objects"""
+            tasks = []
+            # Match checklist items: - [ ] Task description
+            pattern = r'-\s*\[\s*\]\s*(.+?)(?=\n-\s*\[|$)'
+            matches = re.findall(pattern, text, re.DOTALL)
+            
+            for idx, match in enumerate(matches, start=1):
+                description = match.strip()
+                if description and not description.startswith("(none"):
+                    tasks.append(Task(id=idx, description=description, done=False))
+            
+            return tasks
 
         try:
-            response = call_llm(
-                prompt, system_prompt=system_prompt, output_schema=TaskList
-            )
-            tasks = _coerce_tasks(response)
+            response = call_llm(prompt, system_prompt=system_prompt)
+            content = response.content if hasattr(response, "content") else str(response)
+            tasks = _parse_markdown_checklist(content)
+            
             if not tasks:
                 raise ValueError("Empty or invalid task list from LLM")
         except Exception as e:
             this.logger._log(f"Planning failed: {e}")
-            # Retry once with a clarified prompt to handle typos/ambiguous requests
+            # Retry once with a clarified prompt
             retry_prompt = f"""
             The user's request may contain typos or be ambiguous.
             First, rewrite it as a clear curriculum-development request with topic, audience, and level if implied.
-            Then produce a JSON object with 3-6 atomic tasks aligned to available tools.
+            Then produce a Markdown checklist with 3-6 atomic tasks aligned to available tools.
 
             Original request: "{query}"
             """
             try:
-                response = call_llm(
-                    retry_prompt, system_prompt=system_prompt, output_schema=TaskList
-                )
-                tasks = _coerce_tasks(response)
+                response = call_llm(retry_prompt, system_prompt=system_prompt)
+                content = response.content if hasattr(response, "content") else str(response)
+                tasks = _parse_markdown_checklist(content)
+                
                 if not tasks:
                     raise ValueError("Empty or invalid task list from retry")
             except Exception as e2:
@@ -136,10 +123,10 @@ class Agent:
         Is the task done?
         """
         try:
-            resp = call_llm(
-                prompt, system_prompt=VALIDATION_SYSTEM_PROMPT, output_schema=IsDone
-            )
-            return resp.done
+            resp = call_llm(prompt, system_prompt=VALIDATION_SYSTEM_PROMPT)
+            content = resp.content if hasattr(resp, "content") else str(resp)
+            # Simple text parsing - look for yes/no
+            return content.strip().lower().startswith("yes")
         except:
             return False
 
@@ -156,12 +143,10 @@ class Agent:
         Based on the data above, is the original query answered well?
         """
         try:
-            resp = call_llm(
-                prompt,
-                system_prompt=META_VALIDATION_SYSTEM_PROMPT,
-                output_schema=IsDone,
-            )
-            return resp.done
+            resp = call_llm(prompt, system_prompt=META_VALIDATION_SYSTEM_PROMPT)
+            content = resp.content if hasattr(resp, "content") else str(resp)
+            # Simple text parsing - look for yes/no
+            return content.strip().lower().startswith("yes")
         except Exception as e:
             this.logger._log(f"Meta-validation failed: {e}")
             return False
@@ -197,14 +182,35 @@ class Agent:
             response = call_llm(
                 prompt,
                 system_prompt=get_tool_args_system_prompt(),
-                output_schema=OptimizedToolArgs,
             )
-            # Handle case where LLM returns dict directly instead of OptimizedToolArgs
-            if response is None:
-                return initial_args
-            if isinstance(response, dict):
-                return response if response else initial_args
-            return response.arguments
+            content = response.content if hasattr(response, "content") else str(response)
+            
+            # Parse simple key-value format from Markdown code block
+            optimized = {}
+            # Look for code block first
+            code_block_match = re.search(r'```\s*\n(.*?)\n```', content, re.DOTALL)
+            if code_block_match:
+                content = code_block_match.group(1)
+            
+            # Parse key: value pairs
+            for line in content.split('\n'):
+                line = line.strip()
+                if ':' in line and not line.startswith('#'):
+                    key, value = line.split(':', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Try to parse value as Python literal (handles lists, numbers, bools)
+                    try:
+                        import ast
+                        optimized[key] = ast.literal_eval(value)
+                    except:
+                        # Keep as string if parsing fails
+                        optimized[key] = value
+            
+            # Merge with initial args (optimized takes precedence)
+            return {**initial_args, **optimized} if optimized else initial_args
+            
         except Exception as e:
             this.logger._log(f"Argument optimization failed: {e}, using original args")
             return initial_args
@@ -402,35 +408,28 @@ class Agent:
         Based on the data above, provide a comprehensive answer to the user's query.
         Organize the output for curriculum use: summary, objectives, modules, assessments, pacing, resources (if any).
         """
-        answer_obj = call_llm(
-            answer_prompt,
-            system_prompt=get_answer_system_prompt(),
-            output_schema=Answer,
-        )
-        # Be robust to different return types
         try:
-            if answer_obj is None:
-                raise ValueError("Empty answer from LLM")
-            if isinstance(answer_obj, dict):
-                txt = answer_obj.get("answer")
-                if not txt:
-                    raise ValueError("Missing 'answer' in dict response")
-                return txt
-            # Pydantic model with .answer
-            if hasattr(answer_obj, "answer"):
-                return answer_obj.answer  # type: ignore[attr-defined]
-            # Fallback to AIMessage-like content
+            answer_obj = call_llm(
+                answer_prompt,
+                system_prompt=get_answer_system_prompt(),
+            )
+            
+            # Extract content from response
             if hasattr(answer_obj, "content") and answer_obj.content:
                 return str(answer_obj.content)
-            # Last resort string conversion
             return str(answer_obj)
-        except Exception:
-            # Final fallback: return a synthesized summary from collected outputs
+            
+        except Exception as e:
+            # Fallback: return a synthesized summary from collected outputs
+            this.logger._log(f"Answer generation failed: {e}, using fallback")
             fallback = [
-                "Summary:",
-                f"- Query: {query}",
-                f"- Collected {len(task_outputs)} tool outputs.",
-                "\nKey Outputs:",
+                "# Summary",
+                "",
+                f"**Query:** {query}",
+                f"**Outputs Collected:** {len(task_outputs)}",
+                "",
+                "## Key Outputs",
+                "",
             ]
-            fallback.extend([f"- {o[:200]}" for o in task_outputs[-5:]])
+            fallback.extend([f"- {o[:200]}..." for o in task_outputs[-5:]])
             return "\n".join(fallback)
