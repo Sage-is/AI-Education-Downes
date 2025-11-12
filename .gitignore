@@ -50,3 +50,7 @@ yarn-error.log*
 
 # Cursor files
 .cursor/
+
+# Knowledge vaults
+
+vault/*
