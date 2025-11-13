@@ -14,7 +14,7 @@ from downes.prompts import (
     META_VALIDATION_SYSTEM_PROMPT,
 )
 from downes.task import Task
-from downes.tools import TOOLS
+from downes.tools import TOOLS, get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
 from downes.utils.agent_helpers import (
@@ -279,7 +279,7 @@ def optimize_tool_args_impl(
     """Optimize tool arguments based on task requirements."""
     @show_progress("Optimizing tool call...", "", enabled=not debug)
     def _impl():
-        tool = next((t for t in TOOLS if t.name == tool_name), None)
+        tool = get_tool(tool_name)
         if not tool:
             return initial_args
 

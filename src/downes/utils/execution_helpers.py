@@ -1,4 +1,5 @@
 from downes.task import Task
+from downes.tools import invoke_tool
 from downes.utils.logger import Logger
 from downes.utils.ui import show_progress
 
@@ -37,7 +38,7 @@ def execute_tool(tool, tool_name: str, inp_args, logger: Logger, debug: bool):
     def run_tool():
         if debug:
             logger._log(f"[TOOL EXECUTION] {tool_name} with args: {inp_args}")
-        result = tool.run(inp_args)
+        result = invoke_tool(tool, inp_args)
         if debug:
             result_preview = str(result)[:200] if result else "None"
             logger._log(f"[TOOL RESULT] {result_preview}...")

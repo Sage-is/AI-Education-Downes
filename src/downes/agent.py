@@ -3,7 +3,7 @@ from typing import List
 from langchain_core.messages import AIMessage
 
 from downes.task import Task
-from downes.tools import TOOLS
+from downes.tools import TOOLS, get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
 from downes.utils.agent_helpers import (
@@ -152,7 +152,7 @@ class Agent:
                         return
 
                     # Execute the tool.
-                    tool_to_run = next((t for t in TOOLS if t.name == tool_name), None)
+                    tool_to_run = get_tool(tool_name)
                     if tool_to_run and confirm_action(
                         tool_name, str(optimized_args)
                     ):
