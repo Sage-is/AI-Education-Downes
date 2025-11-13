@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import re
 from langchain_core.messages import AIMessage
 
@@ -15,6 +15,7 @@ from downes.prompts import (
 from downes.task import Task
 from downes.tools import TOOLS
 from downes.utils.logger import Logger
+from downes.utils.vault import Vault
 from downes.utils.agent_helpers import (
     extract_content,
     is_affirmative,
@@ -30,6 +31,7 @@ def call_llm_safe(
     tools=None,
     error_msg: str = "LLM call failed",
     operation_name: str = "LLM call",
+    vault: Optional[Vault] = None,
 ):
     """Call LLM with error handling and logging."""
     if debug:
@@ -37,6 +39,14 @@ def call_llm_safe(
         logger._log(f"[SYSTEM PROMPT]\n{system_prompt[:200]}...\n")
         logger._log(f"[USER PROMPT]\n{prompt[:500]}...\n")
     
+    should_record = vault is not None and (debug or verbose)
+    metadata = {
+        "operation": operation_name,
+        "tools_bound": [getattr(t, "name", "unknown") for t in (tools or [])],
+        "verbose": verbose,
+        "debug": debug,
+    }
+
     try:
         response = call_llm(
             prompt, 
@@ -51,13 +61,40 @@ def call_llm_safe(
             if hasattr(response, 'tool_calls') and response.tool_calls:
                 logger._log(f"[TOOL CALLS] {len(response.tool_calls)} call(s)")
             logger._log(f"{'='*60}\n")
+
+        if response and hasattr(response, "response_metadata"):
+            metadata["response_metadata"] = response.response_metadata
+
+        if should_record:
+            vault.save_llm_transcript(
+                operation_name=operation_name,
+                prompt=prompt,
+                system_prompt=system_prompt,
+                response=response,
+                metadata=metadata,
+            )
         
         return response
     except Exception as e:
         logger._log(f"{error_msg}: {e}")
+        if should_record:
+            error_metadata = {**metadata, "error": str(e)}
+            vault.save_llm_transcript(
+                operation_name=f"{operation_name} (error)",
+                prompt=prompt,
+                system_prompt=system_prompt,
+                response=str(e),
+                metadata=error_metadata,
+            )
         return None
 
-def plan_tasks_impl(query: str, logger: Logger, debug: bool, verbose: bool) -> List[Task]:
+def plan_tasks_impl(
+    query: str,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    vault: Optional[Vault] = None,
+) -> List[Task]:
     @show_progress("Planning tasks...", "Tasks planned", enabled=not debug)
     def _impl():
         tool_descriptions = "\n".join([f"- {t.name}: {t.description}" for t in TOOLS])
@@ -70,7 +107,14 @@ def plan_tasks_impl(query: str, logger: Logger, debug: bool, verbose: bool) -> L
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
 
         response = call_llm_safe(
-            prompt, system_prompt, logger, debug, verbose, error_msg="Planning failed", operation_name="Task Planning"
+            prompt,
+            system_prompt,
+            logger,
+            debug,
+            verbose,
+            error_msg="Planning failed",
+            operation_name="Task Planning",
+            vault=vault,
         )
         tasks = []
         if response:
@@ -86,7 +130,14 @@ def plan_tasks_impl(query: str, logger: Logger, debug: bool, verbose: bool) -> L
             Original request: "{query}"
             """
             response = call_llm_safe(
-                retry_prompt, system_prompt, logger, debug, verbose, error_msg="Planning retry failed", operation_name="Task Planning (Retry)"
+                retry_prompt,
+                system_prompt,
+                logger,
+                debug,
+                verbose,
+                error_msg="Planning retry failed",
+                operation_name="Task Planning (Retry)",
+                vault=vault,
             )
             tasks = (
                 parse_markdown_checklist(extract_content(response))
@@ -102,7 +153,14 @@ def plan_tasks_impl(query: str, logger: Logger, debug: bool, verbose: bool) -> L
         return tasks
     return _impl()
 
-def plan_next_actions_impl(task_desc: str, logger: Logger, debug: bool, verbose: bool, last_outputs: str = "") -> AIMessage:
+def plan_next_actions_impl(
+    task_desc: str,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    last_outputs: str = "",
+    vault: Optional[Vault] = None,
+) -> AIMessage:
     @show_progress("Thinking...", "", enabled=not debug)
     def _impl():
         prompt = f"""
@@ -124,11 +182,19 @@ def plan_next_actions_impl(task_desc: str, logger: Logger, debug: bool, verbose:
             tools=TOOLS,
             error_msg="plan_next_actions failed",
             operation_name="Action Planning",
+            vault=vault,
         )
         return response if response else AIMessage(content="Failed to get actions.")
     return _impl()
 
-def ask_if_done_impl(task_desc: str, recent_results: str, logger: Logger, debug: bool, verbose: bool) -> bool:
+def ask_if_done_impl(
+    task_desc: str,
+    recent_results: str,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    vault: Optional[Vault] = None,
+) -> bool:
     @show_progress("Checking if task is complete...", "", enabled=not debug)
     def _impl():
         prompt = f"""
@@ -138,14 +204,28 @@ def ask_if_done_impl(task_desc: str, recent_results: str, logger: Logger, debug:
         Is the task done?
         """
         response = call_llm_safe(
-            prompt, VALIDATION_SYSTEM_PROMPT, logger, debug, verbose, error_msg="Task validation failed", operation_name="Task Validation"
+            prompt,
+            VALIDATION_SYSTEM_PROMPT,
+            logger,
+            debug,
+            verbose,
+            error_msg="Task validation failed",
+            operation_name="Task Validation",
+            vault=vault,
         )
         return (
             is_affirmative(extract_content(response)) if response else False
         )
     return _impl()
 
-def is_goal_achieved_impl(query: str, task_outputs: list, logger: Logger, debug: bool, verbose: bool) -> bool:
+def is_goal_achieved_impl(
+    query: str,
+    task_outputs: list,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    vault: Optional[Vault] = None,
+) -> bool:
     """Check if the overall goal is achieved based on all session outputs."""
     @show_progress("Checking if main goal is achieved...", "", enabled=not debug)
     def _impl():
@@ -159,7 +239,14 @@ def is_goal_achieved_impl(query: str, task_outputs: list, logger: Logger, debug:
         Based on the data above, is the original query answered well?
         """
         response = call_llm_safe(
-            prompt, META_VALIDATION_SYSTEM_PROMPT, logger, debug, verbose, error_msg="Meta-validation failed", operation_name="Goal Validation"
+            prompt,
+            META_VALIDATION_SYSTEM_PROMPT,
+            logger,
+            debug,
+            verbose,
+            error_msg="Meta-validation failed",
+            operation_name="Goal Validation",
+            vault=vault,
         )
         return (
             is_affirmative(extract_content(response)) if response else False
@@ -167,7 +254,13 @@ def is_goal_achieved_impl(query: str, task_outputs: list, logger: Logger, debug:
     return _impl()
 
 def optimize_tool_args_impl(
-    tool_name: str, initial_args: dict, task_desc: str, logger: Logger, debug: bool, verbose: bool
+    tool_name: str,
+    initial_args: dict,
+    task_desc: str,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    vault: Optional[Vault] = None,
 ) -> dict:
     """Optimize tool arguments based on task requirements."""
     @show_progress("Optimizing tool call...", "", enabled=not debug)
@@ -201,6 +294,7 @@ def optimize_tool_args_impl(
             verbose,
             error_msg="Argument optimization failed",
             operation_name="Argument Optimization",
+            vault=vault,
         )
         if response:
             content = extract_content(response)
@@ -228,7 +322,14 @@ def optimize_tool_args_impl(
             return initial_args
     return _impl()
 
-def generate_answer_impl(query: str, task_outputs: list, logger: Logger, debug: bool, verbose: bool) -> str:
+def generate_answer_impl(
+    query: str,
+    task_outputs: list,
+    logger: Logger,
+    debug: bool,
+    verbose: bool,
+    vault: Optional[Vault] = None,
+) -> str:
     """Generate the final answer based on collected data."""
     @show_progress("Generating answer...", "Answer ready", enabled=not debug)
     def _impl():
@@ -252,6 +353,7 @@ def generate_answer_impl(query: str, task_outputs: list, logger: Logger, debug: 
             verbose,
             error_msg="Answer generation failed, using fallback",
             operation_name="Answer Generation",
+            vault=vault,
         )
         if response:
             content = extract_content(response)

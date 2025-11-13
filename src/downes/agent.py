@@ -39,26 +39,26 @@ class Agent:
     # ---------- task planning ----------
     def plan_tasks(this, query: str) -> List[Task]:
         """Plan tasks for the given query."""
-        return plan_tasks_impl(query, this.logger, this.debug, this.verbose)
+        return plan_tasks_impl(query, this.logger, this.debug, this.verbose, this.vault)
 
     # ---------- ask Model what to do ----------
     def plan_next_actions(this, task_desc: str, last_outputs: str = "") -> AIMessage:
         """Plan next actions."""
-        return plan_next_actions_impl(task_desc, this.logger, this.debug, this.verbose, last_outputs)
+        return plan_next_actions_impl(task_desc, this.logger, this.debug, this.verbose, last_outputs, this.vault)
 
     def ask_if_done(this, task_desc: str, recent_results: str) -> bool:
         """Check if task is done."""
-        return ask_if_done_impl(task_desc, recent_results, this.logger, this.debug, this.verbose)
+        return ask_if_done_impl(task_desc, recent_results, this.logger, this.debug, this.verbose, this.vault)
 
     def is_goal_achieved(this, query: str, task_outputs: list) -> bool:
         """Check if goal is achieved."""
-        return is_goal_achieved_impl(query, task_outputs, this.logger, this.debug, this.verbose)
+        return is_goal_achieved_impl(query, task_outputs, this.logger, this.debug, this.verbose, this.vault)
 
     def optimize_tool_args(
         this, tool_name: str, initial_args: dict, task_desc: str
     ) -> dict:
         """Optimize tool arguments."""
-        return optimize_tool_args_impl(tool_name, initial_args, task_desc, this.logger, this.debug, this.verbose)
+        return optimize_tool_args_impl(tool_name, initial_args, task_desc, this.logger, this.debug, this.verbose, this.vault)
 
     def run(this, query: str):
         """
@@ -197,4 +197,4 @@ class Agent:
 
     def _generate_answer(this, query: str, task_outputs: list) -> str:
         """Generate answer."""
-        return generate_answer_impl(query, task_outputs, this.logger, this.debug, this.verbose)
+        return generate_answer_impl(query, task_outputs, this.logger, this.debug, this.verbose, this.vault)
