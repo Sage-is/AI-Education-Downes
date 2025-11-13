@@ -5,7 +5,6 @@ from langchain_core.messages import AIMessage
 from downes.task import Task
 from downes.tools import TOOLS
 from downes.utils.logger import Logger
-from downes.utils.ui import show_progress
 from downes.utils.vault import Vault
 from downes.utils.agent_helpers import (
     normalize_arg_value,
@@ -39,42 +38,27 @@ class Agent:
 
     # ---------- task planning ----------
     def plan_tasks(this, query: str) -> List[Task]:
-        """Plan tasks for the given query with progress indication."""
-        @show_progress("Planning tasks...", "Tasks planned", enabled=not this.debug)
-        def _do_plan():
-            return plan_tasks_impl(query, this.logger, this.debug, this.verbose)
-        return _do_plan()
+        """Plan tasks for the given query."""
+        return plan_tasks_impl(query, this.logger, this.debug, this.verbose)
 
     # ---------- ask Model what to do ----------
     def plan_next_actions(this, task_desc: str, last_outputs: str = "") -> AIMessage:
-        """Plan next actions with conditional progress display."""
-        @show_progress("Thinking...", "", enabled=not this.debug)
-        def _do_plan():
-            return plan_next_actions_impl(task_desc, this.logger, this.debug, this.verbose, last_outputs)
-        return _do_plan()
+        """Plan next actions."""
+        return plan_next_actions_impl(task_desc, this.logger, this.debug, this.verbose, last_outputs)
 
     def ask_if_done(this, task_desc: str, recent_results: str) -> bool:
-        """Check if task is done with conditional progress display."""
-        @show_progress("Checking if task is complete...", "", enabled=not this.debug)
-        def _do_check():
-            return ask_if_done_impl(task_desc, recent_results, this.logger, this.debug, this.verbose)
-        return _do_check()
+        """Check if task is done."""
+        return ask_if_done_impl(task_desc, recent_results, this.logger, this.debug, this.verbose)
 
     def is_goal_achieved(this, query: str, task_outputs: list) -> bool:
-        """Check if goal is achieved with conditional progress display."""
-        @show_progress("Checking if main goal is achieved...", "", enabled=not this.debug)
-        def _do_check():
-            return is_goal_achieved_impl(query, task_outputs, this.logger, this.debug, this.verbose)
-        return _do_check()
+        """Check if goal is achieved."""
+        return is_goal_achieved_impl(query, task_outputs, this.logger, this.debug, this.verbose)
 
     def optimize_tool_args(
         this, tool_name: str, initial_args: dict, task_desc: str
     ) -> dict:
-        """Optimize tool args with conditional progress display."""
-        @show_progress("Optimizing tool call...", "", enabled=not this.debug)
-        def _do_optimize():
-            return optimize_tool_args_impl(tool_name, initial_args, task_desc, this.logger, this.debug, this.verbose)
-        return _do_optimize()
+        """Optimize tool arguments."""
+        return optimize_tool_args_impl(tool_name, initial_args, task_desc, this.logger, this.debug, this.verbose)
 
     def run(this, query: str):
         """
@@ -212,8 +196,5 @@ class Agent:
         return answer
 
     def _generate_answer(this, query: str, task_outputs: list) -> str:
-        """Generate answer with conditional progress display."""
-        @show_progress("Generating answer...", "Answer ready", enabled=not this.debug)
-        def _do_generate():
-            return generate_answer_impl(query, task_outputs, this.logger, this.debug, this.verbose)
-        return _do_generate()
+        """Generate answer."""
+        return generate_answer_impl(query, task_outputs, this.logger, this.debug, this.verbose)
