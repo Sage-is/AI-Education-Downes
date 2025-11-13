@@ -165,11 +165,11 @@ def get_current_date() -> str:
     return datetime.now().strftime("%A, %B %d, %Y")
 
 
-def get_tool_args_system_prompt() -> str:
+def GET_TOOL_ARGS_SYSTEM_PROMPT() -> str:
     """Returns the tool arguments system prompt with the current date."""
     return TOOL_ARGS_SYSTEM_PROMPT.format(current_date=get_current_date())
 
 
-def get_answer_system_prompt() -> str:
+def GET_ANSWER_SYSTEM_PROMPT() -> str:
     """Returns the answer system prompt with the current date."""
     return ANSWER_SYSTEM_PROMPT.format(current_date=get_current_date())

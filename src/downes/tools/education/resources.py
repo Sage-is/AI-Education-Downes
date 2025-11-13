@@ -2,6 +2,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 from langchain.tools import tool
 
+from .utils import normalize_list_input
+
 
 class CurateResourcesInput(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -27,21 +29,9 @@ class CurateResourcesInput(BaseModel):
 
     @field_validator("resource_types", mode="before")
     @classmethod
-    def _coerce_resource_types(cls, v):
-        if v is None or isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            # Try JSON list first, then comma-separated fallback
-            try:
-                import json
-
-                parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return parsed
-            except Exception:
-                pass
-            return [s.strip() for s in v.split(",") if s.strip()]
-        return v
+    def normalize_resource_types(cls, v):
+        """Normalize resource_types from various formats."""
+        return normalize_list_input(v, default=None)
 
 
 @tool(args_schema=CurateResourcesInput)
