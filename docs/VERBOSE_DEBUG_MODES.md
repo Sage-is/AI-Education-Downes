@@ -14,7 +14,7 @@ uv run downes
 uv  run downes-agent --verbose
 uv  run downes-agent -v
 
-# Debug mode (shows detailed LLM prompts, responses, and traces)
+# Debug mode (interactive prompt review + detailed traces)
 uv  run downes-agent --debug
 uv  run downes-agent -d
 
@@ -25,6 +25,20 @@ uv  run downes-agent -v -d
 # Show help
 uv  run downes-agent --help
 ```
+
+### Interactive Debug Mode Features ✨ NEW!
+
+When running in debug mode, you can now interact with every LLM call:
+
+- **[s]** Submit prompt as-is
+- **[e]** Edit user prompt in your editor
+- **[E]** Edit system prompt in your editor  
+- **[v]** View full, untruncated prompts
+- **[c]** Cancel this LLM call
+
+This gives you complete control to review, modify, or skip any AI interaction!
+
+Learn more: [INTERACTIVE_DEBUG_MODE.md](./INTERACTIVE_DEBUG_MODE.md)
 
 ### Environment Variables
 
@@ -56,13 +70,20 @@ DOWNES_VERBOSE=true DOWNES_DEBUG=true uv run downes
 
 ### Debug Mode (`--debug` or `-d`)
 - All verbose mode output
-- Full system prompts (truncated to 200 chars)
-- User prompts sent to LLM (truncated to 500 chars)
-- LLM responses (truncated to 500 chars)
+- **Interactive prompt review before each LLM call** ✨ NEW!
+  - Review system and user prompts before submission
+  - Edit prompts in your system editor
+  - Option to cancel any LLM call
+  - See full, untruncated prompts
+- Full system prompts (truncated to 200 chars in logs)
+- User prompts sent to LLM (truncated to 500 chars in logs)
+- LLM responses (truncated to 500 chars in logs)
 - Tool call counts
 - Tool execution details with arguments and results
 - Operation names for each LLM interaction
 - Disables progress spinners for cleaner debug output
+
+See [INTERACTIVE_DEBUG_MODE.md](./INTERACTIVE_DEBUG_MODE.md) for detailed documentation on the interactive features.
 
 ## Code Improvements
 

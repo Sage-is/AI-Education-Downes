@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage
 
 from downes.model import call_llm
 from downes.utils import no
-from downes.utils.ui import show_progress
+from downes.utils.ui import show_progress, Colors
 from downes.prompts import (
     ACTION_SYSTEM_PROMPT,
     GET_ANSWER_SYSTEM_PROMPT,
@@ -24,6 +24,101 @@ from downes.utils.agent_helpers import (
     parse_markdown_checklist,
     normalize_arg_value,
 )
+import tempfile
+import subprocess
+import os
+
+def _edit_text_in_editor(text: str, title: str = "Edit") -> str:
+    """Open text in system editor for editing."""
+    editor = os.environ.get('EDITOR', os.environ.get('VISUAL', 'nano'))
+    
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tf:
+        tf.write(f"# {title}\n# Save and close this file when done editing\n\n")
+        tf.write(text)
+        tf.flush()
+        temp_path = tf.name
+    
+    try:
+        subprocess.run([editor, temp_path], check=True)
+        
+        with open(temp_path, 'r') as f:
+            lines = f.readlines()
+            # Remove comment lines at the top
+            content_lines = [line for line in lines if not line.strip().startswith('#')]
+            return ''.join(content_lines).strip()
+    finally:
+        os.unlink(temp_path)
+
+def _review_and_edit_prompt(
+    prompt: str,
+    system_prompt: str,
+    operation_name: str,
+    logger: Logger,
+) -> tuple[str, str]:
+    """Allow user to review and optionally edit prompts before submission."""
+    
+    # Display the prompt preview
+    logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
+    
+    # Interactive menu
+    while True:
+        print(f"{Colors.BOLD}Options:{Colors.ENDC}")
+        print(f"  {Colors.GREEN}[s]{Colors.ENDC} Submit as-is")
+        print(f"  {Colors.YELLOW}[e]{Colors.ENDC} Edit user prompt")
+        print(f"  {Colors.YELLOW}[E]{Colors.ENDC} Edit system prompt")
+        print(f"  {Colors.CYAN}[v]{Colors.ENDC} View full prompts")
+        print(f"  {Colors.RED}[c]{Colors.ENDC} Cancel (skip this LLM call)\n")
+        
+        choice = logger.ui.prompt_for_input("Your choice", "s").lower()
+        
+        if choice == 's' or choice == '':
+            print(f"{Colors.GREEN}✓ Submitting prompt...{Colors.ENDC}\n")
+            return prompt, system_prompt
+        
+        elif choice == 'e':
+            print(f"{Colors.YELLOW}Opening editor for user prompt...{Colors.ENDC}")
+            try:
+                edited_prompt = _edit_text_in_editor(prompt, "Edit User Prompt")
+                if edited_prompt:
+                    prompt = edited_prompt
+                    print(f"{Colors.GREEN}✓ User prompt updated{Colors.ENDC}\n")
+                    logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
+                else:
+                    print(f"{Colors.YELLOW}⚠ No changes made{Colors.ENDC}\n")
+            except Exception as e:
+                print(f"{Colors.RED}✗ Error editing: {e}{Colors.ENDC}\n")
+        
+        elif choice == 'E':
+            print(f"{Colors.YELLOW}Opening editor for system prompt...{Colors.ENDC}")
+            try:
+                edited_system = _edit_text_in_editor(system_prompt, "Edit System Prompt")
+                if edited_system:
+                    system_prompt = edited_system
+                    print(f"{Colors.GREEN}✓ System prompt updated{Colors.ENDC}\n")
+                    logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
+                else:
+                    print(f"{Colors.YELLOW}⚠ No changes made{Colors.ENDC}\n")
+            except Exception as e:
+                print(f"{Colors.RED}✗ Error editing: {e}{Colors.ENDC}\n")
+        
+        elif choice == 'v':
+            print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*80}{Colors.ENDC}")
+            print(f"{Colors.BOLD}FULL SYSTEM PROMPT:{Colors.ENDC}\n")
+            print(f"{system_prompt}\n")
+            print(f"{Colors.BOLD}{Colors.CYAN}{'='*80}{Colors.ENDC}")
+            print(f"{Colors.BOLD}FULL USER PROMPT:{Colors.ENDC}\n")
+            print(f"{prompt}\n")
+            print(f"{Colors.BOLD}{Colors.CYAN}{'='*80}{Colors.ENDC}\n")
+        
+        elif choice == 'c':
+            if logger.ui.confirm("Are you sure you want to cancel this LLM call?", default=False):
+                print(f"{Colors.RED}✗ LLM call cancelled{Colors.ENDC}\n")
+                return None, None
+            else:
+                print()
+        
+        else:
+            print(f"{Colors.RED}Invalid choice. Please try again.{Colors.ENDC}\n")
 
 def call_llm_safe(
     prompt: str,
@@ -37,10 +132,19 @@ def call_llm_safe(
     vault: Optional[Vault] = None,
 ):
     """Call LLM with error handling and logging."""
+    
+    # Interactive prompt review in debug mode
     if debug:
-        logger._log(f"\n{'='*60}\n[DEBUG] {operation_name}")
-        logger._log(f"[SYSTEM PROMPT]\n{system_prompt[:200]}...\n")
-        logger._log(f"[USER PROMPT]\n{prompt[:500]}...\n")
+        prompt, system_prompt = _review_and_edit_prompt(
+            prompt, system_prompt, operation_name, logger
+        )
+        
+        # User cancelled
+        if prompt is None or system_prompt is None:
+            logger._log(f"[DEBUG] {operation_name} - CANCELLED BY USER")
+            return None
+        
+        logger._log(f"\n{'='*60}\n[DEBUG] {operation_name} - SUBMITTING")
     
     should_record = vault is not None and (debug or verbose)
     metadata = {
