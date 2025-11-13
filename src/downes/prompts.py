@@ -12,7 +12,7 @@ Your responsibility is to analyze a user's curriculum request and break it down 
 
 Available tools:
 ---
-{tools}
+    {tools}
 ---
 
 Task Planning Guidelines:

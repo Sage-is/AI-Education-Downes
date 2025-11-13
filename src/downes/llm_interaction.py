@@ -4,7 +4,7 @@ import re
 from langchain_core.messages import AIMessage
 
 from downes.model import call_llm
-from downes.utils import no
+from downes.utils import no, indent_multiline
 from downes.utils.ui import show_progress, Colors
 from downes.prompts import (
     ACTION_SYSTEM_PROMPT,
@@ -205,8 +205,10 @@ def plan_tasks_impl(
 ) -> List[Task]:
     @show_progress("Planning tasks...", "Tasks planned", enabled=not debug)
     def _impl():
-        tool_descriptions = "\n\n".join([f"""- {t.name}: 
-    {t.description}""" for t in TOOLS])
+        tool_descriptions = "\n\n".join([
+            f"""   - {t.name}:\n{indent_multiline(t.description, 4)}"""
+            for t in TOOLS
+        ])
         prompt = f"""
         Project: "{query}",
 
@@ -218,7 +220,7 @@ def plan_tasks_impl(
           - [ ] task 3
         ```
         """
-        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
+        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=indent_multiline(tool_descriptions, 0))
 
         response = call_llm_safe(
             prompt,
@@ -289,7 +291,7 @@ def plan_next_actions_impl(
         
         Last tool outputs: 
         ```
-        {last_outputs}
+        {indent_multiline(last_outputs, 8)}
         ```
 
         Given the task and the outputs, our next step is to:
@@ -320,7 +322,8 @@ def ask_if_done_impl(
     def _impl():
         prompt = f"""
         We are trying to complete task: "{task_desc}".
-        Given the history of tool outputs so far: {recent_results}
+        Given the history of tool outputs so far:
+        {indent_multiline(recent_results, 8)}
 
         Is the task done?
         """
@@ -355,7 +358,7 @@ def is_goal_achieved_impl(
         Original user query: "{query}"
         
         Data and results collected from tools so far:
-        {all_results}
+        {indent_multiline(all_results, 8)}
         
         Based on the data above, is the original query answered well?
         """
@@ -400,9 +403,12 @@ def optimize_tool_args_impl(
         prompt = f"""
         Task: "{task_desc}"
         Tool: {tool_name}
-        Tool Description: {tool_description}
-        Tool Parameters: {tool_schema}
-        Initial Arguments: {initial_args}
+        Tool Description:
+        {indent_multiline(tool_description, 8)}
+        Tool Parameters:
+        {indent_multiline(str(tool_schema), 8)}
+        Initial Arguments:
+        {indent_multiline(str(initial_args), 8)}
         
         Given the task, optimize the arguments to ensure all relevant parameters are used correctly.
         *Note:Pay special attention to filtering parameters that would help narrow down results to match the task.*
@@ -539,7 +545,7 @@ def generate_answer_impl(
         Original user query: "{query}"
         
         Data and results collected from tools:
-        {all_results}
+        {indent_multiline(all_results, 8)}
         
         Based on the data above, provide a comprehensive answer to the user's query.
         Organize the output for curriculum use: summary, objectives, modules, assessments, pacing, resources (if any).
