@@ -48,9 +48,11 @@ def draft_syllabus(
     modules_count: int = 6,
 ) -> str:
     """
-    Produces a structured syllabus outline with modules mapped to learning objectives,
-    each including a description and suggested instructional strategies.
-    Returns a Markdown formatted syllabus.
+    
+        Produces a structured syllabus outline with modules mapped to learning objectives,
+            each including a description and suggested instructional strategies.
+    
+            Returns a Markdown formatted syllabus.
     """
     # Simple even distribution of objectives
     obj_per_module = max(1, len(learning_objectives) // modules_count or 1)

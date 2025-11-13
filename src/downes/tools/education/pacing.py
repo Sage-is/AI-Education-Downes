@@ -21,8 +21,9 @@ def create_pacing_guide(
 ) -> str:
     """
     Creates a week-by-week pacing guide allocating time to content, practice,
-    and assessment across modules.
-    Returns a Markdown formatted pacing guide.
+        and assessment across modules.
+    
+        Returns a Markdown formatted pacing guide.
     """
     module_span = max(1, duration_weeks // modules_count or 1)
 

@@ -49,7 +49,8 @@ def design_assessments(
 ) -> str:
     """
     Designs aligned assessments and draft rubrics for each objective.
-    Returns assessments in clean Markdown format.
+    
+        Returns assessments in clean Markdown format.
     """
     default_types = ["quiz", "project", "reflection", "presentation"]
     types = assessment_types or default_types

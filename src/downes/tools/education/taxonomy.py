@@ -38,8 +38,8 @@ class MapToBloomsInput(BaseModel):
 def map_to_blooms_taxonomy(learning_objectives: List[str]) -> str:
     """
     Maps each learning objective to a Bloom's taxonomy level
-    based on indicative action verbs.
-    Returns Markdown formatted taxonomy mapping.
+        based on indicative action verbs.
+        Returns Markdown formatted taxonomy mapping.
     """
     verb_map = {
         "remember": ["define", "list", "recall", "identify"],

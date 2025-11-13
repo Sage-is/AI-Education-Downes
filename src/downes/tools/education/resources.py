@@ -40,8 +40,8 @@ def curate_learning_resources(
 ) -> str:
     """
     Generates a curated placeholder set of learning resources (metadata only) for a topic.
-    The agent can later refine or replace entries via external search tools.
-    Returns Markdown formatted resource list.
+        The agent can later refine or replace entries via external search tools.
+        Returns Markdown formatted resource list.
     """
     types = resource_types or ["article", "video", "repository", "dataset"]
 

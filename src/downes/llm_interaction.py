@@ -205,9 +205,11 @@ def plan_tasks_impl(
 ) -> List[Task]:
     @show_progress("Planning tasks...", "Tasks planned", enabled=not debug)
     def _impl():
-        tool_descriptions = "\n".join([f"- {t.name}: {t.description}" for t in TOOLS])
+        tool_descriptions = "\n\n".join([f"""- {t.name}: 
+    {t.description}""" for t in TOOLS])
         prompt = f"""
         Project: "{query}",
+
         Create a list of curriculum development tasks to be completed.
         Return tasks as a Markdown checklist.
         ```
@@ -215,8 +217,6 @@ def plan_tasks_impl(
           - [ ] task 2
           - [ ] task 3
         ```
-        Ensure that tasks are clear, specific, and actionable.
-        Keep tasks atomic and aligned to available tools.
         """
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
 
