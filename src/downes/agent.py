@@ -86,6 +86,7 @@ class Agent:
         last_actions = []
         task_outputs = []  # outputs from all tasks
         safety_stop = False
+        safety_stop_reason = None
 
         # 1. Decompose the user query into a list of tasks.
         tasks = this.plan_tasks(query)
@@ -97,15 +98,18 @@ class Agent:
             return answer
 
         # 2. Loop through tasks until all tasks are complete or the max steps are reached.
-        while any(not task.done for task in tasks):
+        while any(not the_task.done for the_task in tasks):
             # Global safety break.
             if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
                 safety_stop = True
-                break
+                safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
+                answer = this._generate_answer(query, task_outputs)
+                this.logger.log_summary(answer)
+                return answer
 
             # Select the next incomplete task.
-            task = next(task for task in tasks if not task.done)
-            this.logger.log_task_start(task.description)
+            the_task = next(the_task for the_task in tasks if not the_task.done)
+            this.logger.log_task_start(the_task.description)
 
             # Define per-task state.
             per_task_steps = 0
@@ -115,22 +119,24 @@ class Agent:
             while per_task_steps < this.max_steps_per_task:
                 if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
                     safety_stop = True
+                    safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
                     break
 
                 # Ask the LLM for the next action to take for the current task.
                 ai_message = this.plan_next_actions(
-                    task.description, last_outputs="\n".join(task_step_outputs)
+                    the_task.description, last_outputs="\n".join(task_step_outputs)
                 )
 
                 # If no tool is called, the task is considered complete.
                 if not ai_message.tool_calls:
-                    mark_task_done(task, this.logger)
+                    mark_task_done(the_task, this.logger)
                     break
 
                 # Process each tool call returned by the LLM.
                 for tool_call in ai_message.tool_calls:
                     if step_count >= this.max_steps:
                         safety_stop = True
+                        safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
                         break
 
                     tool_name = tool_call["name"]
@@ -143,13 +149,15 @@ class Agent:
 
                     # Refine tool arguments for better performance.
                     optimized_args = this.optimize_tool_args(
-                        tool_name, initial_args, task.description
+                        tool_name, initial_args, the_task.description
                     )
 
                     # Detect and prevent repetitive action loops.
                     action_sig = f"{tool_name}:{optimized_args}"
                     if detect_loop(last_actions, action_sig, this.logger):
-                        return
+                        safety_stop = True
+                        safety_stop_reason = safety_stop_reason or "Potential action loop detected — pausing for human assistance."
+                        break
 
                     # Execute the tool.
                     tool_to_run = get_tool(tool_name)
@@ -162,7 +170,7 @@ class Agent:
                             )
                             this.logger.log_tool_run(optimized_args, result)
                             this.vault.save_artifact(
-                                task_name=task.description,
+                                task_name=the_task.description,
                                 artifact_name=tool_name,
                                 content=result,
                             )
@@ -186,18 +194,19 @@ class Agent:
 
                     if step_count >= this.max_steps:
                         safety_stop = True
+                        safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
                         break
-
-                # Task-level introspection: Check if the task is complete.
-                if this.ask_if_done(task.description, "\n".join(task_step_outputs)):
-                    mark_task_done(task, this.logger)
-                    break
 
                 if safety_stop:
                     break
 
+                # Task-level introspection: Check if the task is complete.
+                if this.ask_if_done(the_task.description, "\n".join(task_step_outputs)):
+                    mark_task_done(the_task, this.logger)
+                    break
+
             # Global introspection: Check if the overall goal is achieved.
-            if task.done and this.is_goal_achieved(query, task_outputs):
+            if the_task.done and this.is_goal_achieved(query, task_outputs):
                 this.logger._log("Main goal achieved. Finalizing answer.")
                 break
 
@@ -206,7 +215,7 @@ class Agent:
 
         # Generate the final answer from all collected tool outputs.
         if safety_stop:
-            human_help_note = "Global max steps reached — pausing for human assistance."
+            human_help_note = safety_stop_reason or "Global max steps reached — pausing for human assistance."
             this.logger._log(human_help_note)
             task_outputs.append(human_help_note)
 

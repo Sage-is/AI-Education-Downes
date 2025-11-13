@@ -1,4 +1,5 @@
 from typing import List, Dict, Optional
+import ast
 import re
 from langchain_core.messages import AIMessage
 
@@ -21,6 +22,7 @@ from downes.utils.agent_helpers import (
     extract_content,
     is_affirmative,
     parse_markdown_checklist,
+    normalize_arg_value,
 )
 
 def call_llm_safe(
@@ -58,7 +60,8 @@ def call_llm_safe(
         
         if debug and response:
             content = extract_content(response)
-            logger._log(f"[RESPONSE]\n{content[:500]}...")
+            #logger._log(f"[RESPONSE]\n{content[:500]}...")
+            logger._log(f"[RESPONSE]\n{content}...")
             if hasattr(response, 'tool_calls') and response.tool_calls:
                 logger._log(f"[TOOL CALLS] {len(response.tool_calls)} call(s)")
             logger._log(f"{'='*60}\n")
@@ -313,25 +316,103 @@ def optimize_tool_args_impl(
         if response:
             content = extract_content(response)
 
-            optimized = {}
-            code_block_match = re.search(r"```\s*\n(.*?)\n```", content, re.DOTALL)
+            def _strip_inline_comment(raw: str) -> str:
+                if not isinstance(raw, str):
+                    return raw
+                cleaned = raw.strip().rstrip(",")
+                if not cleaned:
+                    return cleaned
+                # Remove trailing sentences wrapped in parentheticals (LLM explanations)
+                if " (" in cleaned and cleaned.endswith(")") and not cleaned.startswith(("'", '"')):
+                    cleaned = cleaned[: cleaned.rfind(" (" )].strip().rstrip(".")
+                return cleaned
+
+            def _parse_scalar(raw: str):
+                if raw is None:
+                    return None
+                if not isinstance(raw, str):
+                    return raw
+                cleaned = _strip_inline_comment(raw)
+                if not cleaned:
+                    return ""
+                lowered = cleaned.lower()
+                if lowered in {"true", "false"}:
+                    return lowered == "true"
+                if lowered in {"null", "none"}:
+                    return None
+                # Try numeric conversion
+                try:
+                    if lowered.startswith("0x"):
+                        return int(lowered, 16)
+                    return int(cleaned)
+                except ValueError:
+                    try:
+                        return float(cleaned)
+                    except ValueError:
+                        pass
+                # Try to interpret JSON/Python literals
+                if cleaned.startswith(("[", "{", "(", "'", '"')) and cleaned[-1] in ("]", "}", ")", "'", '"'):
+                    try:
+                        return ast.literal_eval(cleaned)
+                    except Exception:
+                        pass
+                return cleaned
+
+            def _parse_structured_args(text: str) -> dict:
+                optimized_args: dict = {}
+                current_key: Optional[str] = None
+
+                for raw_line in text.splitlines():
+                    line = raw_line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if line.lower().startswith("argument_name"):
+                        continue
+
+                    if line.startswith("-") and current_key:
+                        item = line[1:].strip()
+                        parsed_item = _parse_scalar(item)
+                        optimized_args.setdefault(current_key, [])
+                        optimized_args[current_key].append(parsed_item)
+                        continue
+
+                    if ":" in line:
+                        key, value = line.split(":", 1)
+                        key = key.strip()
+                        value = value.strip()
+                        if not key:
+                            continue
+                        if not value:
+                            optimized_args[key] = []
+                            current_key = key
+                            continue
+
+                        parsed_value = _parse_scalar(value)
+                        optimized_args[key] = parsed_value
+                        current_key = key if isinstance(parsed_value, list) else None
+                        continue
+
+                    current_key = None
+
+                return optimized_args
+
+            code_block_match = re.search(r"```[^\n]*\n(.*?)\n```", content, re.DOTALL)
             if code_block_match:
                 content = code_block_match.group(1)
 
-            for line in content.split("\n"):
-                line = line.strip()
-                if ":" in line and not line.startswith("#"):
-                    key, value = line.split(":", 1)
-                    key = key.strip()
-                    value = value.strip()
+            optimized = _parse_structured_args(content)
 
-                    try:
-                        import ast
-                        optimized[key] = ast.literal_eval(value)
-                    except:
-                        optimized[key] = value
+            if not optimized:
+                return initial_args
 
-            return {**initial_args, **optimized} if optimized else initial_args
+            merged_args = dict(initial_args)
+            for key, value in optimized.items():
+                if isinstance(value, list):
+                    merged_args[key] = [normalize_arg_value(item) for item in value]
+                else:
+                    merged_args[key] = normalize_arg_value(value)
+
+            return merged_args
         else:
             return initial_args
     return _impl()
