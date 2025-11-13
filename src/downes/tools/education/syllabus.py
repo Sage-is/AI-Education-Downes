@@ -1,6 +1,8 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from langchain.tools import tool
+
+from .utils import normalize_list_input
 
 
 class DraftSyllabusInput(BaseModel):
@@ -19,6 +21,21 @@ class DraftSyllabusInput(BaseModel):
     modules_count: int = Field(
         default=6, description="Number of modules or units to create."
     )
+
+    @field_validator("learning_objectives", mode="before")
+    @classmethod
+    def normalize_learning_objectives(cls, v):
+        """Normalize learning_objectives from various formats."""
+        result = normalize_list_input(v, default=[])
+        if not result:
+            raise ValueError("learning_objectives cannot be empty")
+        return result
+    
+    @field_validator("prerequisites", mode="before")
+    @classmethod
+    def normalize_prerequisites(cls, v):
+        """Normalize prerequisites from various formats."""
+        return normalize_list_input(v, default=None)
 
 
 @tool(args_schema=DraftSyllabusInput)

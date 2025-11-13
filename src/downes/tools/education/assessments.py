@@ -2,6 +2,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 from langchain.tools import tool
 
+from .utils import normalize_list_input
+
 
 class DesignAssessmentsInput(BaseModel):
     learning_objectives: List[str] = Field(
@@ -16,27 +18,27 @@ class DesignAssessmentsInput(BaseModel):
         description="Rubric performance levels.",
     )
 
+    @field_validator("learning_objectives", mode="before")
+    @classmethod
+    def normalize_learning_objectives(cls, v):
+        """Normalize learning_objectives from various formats."""
+        result = normalize_list_input(v, default=[])
+        if not result:
+            raise ValueError("learning_objectives cannot be empty")
+        return result
+    
+    @field_validator("assessment_types", mode="before")
+    @classmethod
+    def normalize_assessment_types(cls, v):
+        """Normalize assessment_types from various formats."""
+        return normalize_list_input(v, default=None)
+
     @field_validator("rubric_scale", mode="before")
     @classmethod
-    def _coerce_rubric_scale(cls, v):
-        if v is None or isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            # Try JSON list first, then comma-separated fallback
-            try:
-                import json
-
-                parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return parsed
-            except Exception:
-                pass
-            # If it's a single string that doesn't look like a list, return default
-            if "," in v:
-                return [s.strip() for s in v.split(",") if s.strip()]
-            # Single non-list string, return default
-            return ["Exceeds", "Meets", "Approaches", "Below"]
-        return v
+    def normalize_rubric_scale(cls, v):
+        """Normalize rubric_scale from various formats."""
+        result = normalize_list_input(v, default=None)
+        return result or ["Exceeds", "Meets", "Approaches", "Below"]
 
 
 @tool(args_schema=DesignAssessmentsInput)
