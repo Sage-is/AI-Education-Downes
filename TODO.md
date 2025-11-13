@@ -18,17 +18,13 @@
 **Tasks:**
 
 - [x] Create TODO.md with simplification plan
-- [ ] Remove Pydantic schemas (schemas.py)
-- [ ] Simplify model.py (remove output_schema parameter)
-- [ ] Update all prompts to request Markdown instead of JSON
-- [ ] Refactor agent.py to parse Markdown instead of JSON
-- [ ] Update education tools to return Markdown
-- [ ] Simplify vault.py for Markdown-first storage
-- [ ] Update tests to expect Markdown output
-- [ ] Update documentation (README, workflow docs)
+- [x] Update education tools to return Markdown
+- [x] Simplify vault.py for Markdown-first storage
 
 ---
 
 ## Previous Weeks
 
-**Completed work will be moved here in reverse chronological order**
+### Completed Work
+
+Completed work will be moved here in reverse chronological order.

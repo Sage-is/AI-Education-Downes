@@ -62,6 +62,7 @@ Decision Process:
 Tool Selection Guidelines:
 - Match the tool to the specific action requested (objectives, syllabus, assessments, pacing, taxonomy, resources, search)
 - Use ALL relevant parameters (audience, level, duration, modules_count, resource_types, site_filters)
+- When curating resources, call `searx_search` first to gather real links, then synthesize the curated list with `curate_learning_resources`
 - Prefer education-biased search when curating resources
 - Avoid calling the same tool with identical parameters repeatedly
 

@@ -45,6 +45,56 @@ def curate_learning_resources(
     """
     types = resource_types or ["article", "video", "repository", "dataset"]
 
+    descriptors = {
+        "article": {
+            "label": "Feature Article",
+            "uses": [
+                "Introduce core concepts",
+                "Support flipped learning",
+                "Extend independent study",
+                "Anchor a seminar discussion",
+            ],
+        },
+        "video": {
+            "label": "Video Lesson",
+            "uses": [
+                "Model software workflow",
+                "Demonstrate techniques",
+                "Provide guided practice",
+                "Flip the classroom warm-up",
+            ],
+        },
+        "repository": {
+            "label": "Project Repository",
+            "uses": [
+                "Offer starter files",
+                "Share remix-ready assets",
+                "Provide reference implementations",
+                "Support capstone build",
+            ],
+        },
+        "dataset": {
+            "label": "Practice Dataset",
+            "uses": [
+                "Enable exploratory analysis",
+                "Support performance tasks",
+                "Feed applied labs",
+                "Back project-based learning",
+            ],
+        },
+    }
+
+    focus_phrases = [
+        "fundamentals",
+        "creative workflow",
+        "classroom implementation",
+        "assessment alignment",
+        "differentiation",
+        "student showcase",
+        "extension challenge",
+        "reflection prompts",
+    ]
+
     lines = [
         "## Curated Learning Resources",
         "",
@@ -57,21 +107,25 @@ def curate_learning_resources(
 
     for i in range(max_items):
         kind = types[i % len(types)]
-        suggested_use = (
-            "Introduce concept" if kind == "article" else "Hands-on practice"
-        )
+        meta = descriptors.get(kind, descriptors["article"])
+        use = meta["uses"][i % len(meta["uses"])]
+        focus = focus_phrases[i % len(focus_phrases)]
 
         lines.extend(
             [
-                f"#### {i+1}. {topic} {kind.title()} Resource {i+1}",
+                f"#### {i + 1}. {topic}: {meta['label']} on {focus.capitalize()}",
                 "",
                 f"- **Type:** {kind.capitalize()}",
-                f"- **Source:** Placeholder",
+                f"- **Source:** Placeholder (replace with vetted source)",
                 f"- **URL:** TBD",
-                f"- **Suggested Use:** {suggested_use}",
-                f"- **Quality Notes:** Needs verification",
+                f"- **Suggested Use:** {use}",
+                "- **Quality Notes:** Verify accuracy and accessibility before sharing",
                 "",
             ]
         )
+
+    lines.append(
+        "_Tip: Replace placeholders with vetted resources from `searx_search` results to personalize this list._"
+    )
 
     return "\n".join(lines)
