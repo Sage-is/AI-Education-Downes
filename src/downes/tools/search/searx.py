@@ -1,10 +1,8 @@
 import os
 from typing import List, Optional
 import requests
-from requests.exceptions import RequestException
 from langchain.tools import tool
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from datetime import datetime
 from bs4 import BeautifulSoup
 
 from downes.tools.search.models import SearchResult
@@ -23,10 +21,6 @@ class SearxSearchInput(BaseModel):
     language: str = Field(
         default="en", description="Language code for results (RFC 5646)."
     )
-    instance_url: Optional[str] = Field(
-        default=None,
-        description="Override SEARXNG_INSTANCE_URL env var with a specific instance base URL.",
-    )
     safe: bool = Field(
         default=True, description="Enable SearXNG safe search filtering if supported."
     )
@@ -34,6 +28,18 @@ class SearxSearchInput(BaseModel):
         default=True,
         description="If True, expands query with curriculum / pedagogy modifiers.",
     )
+
+    @field_validator("safe", mode="before")
+    @classmethod
+    def _coerce_safe(cls, v):
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            cleaned = v.split("#", 1)[0].strip()
+            if not cleaned:
+                return True
+            return cleaned
+        return v
 
     @field_validator("categories", mode="before")
     @classmethod
@@ -72,7 +78,6 @@ def searx_search(
     max_results: int = 10,
     categories: Optional[List[str]] = None,
     language: str = "en",
-    instance_url: Optional[str] = None,
     safe: bool = True,
     education_bias: bool = True,
 ) -> str:
@@ -81,18 +86,15 @@ def searx_search(
 
     Features:
     - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
-    - Uses JSON API output from SearXNG when available, with HTML parsing fallback
+    - Uses HTML parsing 
     - Respects categories if provided
 
-    Configuration:
-    - Set SEARXNG_INSTANCE_URL env var to point at your instance
-    - Tool parameter instance_url overrides the environment variable for a single call
     """
-    base = instance_url or os.getenv("SEARXNG_INSTANCE_URL")
+    base = os.getenv("SEARXNG_INSTANCE_URL")
     if not base:
         return (
             "## SearXNG Search\n"
-            "No SearXNG instance configured. Set `SEARXNG_INSTANCE_URL` or pass `instance_url`."
+            "No SearXNG instance configured. Set `SEARXNG_INSTANCE_URL`."
         )
     base = base.rstrip("/")
 
@@ -111,7 +113,6 @@ def searx_search(
 
     params = {
         "q": expanded_query,
-        "format": "json",
         "language": language,
         "safesearch": 1 if safe else 0,
         "categories": ",".join(categories) if categories else None,
@@ -120,7 +121,7 @@ def searx_search(
 
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; DownesBot/1.0)",
-        "Accept": "application/json, text/html;q=0.9, */*;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
     }
 
@@ -147,68 +148,16 @@ def searx_search(
                 lines.append(f"   - Published: {entry.published_date.date()}")
         return "\n".join(lines)
 
-    results: List[SearchResult] = []
-
-    # First attempt: JSON API
-    json_error: Optional[str] = None
-
+    # HTML parsing to collect search results when JSON is unavailable or blocked
     try:
-        resp = requests.get(
+        r = requests.get(
             f"{base}/search",
-            params=params,
+            params={k: v for k, v in params.items() if v is not None},
             headers=headers,
             timeout=5,
         )
-        resp.raise_for_status()
-        if resp.headers.get("content-type", "").startswith("application/json"):
-            try:
-                data = resp.json()
-            except Exception:
-                data = {"results": []}
-            for r in data.get("results", [])[: max_results * 2]:
-                title = r.get("title") or "Untitled"
-                url = r.get("url") or r.get("link") or ""
-                if not url:
-                    continue
-                published_date = None
-                for key in ["publishedDate", "published", "date"]:
-                    if key in r and isinstance(r[key], str):
-                        try:
-                            published_date = datetime.fromisoformat(
-                                r[key].replace("Z", "+00:00")
-                            )
-                        except Exception:
-                            published_date = None
-                results.append(
-                    SearchResult(
-                        title=title,
-                        url=url,
-                        published_date=published_date,
-                    )
-                )
-                if len(results) >= max_results:
-                    break
-            if results:
-                return render(results)
-    except RequestException as exc:
-        json_error = str(exc)
-
-    # Fallback: HTML parsing when JSON is blocked (e.g., 403)
-    try:
-        html_params = {k: v for k, v in params.items() if k != "format"}
-        html_headers = headers.copy()
-        html_headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        r = requests.get(
-            f"{base}/search",
-            params=html_params,
-            headers=html_headers,
-            timeout=5,
-        )
         if r.status_code != 200:
-            error_msg = f"HTML fallback returned status {r.status_code}"
-            if json_error:
-                error_msg = f"{error_msg}; JSON error: {json_error}"
-            return render([], error=error_msg)
+            return render([], error=f"HTML fetch returned status {r.status_code}")
         soup = BeautifulSoup(r.text, "html.parser")
 
         candidates = []
@@ -246,7 +195,4 @@ def searx_search(
                 break
         return render(results)
     except Exception as exc:
-        error_msg = str(exc)
-        if json_error:
-            error_msg = f"{error_msg}; JSON error: {json_error}"
-        return render([], error=error_msg)
+        return render([], error=str(exc))

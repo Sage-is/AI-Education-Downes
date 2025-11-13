@@ -3,6 +3,7 @@ import re
 from langchain_core.messages import AIMessage
 
 from downes.model import call_llm
+from downes.utils import no
 from downes.utils.ui import show_progress
 from downes.prompts import (
     ACTION_SYSTEM_PROMPT,
@@ -99,9 +100,15 @@ def plan_tasks_impl(
     def _impl():
         tool_descriptions = "\n".join([f"- {t.name}: {t.description}" for t in TOOLS])
         prompt = f"""
-        Given the user query: "{query}",
+        Project: "{query}",
         Create a list of curriculum development tasks to be completed.
         Return tasks as a Markdown checklist.
+        ```
+          - [ ] task 1
+          - [ ] task 2
+          - [ ] task 3
+        ```
+        Ensure that tasks are clear, specific, and actionable.
         Keep tasks atomic and aligned to available tools.
         """
         system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
@@ -120,13 +127,20 @@ def plan_tasks_impl(
         if response:
             tasks = parse_markdown_checklist(extract_content(response))
 
-        if not response or not tasks:
+        if no(response) or no(tasks):
             # Retry once with a clarified prompt
             retry_prompt = f"""
-            The user's request may contain typos or be ambiguous.
-            First, rewrite it as a clear curriculum-development request with topic, audience, and level if implied.
+            The request may contain typos or be ambiguous.
+            Rewrite it as a clear curriculum-development request with topic, audience, and level (if implied).
+
             Then produce a Markdown checklist with 3-6 atomic tasks aligned to available tools.
 
+            ```
+                - [ ] task 1
+                - [ ] task 2
+                - [ ] task 3
+            ```
+            
             Original request: "{query}"
             """
             response = call_llm_safe(

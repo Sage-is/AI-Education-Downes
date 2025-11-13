@@ -10,6 +10,7 @@ from downes.utils.agent_helpers import (
     normalize_arg_value,
     format_output,
 )
+from downes.utils import no
 from downes.llm_interaction import (
     plan_tasks_impl,
     plan_next_actions_impl,
@@ -84,12 +85,13 @@ class Agent:
         step_count = 0
         last_actions = []
         task_outputs = []  # outputs from all tasks
+        safety_stop = False
 
         # 1. Decompose the user query into a list of tasks.
         tasks = this.plan_tasks(query)
 
         # If no tasks were created, the query is likely out of scope.
-        if not tasks:
+        if no(tasks):
             answer = this._generate_answer(query, task_outputs)
             this.logger.log_summary(answer)
             return answer
@@ -98,6 +100,7 @@ class Agent:
         while any(not task.done for task in tasks):
             # Global safety break.
             if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
+                safety_stop = True
                 break
 
             # Select the next incomplete task.
@@ -111,7 +114,8 @@ class Agent:
             # Loop through steps of a single task until the task is complete or the max steps are reached.
             while per_task_steps < this.max_steps_per_task:
                 if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
-                    return
+                    safety_stop = True
+                    break
 
                 # Ask the LLM for the next action to take for the current task.
                 ai_message = this.plan_next_actions(
@@ -126,6 +130,7 @@ class Agent:
                 # Process each tool call returned by the LLM.
                 for tool_call in ai_message.tool_calls:
                     if step_count >= this.max_steps:
+                        safety_stop = True
                         break
 
                     tool_name = tool_call["name"]
@@ -179,9 +184,16 @@ class Agent:
                     step_count += 1
                     per_task_steps += 1
 
+                    if step_count >= this.max_steps:
+                        safety_stop = True
+                        break
+
                 # Task-level introspection: Check if the task is complete.
                 if this.ask_if_done(task.description, "\n".join(task_step_outputs)):
                     mark_task_done(task, this.logger)
+                    break
+
+                if safety_stop:
                     break
 
             # Global introspection: Check if the overall goal is achieved.
@@ -189,7 +201,15 @@ class Agent:
                 this.logger._log("Main goal achieved. Finalizing answer.")
                 break
 
+            if safety_stop:
+                break
+
         # Generate the final answer from all collected tool outputs.
+        if safety_stop:
+            human_help_note = "Global max steps reached — pausing for human assistance."
+            this.logger._log(human_help_note)
+            task_outputs.append(human_help_note)
+
         answer = this._generate_answer(query, task_outputs)
         this.logger.log_summary(answer)
         this.vault.save_artifact("summary", "final_answer", answer)
