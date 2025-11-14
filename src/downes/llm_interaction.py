@@ -220,7 +220,8 @@ def plan_tasks_impl(
           - [ ] task 3
         ```
         """
-        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
+        # Apply the 4-space indent that matches the {tools} position in the template
+        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=indent_multiline(tool_descriptions, 4))
 
         response = call_llm_safe(
             prompt,
