@@ -48,9 +48,8 @@ def design_assessments(
     rubric_scale: List[str] = ["Exceeds", "Meets", "Approaches", "Below"],
 ) -> str:
     """
-    Designs aligned assessments and draft rubrics for each objective.
-    
-        Returns assessments in clean Markdown format.
+        - Designs aligned assessments and draft rubrics for each objective.
+        - Returns assessments in clean Markdown format.
     """
     default_types = ["quiz", "project", "reflection", "presentation"]
     types = assessment_types or default_types

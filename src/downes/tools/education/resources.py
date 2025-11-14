@@ -39,9 +39,9 @@ def curate_learning_resources(
     topic: str, resource_types: Optional[List[str]] = None, max_items: int = 8, **kwargs
 ) -> str:
     """
-    Generates a curated placeholder set of learning resources (metadata only) for a topic.
-        The agent can later refine or replace entries via external search tools.
-        Returns Markdown formatted resource list.
+        - Generates a curated placeholder set of learning resources (metadata only) for a topic.
+        - The agent can later refine or replace entries via external search tools.
+        - Returns Markdown formatted resource list.
     """
     types = resource_types or ["article", "video", "repository", "dataset"]
 

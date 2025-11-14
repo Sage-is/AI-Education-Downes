@@ -206,7 +206,7 @@ def plan_tasks_impl(
     @show_progress("Planning tasks...", "Tasks planned", enabled=not debug)
     def _impl():
         tool_descriptions = "\n\n".join([
-            f"""   - {t.name}:\n{indent_multiline(t.description, 4)}"""
+            f"- {t.name}:\n  {indent_multiline(t.description, 2)}"
             for t in TOOLS
         ])
         prompt = f"""
@@ -220,7 +220,7 @@ def plan_tasks_impl(
           - [ ] task 3
         ```
         """
-        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=indent_multiline(tool_descriptions, 0))
+        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=tool_descriptions)
 
         response = call_llm_safe(
             prompt,

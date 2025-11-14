@@ -21,8 +21,9 @@ def indent_multiline(text: str, indent: int = 0, indent_first: bool = False) -> 
 	
 	This function solves the problem where multi-line variables inserted into f-strings
 	don't inherit the horizontal indentation. It:
-	1. Dedents the text to remove existing indentation
-	2. Re-indents lines to match the substitution position
+	1. Dedents the text to remove the common leading whitespace
+	2. Re-indents all lines to match the substitution position
+	3. Preserves the internal formatting (like bullet points, nested indentation)
 	
 	Args:
 		text: The multi-line text to process
@@ -30,17 +31,17 @@ def indent_multiline(text: str, indent: int = 0, indent_first: bool = False) -> 
 		indent_first: If True, also indent the first line (default: False)
 	
 	Returns:
-		Properly indented text for f-string substitution
+		Properly indented text for f-string substitution with formatting preserved
 		
 	Example:
-		>>> description = "Line 1\\nLine 2\\nLine 3"
+		>>> description = "Line 1\\n  - Bullet\\n  - Another"
 		>>> f"Tool: {indent_multiline(description, 6)}"
-		'Tool: Line 1\\n      Line 2\\n      Line 3'
+		'Tool: Line 1\\n        - Bullet\\n        - Another'
 	"""
 	if not text:
 		return text
 	
-	# First dedent to remove existing indentation
+	# First dedent to remove common leading whitespace
 	dedented = textwrap.dedent(text)
 	
 	# Split into lines
@@ -52,23 +53,24 @@ def indent_multiline(text: str, indent: int = 0, indent_first: bool = False) -> 
 	# Prepare indentation string
 	indent_str = ' ' * indent
 	
-	# Build result
+	# Build result, preserving internal formatting
 	result = []
 	for i, line in enumerate(lines):
 		if i == 0:
-			# First line - optionally indent
+			# First line - optionally indent, preserve any internal spacing
 			if indent_first:
-				result.append(indent_str + line.strip() if line.strip() else '')
+				result.append(indent_str + line if line else '')
 			else:
-				result.append(line.strip())
+				result.append(line)
 		else:
-			# Subsequent lines - always indent non-empty lines
-			if line.strip():
-				result.append(indent_str + line.strip())
+			# Subsequent lines - indent but preserve internal formatting
+			if line:
+				result.append(indent_str + line)
 			else:
 				result.append('')  # Preserve empty lines
 	
-	return '\n'.join(result)
+	# Strip trailing whitespace from the whole result
+	return '\n'.join(result).rstrip()
 
 
 __all__ = ["no", "strip_or_empty", "indent_multiline"]

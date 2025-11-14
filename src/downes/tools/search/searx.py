@@ -82,12 +82,10 @@ def searx_search(
     education_bias: bool = True,
 ) -> str:
     """
-    Perform a meta-search via a SearXNG instance and return Markdown-formatted results.
-
-    Features:
-    - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
-    - Uses HTML parsing 
-    - Respects categories if provided
+        - Perform a meta-search via a SearXNG instance and return Markdown-formatted results.
+            - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
+            - Uses HTML parsing 
+            - Respects categories if provided
 
     """
     base = os.getenv("SEARXNG_INSTANCE_URL")

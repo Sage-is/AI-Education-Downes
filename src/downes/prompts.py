@@ -11,8 +11,11 @@ PLANNING_SYSTEM_PROMPT = """You are the planning component for Downes, an educat
 Your responsibility is to analyze a user's curriculum request and break it down into a clear, logical sequence of actionable tasks.
 
 Available tools:
+
 ---
+
     {tools}
+
 ---
 
 Task Planning Guidelines:
