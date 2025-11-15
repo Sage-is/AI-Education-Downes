@@ -1,6 +1,7 @@
 import json
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 from langchain.tools import tool
 
@@ -16,6 +17,14 @@ class CurateResourcesInput(BaseModel):
         description="Desired resource types (article, video, dataset, repo).",
     )
     max_items: int = Field(default=8, description="Maximum number of resources.")
+    searx_results_markdown: Optional[str] = Field(
+        default=None,
+        description="Raw Markdown output from searx_search for grounding real URLs.",
+    )
+    searx_results: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Structured SearXNG results with keys like title/url/snippet.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -39,7 +48,12 @@ class CurateResourcesInput(BaseModel):
 
 @tool(args_schema=CurateResourcesInput)
 def curate_learning_resources(
-    topic: str, resource_types: Optional[List[str]] = None, max_items: int = 8, **kwargs
+    topic: str,
+    resource_types: Optional[List[str]] = None,
+    max_items: int = 8,
+    searx_results_markdown: Optional[str] = None,
+    searx_results: Optional[List[Dict[str, Any]]] = None,
+    **kwargs,
 ) -> str:
     """
         - Generates a curated placeholder set of learning resources (metadata only) for a topic.
@@ -48,20 +62,266 @@ def curate_learning_resources(
     """
     resource_types = resource_types or ["article", "video", "repository", "dataset"]
 
-    system_prompt = """You are an educational librarian. Curate accessible, high-quality learning resources for the requested topic.\nReturn ONLY valid JSON matching:\n{"resources": [{"title": str, "type": str, "source": str, "url": str, "summary": str, "suggested_use": str}]}\n- Provide exactly the requested number of items when possible\n- Favor openly available or widely known sources\n- Keep summaries to one sentence\n- Invent plausible yet generic sources/URLs if unsure (e.g., example.edu/article)."""
+    seed_resources = _collect_seed_resources(
+        searx_results=searx_results,
+        searx_results_markdown=searx_results_markdown,
+        extra_inputs=kwargs,
+    )
 
-    user_prompt = f"""Topic: {topic}\nRequested resource count: {max_items}\nPreferred resource types: {', '.join(resource_types)}\nAudience context: general educators seeking reusable materials."""
+    curated_entries: List[Dict[str, str]] = []
+
+    if seed_resources:
+        curated_entries = _curate_seed_resources(
+            topic=topic,
+            seed_resources=seed_resources,
+            resource_types=resource_types,
+            max_items=max_items,
+        )
+
+    if not curated_entries:
+        curated_entries = _llm_generate_resources(
+            topic=topic,
+            resource_types=resource_types,
+            max_items=max_items,
+        )
+
+    if curated_entries:
+        return _render_resources(topic, curated_entries, len(curated_entries))
+
+    return _fallback_resources(topic, resource_types, max_items)
+
+
+def _collect_seed_resources(
+    searx_results: Optional[List[Dict[str, Any]]],
+    searx_results_markdown: Optional[str],
+    extra_inputs: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Gather structured resource candidates from various inputs."""
+    def _coerce_list(value) -> List[Any]:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if not cleaned:
+                return []
+            try:
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, list):
+                    return parsed
+            except Exception:
+                return []
+        return []
+
+    structured_candidates: List[Any] = []
+    for candidate in [
+        searx_results,
+        extra_inputs.get("searx_results"),
+        extra_inputs.get("search_results"),
+        extra_inputs.get("resources"),
+        extra_inputs.get("hits"),
+    ]:
+        structured_candidates.extend(_coerce_list(candidate))
+
+    markdown_blobs = [
+        searx_results_markdown,
+        extra_inputs.get("searx_results_markdown"),
+        extra_inputs.get("search_results_markdown"),
+        extra_inputs.get("searx_output"),
+    ]
+
+    entries: List[Dict[str, Any]] = []
+    for blob in structured_candidates:
+        if hasattr(blob, "model_dump"):
+            entries.append(blob.model_dump())
+        elif isinstance(blob, dict):
+            entries.append(blob)
+
+    for text in markdown_blobs:
+        if isinstance(text, str) and text.strip():
+            entries.extend(_parse_markdown_links(text))
+
+    normalized = _normalize_seed_entries(entries)
+    for idx, entry in enumerate(normalized, start=1):
+        entry["id"] = idx
+    return normalized[:50]
+
+
+def _normalize_seed_entries(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    seen_urls: set[str] = set()
+    for cand in candidates:
+        data: Dict[str, Any] = {}
+        if isinstance(cand, dict):
+            data["title"] = cand.get("title") or cand.get("name")
+            data["url"] = cand.get("url") or cand.get("link")
+            data["snippet"] = (
+                cand.get("snippet")
+                or cand.get("summary")
+                or cand.get("description")
+            )
+            data["source"] = cand.get("source")
+            data["type"] = cand.get("type")
+        elif isinstance(cand, tuple) and len(cand) >= 2:
+            data["title"], data["url"] = cand[:2]
+            data["snippet"] = cand[2] if len(cand) > 2 else None
+            data["source"] = None
+            data["type"] = None
+        else:
+            continue
+
+        url = (data.get("url") or "").strip()
+        if not url or not url.startswith("http"):
+            continue
+        if url in seen_urls:
+            continue
+
+        seen_urls.add(url)
+        normalized.append(
+            {
+                "title": (data.get("title") or "Untitled resource").strip(),
+                "url": url,
+                "snippet": data.get("snippet"),
+                "source": data.get("source") or _infer_source_from_url(url),
+                "type": data.get("type"),
+            }
+        )
+
+    return normalized
+
+
+def _parse_markdown_links(markdown_text: str) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    pattern = r"(?:^|\n)\s*(?:-\s*|\d+\.\s*)\[(.+?)\]\((https?://[^)]+)\)"
+    for match in re.finditer(pattern, markdown_text):
+        title, url = match.groups()
+        entries.append({"title": title.strip(), "url": url.strip()})
+    return entries
+
+
+def _curate_seed_resources(
+    topic: str,
+    seed_resources: List[Dict[str, Any]],
+    resource_types: List[str],
+    max_items: int,
+) -> List[Dict[str, str]]:
+    limited = seed_resources[:max_items]
+    metadata_map = _summarize_seed_resources(topic, limited)
+    curated: List[Dict[str, str]] = []
+
+    for entry in limited:
+        meta = metadata_map.get(entry["id"], {})
+        inferred_type = (
+            meta.get("type")
+            or entry.get("type")
+            or _infer_type_from_url(entry["url"], resource_types)
+        )
+        type_label = (str(inferred_type) if inferred_type else "article").title()
+        curated.append(
+            {
+                "title": meta.get("title") or entry["title"],
+                "type": type_label,
+                "source": meta.get("source")
+                or entry.get("source")
+                or _infer_source_from_url(entry["url"]),
+                "url": entry["url"],
+                "summary": meta.get("summary") or entry.get("snippet") or "Summary forthcoming.",
+                "suggested_use": meta.get("suggested_use") or "Use in a flipped lesson or discussion.",
+            }
+        )
+
+    return curated
+
+
+def _summarize_seed_resources(
+    topic: str, seed_resources: List[Dict[str, Any]]
+) -> Dict[int, Dict[str, str]]:
+    if not seed_resources:
+        return {}
+
+    payload = [
+        {
+            "id": entry["id"],
+            "title": entry["title"],
+            "url": entry["url"],
+            "snippet": entry.get("snippet"),
+        }
+        for entry in seed_resources
+    ]
+
+    system_prompt = """You are an educational librarian. Given real search hits, enrich their metadata for curriculum planning.\nReturn ONLY JSON: {\"resources\": [{\"id\": int, \"title\": str, \"type\": str, \"summary\": str, \"suggested_use\": str}]}.\nRules:\n- Keep IDs exactly as provided\n- Do NOT invent or modify URLs (they are handled separately)\n- Titles can be lightly rephrased for clarity\n- Types must be short labels like article, video, dataset, repository, toolkit\n- Summaries limited to one sentence\n- Suggested use should mention how an educator might apply it"""
+
+    user_prompt = (
+        f"Topic: {topic}\n"
+        "Resources to enrich:\n"
+        f"{json.dumps(payload, ensure_ascii=False)}"
+    )
+
+    try:
+        response = call_llm(user_prompt, system_prompt=system_prompt)
+        if response and hasattr(response, "content"):
+            data = _parse_seed_metadata(response.content)
+            return data
+    except Exception:
+        return {}
+
+    return {}
+
+
+def _parse_seed_metadata(raw_content: str) -> Dict[int, Dict[str, str]]:
+    text = raw_content.strip()
+    fence_match = re.search(r"```json(.*?)```", text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1)
+    elif text.startswith("```") and text.endswith("```"):
+        text = text[3:-3]
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+
+    if isinstance(data, list):
+        resources = data
+    elif isinstance(data, dict) and isinstance(data.get("resources"), list):
+        resources = data["resources"]
+    else:
+        return {}
+
+    output: Dict[int, Dict[str, str]] = {}
+    for item in resources:
+        if not isinstance(item, dict):
+            continue
+        rid = item.get("id")
+        if isinstance(rid, int):
+            output[rid] = item
+    return output
+
+
+def _llm_generate_resources(
+    topic: str,
+    resource_types: List[str],
+    max_items: int,
+) -> List[Dict[str, str]]:
+    system_prompt = """You are an educational librarian. Curate accessible, high-quality learning resources for the requested topic.\nReturn ONLY valid JSON matching:\n{\"resources\": [{\"title\": str, \"type\": str, \"source\": str, \"url\": str, \"summary\": str, \"suggested_use\": str}]}\n- Provide exactly the requested number of items when possible\n- Favor openly available or widely known sources\n- Keep summaries to one sentence\n- Invent plausible yet generic sources/URLs if unsure (e.g., example.edu/article)."""
+
+    user_prompt = (
+        f"Topic: {topic}\n"
+        f"Requested resource count: {max_items}\n"
+        f"Preferred resource types: {', '.join(resource_types)}\n"
+        "Audience context: general educators seeking reusable materials."
+    )
 
     try:
         response = call_llm(user_prompt, system_prompt=system_prompt)
         if response and hasattr(response, "content"):
             entries = _parse_resource_payload(response.content, max_items)
-            if entries:
-                return _render_resources(topic, entries, max_items)
+            return entries
     except Exception:
-        pass
+        return []
 
-    return _fallback_resources(topic, resource_types, max_items)
+    return []
 
 
 def _parse_resource_payload(raw_content: str, max_items: int) -> List[dict]:
@@ -102,12 +362,37 @@ def _parse_resource_payload(raw_content: str, max_items: int) -> List[dict]:
     return entries
 
 
-def _render_resources(topic: str, entries: List[dict], max_items: int) -> str:
+def _infer_source_from_url(url: str) -> str:
+    try:
+        host = urlparse(url).netloc.lower()
+        if host.startswith("www."):
+            host = host[4:]
+        return host or "Unknown source"
+    except Exception:
+        return "Unknown source"
+
+
+def _infer_type_from_url(url: str, resource_types: List[str]) -> str:
+    lower = url.lower()
+    if any(token in lower for token in ["youtube", "vimeo", ".mp4", ".mov", "watch?v="]):
+        return "video"
+    if any(lower.endswith(ext) for ext in [".csv", ".tsv", ".json", ".xlsx", ".zip"]):
+        return "dataset"
+    if any(token in lower for token in ["github.com", "gitlab", "bitbucket"]):
+        return "repository"
+    if any(token in lower for token in ["lesson", "curriculum", "guide", "module"]):
+        return "lesson"
+    if resource_types:
+        return resource_types[0]
+    return "article"
+
+
+def _render_resources(topic: str, entries: List[dict], entry_count: int) -> str:
     lines = [
         "## Curated Learning Resources",
         "",
         f"**Topic:** {topic}",
-        f"**Resource Count:** {max_items}",
+        f"**Resource Count:** {entry_count}",
         "",
         "### Resources",
         "",
