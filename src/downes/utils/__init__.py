@@ -73,4 +73,72 @@ def indent_multiline(text: str, indent: int = 0, indent_first: bool = False) -> 
 	return '\n'.join(result).rstrip()
 
 
-__all__ = ["no", "strip_or_empty", "indent_multiline"]
+def format_for_template(template: str, **kwargs) -> str:
+	"""Format a template string while auto-detecting indentation for multi-line values.
+	
+	This function improves upon str.format() by:
+	1. Detecting the indentation level of each placeholder in the template
+	2. Automatically applying indent_multiline() to multi-line values
+	3. Preserving the internal formatting of the values
+	
+	Args:
+		template: The template string with {placeholder} markers
+		**kwargs: Key-value pairs to substitute into the template
+	
+	Returns:
+		Formatted string with proper indentation for all multi-line values
+		
+	Example:
+		>>> template = '''
+		... Tools:
+		...     {tools}
+		... Done.
+		... '''
+		>>> tools = "- tool1:\\n  Description"
+		>>> format_for_template(template, tools=tools)
+		# tools will be indented by 4 spaces to match its position
+	"""
+	import re
+	
+	# Process each value that's multi-line
+	formatted_kwargs = {}
+	
+	for key, value in kwargs.items():
+		# Only process string values with newlines
+		if not isinstance(value, str) or '\n' not in value:
+			formatted_kwargs[key] = value
+			continue
+		
+		# Find the placeholder and its indentation context
+		pattern = rf'^(\s*)(.*)?\{{{key}\}}'
+		indent_detected = False
+		
+		for line in template.split('\n'):
+			match = re.match(pattern, line)
+			if match:
+				line_indent = len(match.group(1))
+				before_placeholder = match.group(2) or ''
+				
+				# Calculate the position where the placeholder's content starts
+				if not before_placeholder.strip():
+					# Placeholder is at the start of the line (after whitespace)
+					# Apply the line's indentation to all lines
+					formatted_kwargs[key] = indent_multiline(value, line_indent)
+				else:
+					# Placeholder is inline after some content
+					# Calculate the column position for continuation lines
+					placeholder_column = len(match.group(1)) + len(before_placeholder)
+					formatted_kwargs[key] = indent_multiline(value, placeholder_column)
+				
+				indent_detected = True
+				break
+		
+		if not indent_detected:
+			# Couldn't find the placeholder, use value as-is
+			formatted_kwargs[key] = value
+	
+	# Now do the normal format
+	return template.format(**formatted_kwargs)
+
+
+__all__ = ["no", "strip_or_empty", "indent_multiline", "format_for_template"]

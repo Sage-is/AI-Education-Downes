@@ -70,21 +70,21 @@ class Vault:
         except Exception:
             return f"```text\n{str(content)}\n```"
 
-    def save_artifact(self, task_name: str, artifact_name: str, content: Any):
+    def save_artifact(self, step_name: str, artifact_name: str, content: Any):
         """
-        Saves an artifact to the vault within a task-specific subfolder.
+        Saves an artifact to the vault within a step-specific subfolder.
         All artifacts are saved as Markdown (.md) files.
         """
         self._ensure_run_dir()
 
-        task_slug = sanitize_for_filename(task_name)
-        task_dir = os.path.join(self.run_dir, task_slug)
+        step_slug = sanitize_for_filename(step_name)
+        step_dir = os.path.join(self.run_dir, step_slug)
 
         artifact_slug = sanitize_for_filename(artifact_name)
 
         # Everything is Markdown now!
         ext = ".md"
-        filepath = self._ensure_unique_path(task_dir, artifact_slug, ext)
+        filepath = self._ensure_unique_path(step_dir, artifact_slug, ext)
 
         content_str = self._serialize_content(content)
 

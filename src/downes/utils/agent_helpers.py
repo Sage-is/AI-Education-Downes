@@ -3,7 +3,7 @@ import re
 import json
 import ast
 
-from downes.task import Task
+from downes.steps import Step
 
 
 def extract_content(response) -> str:
@@ -20,7 +20,7 @@ def normalize_arg_value(value):
     """
     Convert stringified JSON values to Python types.
     
-    LLMs sometimes pass JSON-serialized values as strings (e.g., 'null', '[1,2,3]')
+    LLMs often pass JSON-serialized values as strings (e.g., 'null', '[1,2,3]')
     instead of proper Python types. This method normalizes them to prevent
     Pydantic validation errors.
     
@@ -63,16 +63,16 @@ def format_output(
     return f"{prefix} {tool_name} with args {args}: {result_or_error}"
 
 
-def parse_markdown_checklist(text: str) -> List[Task]:
-    """Parse a Markdown checklist into Task objects"""
-    tasks = []
-    # Match checklist items: - [ ] Task description
+def parse_markdown_checklist(text: str) -> List[Step]:
+    """Parse a Markdown checklist into Step objects"""
+    steps = []
+    # Match checklist items: - [ ] Step description
     pattern = r"-\s*\[\s*\]\s*(.+?)(?=\n-\s*\[|$)"
     matches = re.findall(pattern, text, re.DOTALL)
 
     for idx, match in enumerate(matches, start=1):
         description = match.strip()
         if description and not description.startswith("(none"):
-            tasks.append(Task(id=idx, description=description, done=False))
+            steps.append(Step(id=idx, description=description, done=False))
 
-    return tasks
+    return steps

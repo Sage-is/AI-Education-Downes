@@ -77,7 +77,7 @@ def curate_learning_resources(
             "label": "Practice Dataset",
             "uses": [
                 "Enable exploratory analysis",
-                "Support performance tasks",
+                "Support performance steps",
                 "Feed applied labs",
                 "Back project-based learning",
             ],

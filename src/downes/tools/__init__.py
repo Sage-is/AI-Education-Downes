@@ -4,13 +4,14 @@ from typing import Any
 from langchain_core.tools import BaseTool
 
 from downes.tools.education import EDUCATION_TOOLS
-from downes.tools.search.google import search_google_news
 from downes.tools.search.searx import searx_search
+from downes.tools.search.google import search_google_news
+
 
 TOOLS: tuple[BaseTool, ...] = (
-    search_google_news,
     *EDUCATION_TOOLS,
     searx_search,
+    search_google_news,
 )
 
 TOOLS_BY_NAME: dict[str, BaseTool] = {tool.name: tool for tool in TOOLS}

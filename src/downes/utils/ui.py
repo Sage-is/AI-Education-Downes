@@ -138,26 +138,26 @@ class UI:
         """Print the user's query in the same style as   ASCII art."""
         print(f"\n{Colors.BOLD}{Colors.LIGHT_BLUE}You: {query}{Colors.ENDC}\n")
 
-    def print_task_list(this, tasks):
-        """Print a clean list of planned tasks."""
-        if not tasks:
+    def print_step_list(this, steps):
+        """Print a clean list of planned steps."""
+        if not steps:
             return
-        this.print_header("Planned Tasks")
-        for i, task in enumerate(tasks):
+        this.print_header("Planned Steps")
+        for i, step in enumerate(steps):
             status = "+"
             color = Colors.DIM
-            desc = task.get("description", task)
+            desc = step.get("description", step)
             print(f"{Colors.BLUE}│{Colors.ENDC} {color}{status}{Colors.ENDC} {desc}")
         print(f"{Colors.BLUE}╰{'─' * 50}{Colors.ENDC}\n")
 
-    def print_task_start(this, task_desc: str):
-        """Print when starting a task."""
-        print(f"\n{Colors.BOLD}{Colors.CYAN}▶ Task:{Colors.ENDC} {task_desc}")
+    def print_step_start(this, step_desc: str):
+        """Print when starting a step."""
+        print(f"\n{Colors.BOLD}{Colors.CYAN}▶ Step:{Colors.ENDC} {step_desc}")
 
-    def print_task_done(this, task_desc: str):
-        """Print when a task is completed."""
+    def print_step_done(this, step_desc: str):
+        """Print when a step is completed."""
         print(
-            f"{Colors.GREEN}  ✓ Completed{Colors.ENDC} {Colors.DIM}│ {task_desc}{Colors.ENDC}"
+            f"{Colors.GREEN}  ✓ Completed{Colors.ENDC} {Colors.DIM}│ {step_desc}{Colors.ENDC}"
         )
 
     def print_tool_params(this, params: str):

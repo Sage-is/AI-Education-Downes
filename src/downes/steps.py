@@ -1,5 +1,5 @@
-class Task:
-    """Simple task representation - no Pydantic complexity"""
+class Step:
+    """Simple step representation"""
 
     def __init__(self, id: int, description: str, done: bool = False):
         self.id = id

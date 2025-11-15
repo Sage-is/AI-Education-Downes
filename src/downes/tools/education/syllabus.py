@@ -94,7 +94,9 @@ def draft_syllabus(
             [
                 f"### Module {i + 1}: Core Concepts",
                 "",
-                f"**Summary:** Introduces foundational elements of {course_title} with focus on applied understanding.",
+                f"**Summary:**",
+                "",
+                f"   Introduces foundational elements of {course_title} with focus on applied understanding.",
                 "",
                 "**Aligned Learning Objectives:**",
                 "",

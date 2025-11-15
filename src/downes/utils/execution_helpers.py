@@ -1,13 +1,13 @@
-from downes.task import Task
+from downes.steps import Step
 from downes.tools import invoke_tool
 from downes.utils.logger import Logger
 from downes.utils.ui import show_progress
 
 
-def mark_task_done(task: Task, logger: Logger):
-    """Mark a task as complete and log it."""
-    task.done = True
-    logger.log_task_done(task.description)
+def mark_step_done(step: Step, logger: Logger):
+    """Mark a step as complete and log it."""
+    step.done = True
+    logger.log_step_done(step.description)
 
 
 def check_step_limit(step_count: int, max_steps: int, logger: Logger, context: str = "Global") -> bool:

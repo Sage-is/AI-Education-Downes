@@ -4,7 +4,7 @@ import re
 from langchain_core.messages import AIMessage
 
 from downes.model import call_llm
-from downes.utils import no, indent_multiline
+from downes.utils import no, indent_multiline, format_for_template
 from downes.utils.ui import show_progress, Colors
 from downes.prompts import (
     ACTION_SYSTEM_PROMPT,
@@ -14,7 +14,7 @@ from downes.prompts import (
     VALIDATION_SYSTEM_PROMPT,
     META_VALIDATION_SYSTEM_PROMPT,
 )
-from downes.task import Task
+from downes.steps import Step
 from downes.tools import TOOLS, get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
@@ -196,14 +196,14 @@ def call_llm_safe(
             )
         return None
 
-def plan_tasks_impl(
+def plan_steps_impl(
     query: str,
     logger: Logger,
     debug: bool,
     verbose: bool,
     vault: Optional[Vault] = None,
-) -> List[Task]:
-    @show_progress("Planning tasks...", "Tasks planned", enabled=not debug)
+) -> List[Step]:
+    @show_progress("Planning steps...", "Steps planned", enabled=not debug)
     def _impl():
         tool_descriptions = "\n\n".join([
             f"- {t.name}:\n  {indent_multiline(t.description, 2)}"
@@ -212,16 +212,10 @@ def plan_tasks_impl(
         prompt = f"""
         Project: "{query}",
 
-        Create a list of curriculum development tasks to be completed.
-        Return tasks as a Markdown checklist.
-        ```
-          - [ ] task 1
-          - [ ] task 2
-          - [ ] task 3
-        ```
+        **Note:** Only return the atomic steps as a markdown checklist. Each step should be a clear, actionable step that can be completed using the available tools.
         """
-        # Apply the 4-space indent that matches the {tools} position in the template
-        system_prompt = PLANNING_SYSTEM_PROMPT.format(tools=indent_multiline(tool_descriptions, 4))
+        # Use format_for_template to auto-detect indentation
+        system_prompt = format_for_template(PLANNING_SYSTEM_PROMPT, tools=tool_descriptions)
 
         response = call_llm_safe(
             prompt,
@@ -230,25 +224,25 @@ def plan_tasks_impl(
             debug,
             verbose,
             error_msg="Planning failed",
-            operation_name="Task Planning",
+            operation_name="Step Planning",
             vault=vault,
         )
-        tasks = []
+        steps = []
         if response:
-            tasks = parse_markdown_checklist(extract_content(response))
+            steps = parse_markdown_checklist(extract_content(response))
 
-        if no(response) or no(tasks):
+        if no(response) or no(steps):
             # Retry once with a clarified prompt
             retry_prompt = f"""
             The request may contain typos or be ambiguous.
             Rewrite it as a clear curriculum-development request with topic, audience, and level (if implied).
 
-            Then produce a Markdown checklist with 3-6 atomic tasks aligned to available tools.
+            Then produce a Markdown checklist with 3-6 atomic steps aligned to available tools.
 
             ```
-                - [ ] task 1
-                - [ ] task 2
-                - [ ] task 3
+                - [ ] step 1
+                - [ ] step 2
+                - [ ] step 3
             ```
             
             Original request: "{query}"
@@ -260,25 +254,25 @@ def plan_tasks_impl(
                 debug,
                 verbose,
                 error_msg="Planning retry failed",
-                operation_name="Task Planning (Retry)",
+                operation_name="Step Planning (Retry)",
                 vault=vault,
             )
-            tasks = (
+            steps = (
                 parse_markdown_checklist(extract_content(response))
                 if response
                 else []
             )
 
-            if not tasks:
-                tasks = [Task(id=1, description=query, done=False)]
+            if not steps:
+                steps = [Step(id=1, description=query, done=False)]
 
-        task_dicts = [task.dict() for task in tasks]
-        logger.log_task_list(task_dicts)
-        return tasks
+        step_dicts = [step.dict() for step in steps]
+        logger.log_step_list(step_dicts)
+        return steps
     return _impl()
 
 def plan_next_actions_impl(
-    task_desc: str,
+    step_desc: str,
     logger: Logger,
     debug: bool,
     verbose: bool,
@@ -288,14 +282,14 @@ def plan_next_actions_impl(
     @show_progress("Thinking...", "", enabled=not debug)
     def _impl():
         prompt = f"""
-        We are working on: "{task_desc}".
+        We are working on: "{step_desc}".
         
         Last tool outputs: 
         ```
         {indent_multiline(last_outputs, 8)}
         ```
 
-        Given the task and the outputs, our next step is to:
+        Given the step and the outputs, our next step is to:
         """
         response = call_llm_safe(
             prompt,
@@ -312,21 +306,22 @@ def plan_next_actions_impl(
     return _impl()
 
 def ask_if_done_impl(
-    task_desc: str,
+    step_desc: str,
     recent_results: str,
     logger: Logger,
     debug: bool,
     verbose: bool,
     vault: Optional[Vault] = None,
 ) -> bool:
-    @show_progress("Checking if task is complete...", "", enabled=not debug)
+    @show_progress("Checking if step is complete...", "", enabled=not debug)
     def _impl():
         prompt = f"""
-        We are trying to complete task: "{task_desc}".
+        We are trying to complete step: "{step_desc}".
+        
         Given the history of tool outputs so far:
-        {indent_multiline(recent_results, 8)}
+        {indent_multiline(recent_results, 4)}
 
-        Is the task done?
+        Is the step done?
         """
         response = call_llm_safe(
             prompt,
@@ -334,8 +329,8 @@ def ask_if_done_impl(
             logger,
             debug,
             verbose,
-            error_msg="Task validation failed",
-            operation_name="Task Validation",
+            error_msg="Step validation failed",
+            operation_name="Step Validation",
             vault=vault,
         )
         return (
@@ -345,7 +340,7 @@ def ask_if_done_impl(
 
 def is_goal_achieved_impl(
     query: str,
-    task_outputs: list,
+    step_outputs: list,
     logger: Logger,
     debug: bool,
     verbose: bool,
@@ -354,7 +349,7 @@ def is_goal_achieved_impl(
     """Check if the overall goal is achieved based on all session outputs."""
     @show_progress("Checking if main goal is achieved...", "", enabled=not debug)
     def _impl():
-        all_results = "\n\n".join(task_outputs)
+        all_results = "\n\n".join(step_outputs)
         prompt = f"""
         Original user query: "{query}"
         
@@ -381,13 +376,13 @@ def is_goal_achieved_impl(
 def optimize_tool_args_impl(
     tool_name: str,
     initial_args: dict,
-    task_desc: str,
+    step_desc: str,
     logger: Logger,
     debug: bool,
     verbose: bool,
     vault: Optional[Vault] = None,
 ) -> dict:
-    """Optimize tool arguments based on task requirements."""
+    """Optimize tool arguments based on step requirements."""
     @show_progress("Optimizing tool call...", "", enabled=not debug)
     def _impl():
         tool = get_tool(tool_name)
@@ -402,7 +397,7 @@ def optimize_tool_args_impl(
         )
 
         prompt = f"""
-        Task: "{task_desc}"
+        Step: "{step_desc}"
         Tool: {tool_name}
         Tool Description:
         {indent_multiline(tool_description, 8)}
@@ -411,8 +406,8 @@ def optimize_tool_args_impl(
         Initial Arguments:
         {indent_multiline(str(initial_args), 8)}
         
-        Given the task, optimize the arguments to ensure all relevant parameters are used correctly.
-        *Note:Pay special attention to filtering parameters that would help narrow down results to match the task.*
+        Given the step, optimize the arguments to ensure all relevant parameters are used correctly.
+        *Note:Pay special attention to filtering parameters that would help narrow down results to match the step.*
         """
         response = call_llm_safe(
             prompt,
@@ -530,7 +525,7 @@ def optimize_tool_args_impl(
 
 def generate_answer_impl(
     query: str,
-    task_outputs: list,
+    step_outputs: list,
     logger: Logger,
     debug: bool,
     verbose: bool,
@@ -540,7 +535,7 @@ def generate_answer_impl(
     @show_progress("Generating answer...", "Answer ready", enabled=not debug)
     def _impl():
         all_results = (
-            "\n\n".join(task_outputs) if task_outputs else "No data was collected."
+            "\n\n".join(step_outputs) if step_outputs else "No data was collected."
         )
         answer_prompt = f"""
         Original user query: "{query}"
@@ -570,11 +565,11 @@ def generate_answer_impl(
             "# Summary",
             "",
             f"**Query:** {query}",
-            f"**Outputs Collected:** {len(task_outputs)}",
+            f"**Outputs Collected:** {len(step_outputs)}",
             "",
             "## Key Outputs",
             "",
         ]
-        fallback.extend([f"- {o[:200]}..." for o in task_outputs[-5:]])
+        fallback.extend([f"- {o[:200]}..." for o in step_outputs[-5:]])
         return "\n".join(fallback)
     return _impl()

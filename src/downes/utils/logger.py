@@ -20,14 +20,14 @@ class Logger:
     def log_user_query(this, query: str):
         this.ui.print_user_query(query)
 
-    def log_task_list(this, tasks):
-        this.ui.print_task_list(tasks)
+    def log_step_list(this, steps):
+        this.ui.print_step_list(steps)
 
-    def log_task_start(this, task_desc: str):
-        this.ui.print_task_start(task_desc)
+    def log_step_start(this, step_desc: str):
+        this.ui.print_step_start(step_desc)
 
-    def log_task_done(this, task_desc: str):
-        this.ui.print_task_done(task_desc)
+    def log_step_done(this, step_desc: str):
+        this.ui.print_step_done(step_desc)
 
     def log_tool_run(this, params: dict, result: dict):
         this.ui.print_tool_params(str(params))

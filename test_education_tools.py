@@ -2,7 +2,7 @@ from downes.tools.education.objectives import generate_learning_objectives
 from downes.tools.education.syllabus import draft_syllabus
 from downes.tools.education.assessments import design_assessments
 from downes.tools.education.pacing import create_pacing_guide
-from downes.tools.education.taxonomy import map_to_blooms_taxonomy
+from downes.tools.education.taxonomy import map_taxonomy
 from downes.tools.education.resources import curate_learning_resources
 
 
@@ -84,14 +84,28 @@ def test_taxonomy():
         "Analyze algorithm complexity",
         "Design a small program",
     ]
-    out = map_to_blooms_taxonomy.run({
-        "learning_objectives": objs
+    
+    # Test with Bloom's taxonomy
+    out = map_taxonomy.run({
+        "learning_objectives": objs,
+        "subject": "Intro to Python",
+        "taxonomy_type": "blooms"
     })
     assert isinstance(out, str)
-    assert "## Bloom's Taxonomy Mapping" in out
-    assert "Bloom's Level" in out
-    assert any(level in out.lower() for level in ["remember", "understand", "apply", "analyze", "create"])
-    print("✓ Taxonomy test passed")
+    assert "Mapping" in out
+    assert "Objective" in out and "Level" in out
+    print("✓ Taxonomy test (Bloom's) passed")
+    
+    # Test with Webb's DOK
+    out_webb = map_taxonomy.run({
+        "learning_objectives": objs[:2],
+        "subject": "Python Programming",
+        "taxonomy_type": "webb"
+    })
+    assert isinstance(out_webb, str)
+    assert "Mapping" in out_webb
+    assert "Objective" in out_webb
+    print("✓ Taxonomy test (Webb's) passed")
 
 
 def test_resources():
