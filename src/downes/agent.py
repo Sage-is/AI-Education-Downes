@@ -1,14 +1,14 @@
-from typing import List
+from types import SimpleNamespace
 
-from langchain_core.messages import AIMessage
-
-from downes.steps import Step
-from downes.tools import TOOLS, get_tool
+from downes.tools import get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
 from downes.utils.agent_helpers import (
     normalize_arg_value,
     format_output,
+    bind_llm_call,
+    guard_step_limit,
+    finalize_run,
 )
 from downes.utils import no
 from downes.llm_interaction import (
@@ -21,7 +21,6 @@ from downes.llm_interaction import (
 )
 from downes.utils.execution_helpers import (
     mark_step_done,
-    check_step_limit,
     detect_loop,
     execute_tool,
     confirm_action,
@@ -37,29 +36,14 @@ class Agent:
         this.verbose = verbose
         this.debug = debug
 
-    # ---------- step planning ----------
-    def plan_steps(this, query: str) -> List[Step]:
-        """Plan steps for the given query."""
-        return plan_steps_impl(query, this.logger, this.debug, this.verbose, this.vault)
-
-    # ---------- ask Model what to do ----------
-    def plan_next_actions(this, step_desc: str, last_outputs: str = "") -> AIMessage:
-        """Plan next actions."""
-        return plan_next_actions_impl(step_desc, this.logger, this.debug, this.verbose, last_outputs, this.vault)
-
-    def ask_if_done(this, step_desc: str, recent_results: str) -> bool:
-        """Check if step is done."""
-        return ask_if_done_impl(step_desc, recent_results, this.logger, this.debug, this.verbose, this.vault)
-
-    def is_goal_achieved(this, query: str, step_outputs: list) -> bool:
-        """Check if goal is achieved."""
-        return is_goal_achieved_impl(query, step_outputs, this.logger, this.debug, this.verbose, this.vault)
-
-    def optimize_tool_args(
-        this, tool_name: str, initial_args: dict, step_desc: str
-    ) -> dict:
-        """Optimize tool arguments."""
-        return optimize_tool_args_impl(tool_name, initial_args, step_desc, this.logger, this.debug, this.verbose, this.vault)
+        this.llm = SimpleNamespace(
+            plan_steps=bind_llm_call(plan_steps_impl, this.logger, this.debug, this.verbose, this.vault),
+            plan_next_actions=bind_llm_call(plan_next_actions_impl, this.logger, this.debug, this.verbose, this.vault),
+            ask_if_done=bind_llm_call(ask_if_done_impl, this.logger, this.debug, this.verbose, this.vault),
+            is_goal_achieved=bind_llm_call(is_goal_achieved_impl, this.logger, this.debug, this.verbose, this.vault),
+            optimize_tool_args=bind_llm_call(optimize_tool_args_impl, this.logger, this.debug, this.verbose, this.vault),
+            generate_answer=bind_llm_call(generate_answer_impl, this.logger, this.debug, this.verbose, this.vault),
+        )
 
     def run(this, query: str):
         """
@@ -89,23 +73,20 @@ class Agent:
         safety_stop_reason = None
 
         # 1. Decompose the user query into a list of steps.
-        steps = this.plan_steps(query)
+        steps = this.llm.plan_steps(query)
 
         # If no steps were created, the query is likely out of scope.
         if no(steps):
-            answer = this._generate_answer(query, step_outputs)
-            this.logger.log_summary(answer)
-            return answer
+            return finalize_run(this.llm.generate_answer, query, step_outputs, this.logger, this.vault)
 
         # 2. Loop through steps until all steps are complete or the max steps are reached.
         while any(not the_step.done for the_step in steps):
-            # Global safety break.
-            if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
+            limit_hit, safety_stop_reason = guard_step_limit(
+                step_count, this.max_steps, this.logger, safety_stop_reason
+            )
+            if limit_hit:
                 safety_stop = True
-                safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
-                answer = this._generate_answer(query, step_outputs)
-                this.logger.log_summary(answer)
-                return answer
+                break
 
             # Select the next incomplete step.
             the_step = next(the_step for the_step in steps if not the_step.done)
@@ -117,13 +98,15 @@ class Agent:
 
             # Loop through steps of a single step until the step is complete or the max steps are reached.
             while per_step_steps < this.max_steps_per_step:
-                if check_step_limit(step_count, this.max_steps, this.logger, "Global"):
+                limit_hit, safety_stop_reason = guard_step_limit(
+                    step_count, this.max_steps, this.logger, safety_stop_reason
+                )
+                if limit_hit:
                     safety_stop = True
-                    safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
                     break
 
                 # Ask the LLM for the next action to take for the current step.
-                ai_message = this.plan_next_actions(
+                ai_message = this.llm.plan_next_actions(
                     the_step.description, last_outputs="\n".join(step_step_outputs)
                 )
 
@@ -134,9 +117,11 @@ class Agent:
 
                 # Process each tool call returned by the LLM.
                 for tool_call in ai_message.tool_calls:
-                    if step_count >= this.max_steps:
+                    limit_hit, safety_stop_reason = guard_step_limit(
+                        step_count, this.max_steps, this.logger, safety_stop_reason
+                    )
+                    if limit_hit:
                         safety_stop = True
-                        safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
                         break
 
                     tool_name = tool_call["name"]
@@ -148,7 +133,7 @@ class Agent:
                     }
 
                     # Refine tool arguments for better performance.
-                    optimized_args = this.optimize_tool_args(
+                    optimized_args = this.llm.optimize_tool_args(
                         tool_name, initial_args, the_step.description
                     )
 
@@ -192,38 +177,28 @@ class Agent:
                     step_count += 1
                     per_step_steps += 1
 
-                    if step_count >= this.max_steps:
-                        safety_stop = True
-                        safety_stop_reason = safety_stop_reason or "Global max steps reached — pausing for human assistance."
-                        break
-
                 if safety_stop:
                     break
 
                 # Step-level introspection: Check if the step is complete.
-                if this.ask_if_done(the_step.description, "\n".join(step_step_outputs)):
+                if this.llm.ask_if_done(the_step.description, "\n".join(step_step_outputs)):
                     mark_step_done(the_step, this.logger)
                     break
 
             # Global introspection: Check if the overall goal is achieved.
-            if the_step.done and this.is_goal_achieved(query, step_outputs):
+            if the_step.done and this.llm.is_goal_achieved(query, step_outputs):
                 this.logger._log("Main goal achieved. Finalizing answer.")
                 break
 
             if safety_stop:
                 break
 
-        # Generate the final answer from all collected tool outputs.
-        if safety_stop:
-            human_help_note = safety_stop_reason or "Global max steps reached — pausing for human assistance."
-            this.logger._log(human_help_note)
-            step_outputs.append(human_help_note)
-
-        answer = this._generate_answer(query, step_outputs)
-        this.logger.log_summary(answer)
-        this.vault.save_artifact("summary", "final_answer", answer)
-        return answer
-
-    def _generate_answer(this, query: str, step_outputs: list) -> str:
-        """Generate answer."""
-        return generate_answer_impl(query, step_outputs, this.logger, this.debug, this.verbose, this.vault)
+        reason = safety_stop_reason if safety_stop else None
+        return finalize_run(
+            this.llm.generate_answer,
+            query,
+            step_outputs,
+            this.logger,
+            this.vault,
+            reason=reason,
+        )
