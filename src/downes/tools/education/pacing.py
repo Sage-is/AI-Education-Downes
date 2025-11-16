@@ -21,7 +21,7 @@ def create_pacing_guide(
     hours_per_week: int = 6,
 ) -> str:
     """
-        - Creates a week-by-week pacing guide allocating time 
+        - Creates a pacing guide for allocating time 
           to content, practice, and assessment across modules.
         - Returns a Markdown formatted pacing guide.
     """

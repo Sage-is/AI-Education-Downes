@@ -56,9 +56,12 @@ def curate_learning_resources(
     **kwargs,
 ) -> str:
     """
-        - Generates a curated placeholder set of learning resources (metadata only) for a topic.
-        - The agent can later refine or replace entries via external search tools.
+        - Generates a curated list of learning resources to be searched for.
+        - The list is tailored to the specified topic and resource types.
         - Returns Markdown formatted resource list.
+
+        - If provided, uses searx_search results to ground real URLs. 
+          Otherwise, the agent may search for resources using search tools.
     """
     resource_types = resource_types or ["article", "video", "repository", "dataset"]
 
