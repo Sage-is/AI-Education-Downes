@@ -4,7 +4,9 @@ from .syllabus import draft_syllabus
 from .assessments import design_assessments
 from .pacing import create_pacing_guide
 from .taxonomy import map_taxonomy
-from .resources import curate_learning_resources
+from .resources import synthesize_learning_resources
+from .slides import build_slide_deck
+from .worksheet import design_worksheet
 
 EDUCATION_TOOLS: list[Callable[..., any]] = [
     generate_learning_objectives,
@@ -12,5 +14,7 @@ EDUCATION_TOOLS: list[Callable[..., any]] = [
     design_assessments,
     create_pacing_guide,
     map_taxonomy,
-    curate_learning_resources,
+    synthesize_learning_resources,
+    build_slide_deck,
+    design_worksheet,
 ]

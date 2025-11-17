@@ -3,7 +3,9 @@ from downes.tools.education.syllabus import draft_syllabus
 from downes.tools.education.assessments import design_assessments
 from downes.tools.education.pacing import create_pacing_guide
 from downes.tools.education.taxonomy import map_taxonomy
-from downes.tools.education.resources import curate_learning_resources
+from downes.tools.education.resources import synthesize_learning_resources
+from downes.tools.education.slides import build_slide_deck
+from downes.tools.education.worksheet import design_worksheet
 
 
 def test_objectives():
@@ -110,15 +112,51 @@ def test_taxonomy():
 
 def test_resources():
     """Test resources tool returns Markdown"""
-    out = curate_learning_resources.run({
+    out = synthesize_learning_resources.run({
         "topic": "Intro to Python",
         "max_items": 6,
     })
     assert isinstance(out, str)
-    assert "## Curated Learning Resources" in out
+    assert "## Synthesized Learning Resources" in out
     assert "Intro to Python" in out
     assert "Type:" in out
     print("✓ Resources test passed")
+
+
+def test_slides():
+    """Test slide deck tool returns reveal.js formatted Markdown"""
+    out = build_slide_deck.run({
+        "topic": "Intro to Python",
+        "audience": "high school programming club",
+        "slide_count": 6,
+        "learning_objectives": [
+            "Explain why Python is popular",
+            "Demonstrate variables",
+        ],
+        "call_to_action": "Share a simple script in the chat",
+    })
+    assert isinstance(out, str)
+    assert "#" in out and "---" in out
+    assert "Intro to Python" in out
+    print("✓ Slides test passed")
+
+
+def test_worksheet():
+    """Test worksheet tool returns structured Markdown"""
+    out = design_worksheet.run({
+        "topic": "Intro to Python",
+        "audience": "Grade 9 CS",
+        "skill_focus": "Writing simple programs",
+        "learning_objectives": [
+            "Trace simple input/output",
+            "Write a script that prints a message",
+        ],
+        "materials": ["Laptop"],
+    })
+    assert isinstance(out, str)
+    assert "Worksheet" in out
+    assert "Differentiation" in out
+    print("✓ Worksheet test passed")
 
 
 if __name__ == "__main__":
@@ -128,4 +166,6 @@ if __name__ == "__main__":
     test_pacing()
     test_taxonomy()
     test_resources()
+    test_slides()
+    test_worksheet()
     print("\n✅ All education tools smoke tests passed!")

@@ -10,7 +10,7 @@ from downes.tools.education.syllabus import draft_syllabus
 from downes.tools.education.assessments import design_assessments
 from downes.tools.education.pacing import create_pacing_guide
 from downes.tools.education.taxonomy import map_to_blooms_taxonomy
-from downes.tools.education.resources import curate_learning_resources
+from downes.tools.education.resources import synthesize_learning_resources
 
 
 def test_objectives():
@@ -85,13 +85,13 @@ def test_taxonomy():
 
 
 def test_resources():
-    print("Testing: curate_learning_resources …")
-    res = curate_learning_resources.run({
+    print("Testing: synthesize_learning_resources …")
+    res = synthesize_learning_resources.run({
         "topic": "Data Visualization",
         "max_items": 5,
     })
     assert isinstance(res, list) and len(res) == 5
-    print(f"✓ Resources curated: {len(res)}")
+    print(f"✓ Resources synthesized: {len(res)}")
 
 
 if __name__ == "__main__":

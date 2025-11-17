@@ -9,7 +9,7 @@ from downes.model import call_llm
 from .utils import normalize_list_input
 
 
-class CurateResourcesInput(BaseModel):
+class SynthesizeResourcesInput(BaseModel):
     model_config = ConfigDict(extra="allow")
     topic: str = Field(description="Primary subject or focus area.")
     resource_types: Optional[List[str]] = Field(
@@ -46,8 +46,8 @@ class CurateResourcesInput(BaseModel):
         return normalize_list_input(v, default=None)
 
 
-@tool(args_schema=CurateResourcesInput)
-def curate_learning_resources(
+@tool(args_schema=SynthesizeResourcesInput)
+def synthesize_learning_resources(
     topic: str,
     resource_types: Optional[List[str]] = None,
     max_items: int = 8,
@@ -56,7 +56,7 @@ def curate_learning_resources(
     **kwargs,
 ) -> str:
     """
-        - Generates a curated list of learning resources to be searched for.
+        - Generates a synthesized list of learning resources to be searched for.
         - The list is tailored to the specified topic and resource types.
         - Returns Markdown formatted resource list.
 
@@ -71,25 +71,25 @@ def curate_learning_resources(
         extra_inputs=kwargs,
     )
 
-    curated_entries: List[Dict[str, str]] = []
+    synthesized_entries: List[Dict[str, str]] = []
 
     if seed_resources:
-        curated_entries = _curate_seed_resources(
+        synthesized_entries = _curate_seed_resources(
             topic=topic,
             seed_resources=seed_resources,
             resource_types=resource_types,
             max_items=max_items,
         )
 
-    if not curated_entries:
-        curated_entries = _llm_generate_resources(
+    if not synthesized_entries:
+        synthesized_entries = _llm_generate_resources(
             topic=topic,
             resource_types=resource_types,
             max_items=max_items,
         )
 
-    if curated_entries:
-        return _render_resources(topic, curated_entries, len(curated_entries))
+    if synthesized_entries:
+        return _render_resources(topic, synthesized_entries, len(synthesized_entries))
 
     return _fallback_resources(topic, resource_types, max_items)
 
@@ -211,7 +211,7 @@ def _curate_seed_resources(
 ) -> List[Dict[str, str]]:
     limited = seed_resources[:max_items]
     metadata_map = _summarize_seed_resources(topic, limited)
-    curated: List[Dict[str, str]] = []
+    synthesized: List[Dict[str, str]] = []
 
     for entry in limited:
         meta = metadata_map.get(entry["id"], {})
@@ -221,7 +221,7 @@ def _curate_seed_resources(
             or _infer_type_from_url(entry["url"], resource_types)
         )
         type_label = (str(inferred_type) if inferred_type else "article").title()
-        curated.append(
+        synthesized.append(
             {
                 "title": meta.get("title") or entry["title"],
                 "type": type_label,
@@ -234,7 +234,7 @@ def _curate_seed_resources(
             }
         )
 
-    return curated
+    return synthesized
 
 
 def _summarize_seed_resources(
@@ -253,7 +253,18 @@ def _summarize_seed_resources(
         for entry in seed_resources
     ]
 
-    system_prompt = """You are an educational librarian. Given real search hits, enrich their metadata for curriculum planning.\nReturn ONLY JSON: {\"resources\": [{\"id\": int, \"title\": str, \"type\": str, \"summary\": str, \"suggested_use\": str}]}.\nRules:\n- Keep IDs exactly as provided\n- Do NOT invent or modify URLs (they are handled separately)\n- Titles can be lightly rephrased for clarity\n- Types must be short labels like article, video, dataset, repository, toolkit\n- Summaries limited to one sentence\n- Suggested use should mention how an educator might apply it"""
+    system_prompt = """
+        You are an educational librarian.
+        Given real search hits, enrich their metadata for curriculum planning.
+        Return ONLY JSON: {{"resources": [{{"id": int, "title": str, "type": str, "summary": str, "suggested_use": str}}]}}.
+        Rules:
+        - Keep IDs exactly as provided
+        - Do NOT invent or modify URLs (they are handled separately)
+        - Titles can be lightly rephrased for clarity
+        - Types must be short labels like article, video, dataset, repository, toolkit
+        - Summaries limited to one sentence
+        - Suggested use should mention how an educator might apply it.
+        """
 
     user_prompt = (
         f"Topic: {topic}\n"
@@ -307,7 +318,15 @@ def _llm_generate_resources(
     resource_types: List[str],
     max_items: int,
 ) -> List[Dict[str, str]]:
-    system_prompt = """You are an educational librarian. Curate accessible, high-quality learning resources for the requested topic.\nReturn ONLY valid JSON matching:\n{\"resources\": [{\"title\": str, \"type\": str, \"source\": str, \"url\": str, \"summary\": str, \"suggested_use\": str}]}\n- Provide exactly the requested number of items when possible\n- Favor openly available or widely known sources\n- Keep summaries to one sentence\n- Invent plausible yet generic sources/URLs if unsure (e.g., example.edu/article)."""
+    system_prompt = """
+    You are an educational librarian. Synthesize accessible, high-quality learning resources for the requested topic.
+        Return ONLY valid JSON matching:
+        {"resources": [{"title": str, "type": str, "source": str, "url": str, "summary": str, "suggested_use": str}]}
+        - Provide exactly the requested number of items when possible
+        - Favor openly available or widely known sources
+        - Keep summaries to one sentence
+        - Invent plausible yet generic sources/URLs if unsure (e.g., example.edu/article).
+    """
 
     user_prompt = (
         f"Topic: {topic}\n"
@@ -353,7 +372,7 @@ def _parse_resource_payload(raw_content: str, max_items: int) -> List[dict]:
             continue
         entries.append(
             {
-                "title": item.get("title") or "Curated Resource",
+                "title": item.get("title") or "Synthesized Resource",
                 "type": item.get("type") or "Article",
                 "source": item.get("source") or "TBD",
                 "url": item.get("url") or "TBD",
@@ -392,7 +411,7 @@ def _infer_type_from_url(url: str, resource_types: List[str]) -> str:
 
 def _render_resources(topic: str, entries: List[dict], entry_count: int) -> str:
     lines = [
-        "## Curated Learning Resources",
+        "## Synthesized Learning Resources",
         "",
         f"**Topic:** {topic}",
         f"**Resource Count:** {entry_count}",
@@ -474,7 +493,7 @@ def _fallback_resources(topic: str, resource_types: List[str], max_items: int) -
     ]
 
     lines = [
-        "## Curated Learning Resources",
+        "## Synthesized Learning Resources",
         "",
         f"**Topic:** {topic}",
         f"**Resource Count:** {max_items}",
