@@ -43,6 +43,9 @@ Bad step examples:
 - "Compare two curricula" (combines multiple actions)
 
 Good step examples:
+- "Craft a worksheet with 5 activities for middle schoolers on fractions"
+- "Outline a 4-module syllabus for beginner Spanish learners over 8 weeks"
+- "Generate a 10 slide deck on climate change for high school students"
 - "Generate 5 measurable learning objectives for Grade 9 Intro to Art Techniques"
 - "Draft a 6-module syllabus aligned to the objectives with suggested activities"
 - "Design assessments with rubrics aligned to each objective"
