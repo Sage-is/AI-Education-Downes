@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+
 
 from downes.tools import get_tool
 from downes.utils.logger import Logger
@@ -42,33 +42,46 @@ class Agent:
         this.verbose = verbose
         this.debug = debug
 
-        this.llm = SimpleNamespace(
-            plan_steps=bind_llm_call(
-                plan_steps_impl, this.logger, this.debug, this.verbose, this.vault
-            ),
-            plan_next_actions=bind_llm_call(
-                plan_next_actions_impl,
-                this.logger,
-                this.debug,
-                this.verbose,
-                this.vault,
-            ),
-            ask_if_done=bind_llm_call(
-                ask_if_done_impl, this.logger, this.debug, this.verbose, this.vault
-            ),
-            is_goal_achieved=bind_llm_call(
-                is_goal_achieved_impl, this.logger, this.debug, this.verbose, this.vault
-            ),
-            optimize_tool_args=bind_llm_call(
-                optimize_tool_args_impl,
-                this.logger,
-                this.debug,
-                this.verbose,
-                this.vault,
-            ),
-            generate_answer=bind_llm_call(
-                generate_answer_impl, this.logger, this.debug, this.verbose, this.vault
-            ),
+        class LLM: pass
+
+        this.llm = LLM()
+        this.llm.plan_steps = bind_llm_call(
+            plan_steps_impl, 
+            this.logger, 
+            this.debug, 
+            this.verbose, 
+            this.vault
+        )
+        this.llm.plan_next_actions = bind_llm_call(
+            plan_next_actions_impl,
+            this.logger,
+            this.debug,
+            this.verbose,
+            this.vault,
+        )
+        this.llm.ask_if_done = bind_llm_call(
+            ask_if_done_impl, 
+            this.logger, 
+            this.debug, 
+            this.verbose, 
+            this.vault
+        )
+        this.llm.is_goal_achieved = bind_llm_call(
+            is_goal_achieved_impl, 
+            this.logger, 
+            this.debug, 
+            this.verbose, 
+            this.vault
+        )
+        this.llm.optimize_tool_args = bind_llm_call(
+            optimize_tool_args_impl,
+            this.logger,
+            this.debug,
+            this.verbose,
+            this.vault,
+        )
+        this.llm.generate_answer = bind_llm_call(
+            generate_answer_impl, this.logger, this.debug, this.verbose, this.vault
         )
 
     def run(this, query: str):
