@@ -21,7 +21,6 @@
 - [x] Update education tools to return Markdown
 - [x] Simplify vault.py for Markdown-first storage
 
-
 ### Fix and optimize tools
 
 - [x] Fix curate learning resources to not break the urls obtained from searxng by grounding outputs in parsed SearXNG hits and preserving original links.
@@ -34,7 +33,6 @@ Plan how to run smaller and larger models side-by-side for different workflow st
 - [ ] Update `get_llm_config`/`call_llm` to accept a profile parameter plus helper routing logic per task type.
 - [ ] Tag each tool/agent flow with an appropriate profile (e.g., planning → premium, drafting → fast) and expose CLI flags for overrides.
 - [ ] Add tests plus README/env.example docs covering multi-profile setup and fallback behavior.
-
 
 ---
 
