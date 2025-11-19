@@ -10,13 +10,15 @@ from downes.tools.education.worksheet import design_worksheet
 
 def test_objectives():
     """Test objectives tool returns Markdown"""
-    out = generate_learning_objectives.run({
-        "topic": "Intro to Python",
-        "audience": "adult beginners",
-        "level": "beginner",
-        "duration_weeks": 8,
-        "outcomes_count": 4
-    })
+    out = generate_learning_objectives.run(
+        {
+            "topic": "Intro to Python",
+            "audience": "adult beginners",
+            "level": "beginner",
+            "duration_weeks": 8,
+            "outcomes_count": 4,
+        }
+    )
     assert isinstance(out, str)
     assert "## Learning Objectives" in out
     assert "Intro to Python" in out
@@ -32,13 +34,15 @@ def test_syllabus():
         "Implement functions",
         "Analyze simple data with lists and dicts",
     ]
-    out = draft_syllabus.run({
-        "course_title": "Intro to Python",
-        "learning_objectives": objs,
-        "duration_weeks": 8,
-        "modality": "online",
-        "modules_count": 4,
-    })
+    out = draft_syllabus.run(
+        {
+            "course_title": "Intro to Python",
+            "learning_objectives": objs,
+            "duration_weeks": 8,
+            "modality": "online",
+            "modules_count": 4,
+        }
+    )
     assert isinstance(out, str)
     assert "# Intro to Python - Syllabus" in out
     assert "## Course Modules" in out
@@ -53,10 +57,12 @@ def test_assessments():
         "Apply variables and control flow",
         "Implement functions",
     ]
-    out = design_assessments.run({
-        "learning_objectives": objs,
-        "assessment_types": ["quiz", "project"],
-    })
+    out = design_assessments.run(
+        {
+            "learning_objectives": objs,
+            "assessment_types": ["quiz", "project"],
+        }
+    )
     assert isinstance(out, str)
     assert "## Assessments & Rubrics" in out
     assert "### Assessment 1:" in out
@@ -66,11 +72,13 @@ def test_assessments():
 
 def test_pacing():
     """Test pacing guide returns Markdown"""
-    out = create_pacing_guide.run({
-        "duration_weeks": 6,
-        "modules_count": 3,
-        "hours_per_week": 5,
-    })
+    out = create_pacing_guide.run(
+        {
+            "duration_weeks": 6,
+            "modules_count": 3,
+            "hours_per_week": 5,
+        }
+    )
     assert isinstance(out, str)
     assert "## Pacing Guide" in out
     assert "Week | Module" in out
@@ -86,24 +94,28 @@ def test_taxonomy():
         "Analyze algorithm complexity",
         "Design a small program",
     ]
-    
+
     # Test with Bloom's taxonomy
-    out = map_taxonomy.run({
-        "learning_objectives": objs,
-        "subject": "Intro to Python",
-        "taxonomy_type": "blooms"
-    })
+    out = map_taxonomy.run(
+        {
+            "learning_objectives": objs,
+            "subject": "Intro to Python",
+            "taxonomy_type": "blooms",
+        }
+    )
     assert isinstance(out, str)
     assert "Mapping" in out
     assert "Objective" in out and "Level" in out
     print("✓ Taxonomy test (Bloom's) passed")
-    
+
     # Test with Webb's DOK
-    out_webb = map_taxonomy.run({
-        "learning_objectives": objs[:2],
-        "subject": "Python Programming",
-        "taxonomy_type": "webb"
-    })
+    out_webb = map_taxonomy.run(
+        {
+            "learning_objectives": objs[:2],
+            "subject": "Python Programming",
+            "taxonomy_type": "webb",
+        }
+    )
     assert isinstance(out_webb, str)
     assert "Mapping" in out_webb
     assert "Objective" in out_webb
@@ -112,10 +124,12 @@ def test_taxonomy():
 
 def test_resources():
     """Test resources tool returns Markdown"""
-    out = synthesize_learning_resources.run({
-        "topic": "Intro to Python",
-        "max_items": 6,
-    })
+    out = synthesize_learning_resources.run(
+        {
+            "topic": "Intro to Python",
+            "max_items": 6,
+        }
+    )
     assert isinstance(out, str)
     assert "## Synthesized Learning Resources" in out
     assert "Intro to Python" in out
@@ -125,16 +139,18 @@ def test_resources():
 
 def test_slides():
     """Test slide deck tool returns reveal.js formatted Markdown"""
-    out = build_slide_deck.run({
-        "topic": "Intro to Python",
-        "audience": "high school programming club",
-        "slide_count": 6,
-        "learning_objectives": [
-            "Explain why Python is popular",
-            "Demonstrate variables",
-        ],
-        "call_to_action": "Share a simple script in the chat",
-    })
+    out = build_slide_deck.run(
+        {
+            "topic": "Intro to Python",
+            "audience": "high school programming club",
+            "slide_count": 6,
+            "learning_objectives": [
+                "Explain why Python is popular",
+                "Demonstrate variables",
+            ],
+            "call_to_action": "Share a simple script in the chat",
+        }
+    )
     assert isinstance(out, str)
     assert "#" in out and "---" in out
     assert "Intro to Python" in out
@@ -143,16 +159,18 @@ def test_slides():
 
 def test_worksheet():
     """Test worksheet tool returns structured Markdown"""
-    out = design_worksheet.run({
-        "topic": "Intro to Python",
-        "audience": "Grade 9 CS",
-        "skill_focus": "Writing simple programs",
-        "learning_objectives": [
-            "Trace simple input/output",
-            "Write a script that prints a message",
-        ],
-        "materials": ["Laptop"],
-    })
+    out = design_worksheet.run(
+        {
+            "topic": "Intro to Python",
+            "audience": "Grade 9 CS",
+            "skill_focus": "Writing simple programs",
+            "learning_objectives": [
+                "Trace simple input/output",
+                "Write a script that prints a message",
+            ],
+            "materials": ["Laptop"],
+        }
+    )
     assert isinstance(out, str)
     assert "Worksheet" in out
     assert "Differentiation" in out

@@ -124,21 +124,25 @@ class Vault:
         ]
 
         if metadata:
-            lines.extend([
-                "",
-                "## Metadata",
-                "```json",
-                json.dumps(metadata, indent=2),
-                "```",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Metadata",
+                    "```json",
+                    json.dumps(metadata, indent=2),
+                    "```",
+                ]
+            )
 
-        lines.extend([
-            "",
-            "## Response",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Response",
+            ]
+        )
 
         if response is None:
-            lines.extend(["(no response)"]) 
+            lines.extend(["(no response)"])
         else:
             content_str = self._serialize_content(response)
             lines.append(content_str)

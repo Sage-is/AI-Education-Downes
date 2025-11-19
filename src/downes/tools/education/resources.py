@@ -56,12 +56,12 @@ def synthesize_learning_resources(
     **kwargs,
 ) -> str:
     """
-        - Generates a synthesized list of learning resources to be searched for.
-        - The list is tailored to the specified topic and resource types.
-        - Returns Markdown formatted resource list.
+    - Generates a synthesized list of learning resources to be searched for.
+    - The list is tailored to the specified topic and resource types.
+    - Returns Markdown formatted resource list.
 
-        - If provided, uses searx_search results to ground real URLs. 
-          Otherwise, the agent may search for resources using search tools.
+    - If provided, uses searx_search results to ground real URLs.
+      Otherwise, the agent may search for resources using search tools.
     """
     resource_types = resource_types or ["article", "video", "repository", "dataset"]
 
@@ -100,6 +100,7 @@ def _collect_seed_resources(
     extra_inputs: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     """Gather structured resource candidates from various inputs."""
+
     def _coerce_list(value) -> List[Any]:
         if value is None:
             return []
@@ -160,9 +161,7 @@ def _normalize_seed_entries(candidates: List[Dict[str, Any]]) -> List[Dict[str, 
             data["title"] = cand.get("title") or cand.get("name")
             data["url"] = cand.get("url") or cand.get("link")
             data["snippet"] = (
-                cand.get("snippet")
-                or cand.get("summary")
-                or cand.get("description")
+                cand.get("snippet") or cand.get("summary") or cand.get("description")
             )
             data["source"] = cand.get("source")
             data["type"] = cand.get("type")
@@ -229,8 +228,11 @@ def _curate_seed_resources(
                 or entry.get("source")
                 or _infer_source_from_url(entry["url"]),
                 "url": entry["url"],
-                "summary": meta.get("summary") or entry.get("snippet") or "Summary forthcoming.",
-                "suggested_use": meta.get("suggested_use") or "Use in a flipped lesson or discussion.",
+                "summary": meta.get("summary")
+                or entry.get("snippet")
+                or "Summary forthcoming.",
+                "suggested_use": meta.get("suggested_use")
+                or "Use in a flipped lesson or discussion.",
             }
         )
 
@@ -376,8 +378,11 @@ def _parse_resource_payload(raw_content: str, max_items: int) -> List[dict]:
                 "type": item.get("type") or "Article",
                 "source": item.get("source") or "TBD",
                 "url": item.get("url") or "TBD",
-                "summary": item.get("summary") or item.get("description") or "Summary forthcoming.",
-                "suggested_use": item.get("suggested_use") or "Use as a discussion catalyst.",
+                "summary": item.get("summary")
+                or item.get("description")
+                or "Summary forthcoming.",
+                "suggested_use": item.get("suggested_use")
+                or "Use as a discussion catalyst.",
             }
         )
 
@@ -396,7 +401,9 @@ def _infer_source_from_url(url: str) -> str:
 
 def _infer_type_from_url(url: str, resource_types: List[str]) -> str:
     lower = url.lower()
-    if any(token in lower for token in ["youtube", "vimeo", ".mp4", ".mov", "watch?v="]):
+    if any(
+        token in lower for token in ["youtube", "vimeo", ".mp4", ".mov", "watch?v="]
+    ):
         return "video"
     if any(lower.endswith(ext) for ext in [".csv", ".tsv", ".json", ".xlsx", ".zip"]):
         return "dataset"

@@ -36,9 +36,9 @@ def search_google_news(
     site_filters: Optional[List[str]] = None,
     extra_terms: Optional[List[str]] = None,
 ) -> list[SearchResult]:
-    """ 
+    """
     - Searches Google News RSS for articles/resources matching a query.
-        - When education_bias=True (default), the tool augments the query with curriculum-related terms 
+        - When education_bias=True (default), the tool augments the query with curriculum-related terms
         - You can also constrain results with site filters like 'site:.edu' or 'site:oercommons.org'.
         - Use extra_terms to inject additional phrases.
     """

@@ -82,10 +82,10 @@ def searx_search(
     education_bias: bool = True,
 ) -> str:
     """
-        - Perform a meta-search via a SearXNG instance and return Markdown-formatted results.
-            - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
-            - Uses HTML parsing 
-            - Respects categories if provided
+    - Perform a meta-search via a SearXNG instance and return Markdown-formatted results.
+        - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
+        - Uses HTML parsing
+        - Respects categories if provided
 
     """
     base = os.getenv("SEARXNG_INSTANCE_URL")
@@ -130,10 +130,12 @@ def searx_search(
             "",
         ]
         if error:
-            lines.extend([
-                "_Search failed._",
-                f"Error: {error}",
-            ])
+            lines.extend(
+                [
+                    "_Search failed._",
+                    f"Error: {error}",
+                ]
+            )
             return "\n".join(lines)
 
         if not results:
@@ -188,7 +190,9 @@ def searx_search(
             if url in seen:
                 continue
             seen.add(url)
-            results.append(SearchResult(title=title or "Untitled", url=url, published_date=None))
+            results.append(
+                SearchResult(title=title or "Untitled", url=url, published_date=None)
+            )
             if len(results) >= max_results:
                 break
         return render(results)

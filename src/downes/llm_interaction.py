@@ -28,26 +28,28 @@ import tempfile
 import subprocess
 import os
 
+
 def _edit_text_in_editor(text: str, title: str = "Edit") -> str:
     """Open text in system editor for editing."""
-    editor = os.environ.get('EDITOR', os.environ.get('VISUAL', 'nano'))
-    
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tf:
+    editor = os.environ.get("EDITOR", os.environ.get("VISUAL", "nano"))
+
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as tf:
         tf.write(f"# {title}\n# Save and close this file when done editing\n\n")
         tf.write(text)
         tf.flush()
         temp_path = tf.name
-    
+
     try:
         subprocess.run([editor, temp_path], check=True)
-        
-        with open(temp_path, 'r') as f:
+
+        with open(temp_path, "r") as f:
             lines = f.readlines()
             # Remove comment lines at the top
-            content_lines = [line for line in lines if not line.strip().startswith('#')]
-            return ''.join(content_lines).strip()
+            content_lines = [line for line in lines if not line.strip().startswith("#")]
+            return "".join(content_lines).strip()
     finally:
         os.unlink(temp_path)
+
 
 def _review_and_edit_prompt(
     prompt: str,
@@ -56,10 +58,10 @@ def _review_and_edit_prompt(
     logger: Logger,
 ) -> tuple[str, str]:
     """Allow user to review and optionally edit prompts before submission."""
-    
+
     # Display the prompt preview
     logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
-    
+
     # Interactive menu
     while True:
         print(f"{Colors.BOLD}Options:{Colors.ENDC}")
@@ -68,40 +70,46 @@ def _review_and_edit_prompt(
         print(f"  {Colors.YELLOW}[E]{Colors.ENDC} Edit system prompt")
         print(f"  {Colors.CYAN}[v]{Colors.ENDC} View full prompts")
         print(f"  {Colors.RED}[c]{Colors.ENDC} Cancel (skip this LLM call)\n")
-        
+
         choice = logger.ui.prompt_for_input("Your choice", "s").lower()
-        
-        if choice == 's' or choice == '':
+
+        if choice == "s" or choice == "":
             print(f"{Colors.GREEN}✓ Submitting prompt...{Colors.ENDC}\n")
             return prompt, system_prompt
-        
-        elif choice == 'e':
+
+        elif choice == "e":
             print(f"{Colors.YELLOW}Opening editor for user prompt...{Colors.ENDC}")
             try:
                 edited_prompt = _edit_text_in_editor(prompt, "Edit User Prompt")
                 if edited_prompt:
                     prompt = edited_prompt
                     print(f"{Colors.GREEN}✓ User prompt updated{Colors.ENDC}\n")
-                    logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
+                    logger.ui.print_prompt_preview(
+                        system_prompt, prompt, operation_name
+                    )
                 else:
                     print(f"{Colors.YELLOW}⚠ No changes made{Colors.ENDC}\n")
             except Exception as e:
                 print(f"{Colors.RED}✗ Error editing: {e}{Colors.ENDC}\n")
-        
-        elif choice == 'E':
+
+        elif choice == "E":
             print(f"{Colors.YELLOW}Opening editor for system prompt...{Colors.ENDC}")
             try:
-                edited_system = _edit_text_in_editor(system_prompt, "Edit System Prompt")
+                edited_system = _edit_text_in_editor(
+                    system_prompt, "Edit System Prompt"
+                )
                 if edited_system:
                     system_prompt = edited_system
                     print(f"{Colors.GREEN}✓ System prompt updated{Colors.ENDC}\n")
-                    logger.ui.print_prompt_preview(system_prompt, prompt, operation_name)
+                    logger.ui.print_prompt_preview(
+                        system_prompt, prompt, operation_name
+                    )
                 else:
                     print(f"{Colors.YELLOW}⚠ No changes made{Colors.ENDC}\n")
             except Exception as e:
                 print(f"{Colors.RED}✗ Error editing: {e}{Colors.ENDC}\n")
-        
-        elif choice == 'v':
+
+        elif choice == "v":
             print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*80}{Colors.ENDC}")
             print(f"{Colors.BOLD}FULL SYSTEM PROMPT:{Colors.ENDC}\n")
             print(f"{system_prompt}\n")
@@ -109,16 +117,19 @@ def _review_and_edit_prompt(
             print(f"{Colors.BOLD}FULL USER PROMPT:{Colors.ENDC}\n")
             print(f"{prompt}\n")
             print(f"{Colors.BOLD}{Colors.CYAN}{'='*80}{Colors.ENDC}\n")
-        
-        elif choice == 'c':
-            if logger.ui.confirm("Are you sure you want to cancel this LLM call?", default=False):
+
+        elif choice == "c":
+            if logger.ui.confirm(
+                "Are you sure you want to cancel this LLM call?", default=False
+            ):
                 print(f"{Colors.RED}✗ LLM call cancelled{Colors.ENDC}\n")
                 return None, None
             else:
                 print()
-        
+
         else:
             print(f"{Colors.RED}Invalid choice. Please try again.{Colors.ENDC}\n")
+
 
 def call_llm_safe(
     prompt: str,
@@ -132,20 +143,20 @@ def call_llm_safe(
     vault: Optional[Vault] = None,
 ):
     """Call LLM with error handling and logging."""
-    
+
     # Interactive prompt review in debug mode
     if debug:
         prompt, system_prompt = _review_and_edit_prompt(
             prompt, system_prompt, operation_name, logger
         )
-        
+
         # User cancelled
         if prompt is None or system_prompt is None:
             logger._log(f"[DEBUG] {operation_name} - CANCELLED BY USER")
             return None
-        
+
         logger._log(f"\n{'='*60}\n[DEBUG] {operation_name} - SUBMITTING")
-    
+
     should_record = vault is not None and (debug or verbose)
     metadata = {
         "operation": operation_name,
@@ -156,17 +167,14 @@ def call_llm_safe(
 
     try:
         response = call_llm(
-            prompt, 
-            system_prompt=system_prompt, 
-            tools=tools,
-            verbose=verbose or debug
+            prompt, system_prompt=system_prompt, tools=tools, verbose=verbose or debug
         )
-        
+
         if debug and response:
             content = extract_content(response)
-            #logger._log(f"[RESPONSE]\n{content[:500]}...")
+            # logger._log(f"[RESPONSE]\n{content[:500]}...")
             logger._log(f"[RESPONSE]\n{content}...")
-            if hasattr(response, 'tool_calls') and response.tool_calls:
+            if hasattr(response, "tool_calls") and response.tool_calls:
                 logger._log(f"[TOOL CALLS] {len(response.tool_calls)} call(s)")
             logger._log(f"{'='*60}\n")
 
@@ -181,7 +189,7 @@ def call_llm_safe(
                 response=response,
                 metadata=metadata,
             )
-        
+
         return response
     except Exception as e:
         logger._log(f"{error_msg}: {e}")
@@ -196,6 +204,7 @@ def call_llm_safe(
             )
         return None
 
+
 def plan_steps_impl(
     query: str,
     logger: Logger,
@@ -205,17 +214,18 @@ def plan_steps_impl(
 ) -> List[Step]:
     @show_progress("Planning steps...", "Steps planned", enabled=not debug)
     def _impl():
-        tool_descriptions = "\n\n".join([
-            f"- {t.name}:\n  {indent_multiline(t.description, 2)}"
-            for t in TOOLS
-        ])
+        tool_descriptions = "\n\n".join(
+            [f"- {t.name}:\n  {indent_multiline(t.description, 2)}" for t in TOOLS]
+        )
         prompt = f"""
         Project: "{query}",
 
         **Note:** Only return the atomic steps as a markdown checklist. Each step should be a clear, actionable step that can be completed using the available tools.
         """
         # Use format_for_template to auto-detect indentation
-        system_prompt = format_for_template(PLANNING_SYSTEM_PROMPT, tools=tool_descriptions)
+        system_prompt = format_for_template(
+            PLANNING_SYSTEM_PROMPT, tools=tool_descriptions
+        )
 
         response = call_llm_safe(
             prompt,
@@ -258,9 +268,7 @@ def plan_steps_impl(
                 vault=vault,
             )
             steps = (
-                parse_markdown_checklist(extract_content(response))
-                if response
-                else []
+                parse_markdown_checklist(extract_content(response)) if response else []
             )
 
             if not steps:
@@ -269,7 +277,9 @@ def plan_steps_impl(
         step_dicts = [step.dict() for step in steps]
         logger.log_step_list(step_dicts)
         return steps
+
     return _impl()
+
 
 def plan_next_actions_impl(
     step_desc: str,
@@ -303,7 +313,9 @@ def plan_next_actions_impl(
             vault=vault,
         )
         return response if response else AIMessage(content="Failed to get actions.")
+
     return _impl()
+
 
 def ask_if_done_impl(
     step_desc: str,
@@ -333,10 +345,10 @@ def ask_if_done_impl(
             operation_name="Step Validation",
             vault=vault,
         )
-        return (
-            is_affirmative(extract_content(response)) if response else False
-        )
+        return is_affirmative(extract_content(response)) if response else False
+
     return _impl()
+
 
 def is_goal_achieved_impl(
     query: str,
@@ -347,6 +359,7 @@ def is_goal_achieved_impl(
     vault: Optional[Vault] = None,
 ) -> bool:
     """Check if the overall goal is achieved based on all session outputs."""
+
     @show_progress("Checking if main goal is achieved...", "", enabled=not debug)
     def _impl():
         all_results = "\n\n".join(step_outputs)
@@ -368,10 +381,10 @@ def is_goal_achieved_impl(
             operation_name="Goal Validation",
             vault=vault,
         )
-        return (
-            is_affirmative(extract_content(response)) if response else False
-        )
+        return is_affirmative(extract_content(response)) if response else False
+
     return _impl()
+
 
 def optimize_tool_args_impl(
     tool_name: str,
@@ -383,6 +396,7 @@ def optimize_tool_args_impl(
     vault: Optional[Vault] = None,
 ) -> dict:
     """Optimize tool arguments based on step requirements."""
+
     @show_progress("Optimizing tool call...", "", enabled=not debug)
     def _impl():
         tool = get_tool(tool_name)
@@ -429,8 +443,12 @@ def optimize_tool_args_impl(
                 if not cleaned:
                     return cleaned
                 # Remove trailing sentences wrapped in parentheticals (LLM explanations)
-                if " (" in cleaned and cleaned.endswith(")") and not cleaned.startswith(("'", '"')):
-                    cleaned = cleaned[: cleaned.rfind(" (" )].strip().rstrip(".")
+                if (
+                    " (" in cleaned
+                    and cleaned.endswith(")")
+                    and not cleaned.startswith(("'", '"'))
+                ):
+                    cleaned = cleaned[: cleaned.rfind(" (")].strip().rstrip(".")
                 return cleaned
 
             def _parse_scalar(raw: str):
@@ -457,7 +475,13 @@ def optimize_tool_args_impl(
                     except ValueError:
                         pass
                 # Try to interpret JSON/Python literals
-                if cleaned.startswith(("[", "{", "(", "'", '"')) and cleaned[-1] in ("]", "}", ")", "'", '"'):
+                if cleaned.startswith(("[", "{", "(", "'", '"')) and cleaned[-1] in (
+                    "]",
+                    "}",
+                    ")",
+                    "'",
+                    '"',
+                ):
                     try:
                         return ast.literal_eval(cleaned)
                     except Exception:
@@ -521,7 +545,9 @@ def optimize_tool_args_impl(
             return merged_args
         else:
             return initial_args
+
     return _impl()
+
 
 def generate_answer_impl(
     query: str,
@@ -532,6 +558,7 @@ def generate_answer_impl(
     vault: Optional[Vault] = None,
 ) -> str:
     """Generate the final answer based on collected data."""
+
     @show_progress("Generating answer...", "Answer ready", enabled=not debug)
     def _impl():
         all_results = (
@@ -572,4 +599,5 @@ def generate_answer_impl(
         ]
         fallback.extend([f"- {o[:200]}..." for o in step_outputs[-5:]])
         return "\n".join(fallback)
+
     return _impl()

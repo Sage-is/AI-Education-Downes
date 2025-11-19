@@ -13,12 +13,21 @@ from prompt_toolkit.history import InMemoryHistory
 
 def main():
     # Parse command line arguments for verbose/debug flags
-    verbose = "--verbose" in sys.argv or "-v" in sys.argv or os.getenv("DOWNES_VERBOSE", "").lower() == "true"
-    debug = "--debug" in sys.argv or "-d" in sys.argv or os.getenv("DOWNES_DEBUG", "").lower() == "true"
-    
+    verbose = (
+        "--verbose" in sys.argv
+        or "-v" in sys.argv
+        or os.getenv("DOWNES_VERBOSE", "").lower() == "true"
+    )
+    debug = (
+        "--debug" in sys.argv
+        or "-d" in sys.argv
+        or os.getenv("DOWNES_DEBUG", "").lower() == "true"
+    )
+
     # Show help if requested
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("""
+        print(
+            """
 Usage: downes [OPTIONS]
 
 Options:
@@ -29,14 +38,15 @@ Options:
 Environment Variables:
   DOWNES_VERBOSE   Set to 'true' to enable verbose mode
   DOWNES_DEBUG     Set to 'true' to enable debug mode
-        """)
+        """
+        )
         sys.exit(0)
-    
+
     if debug:
         print("[DEBUG MODE ENABLED] Showing detailed LLM interactions")
     elif verbose:
         print("[VERBOSE MODE ENABLED] Showing LLM timing and token usage")
-    
+
     print_intro()
     agent = Agent(verbose=verbose, debug=debug)
 

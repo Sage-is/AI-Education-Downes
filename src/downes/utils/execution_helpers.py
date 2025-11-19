@@ -10,12 +10,12 @@ def mark_step_done(step: Step, logger: Logger):
     logger.log_step_done(step.description)
 
 
-def check_step_limit(step_count: int, max_steps: int, logger: Logger, context: str = "Global") -> bool:
+def check_step_limit(
+    step_count: int, max_steps: int, logger: Logger, context: str = "Global"
+) -> bool:
     """Check if step limit is reached and log if so."""
     if step_count >= max_steps:
-        logger._log(
-            f"{context} max steps reached — aborting to avoid runaway loop."
-        )
+        logger._log(f"{context} max steps reached — aborting to avoid runaway loop.")
         return True
     return False
 
@@ -34,6 +34,7 @@ def detect_loop(last_actions: list, action_sig: str, logger: Logger) -> bool:
 
 def execute_tool(tool, tool_name: str, inp_args, logger: Logger, debug: bool):
     """Execute a tool with progress indication."""
+
     @show_progress(f"Executing {tool_name}...", "", enabled=not debug)
     def run_tool():
         if debug:
@@ -43,6 +44,7 @@ def execute_tool(tool, tool_name: str, inp_args, logger: Logger, debug: bool):
             result_preview = str(result)[:200] if result else "None"
             logger._log(f"[TOOL RESULT] {result_preview}...")
         return result
+
     return run_tool()
 
 

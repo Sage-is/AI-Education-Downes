@@ -15,11 +15,11 @@ class MapTaxonomyInput(BaseModel):
     )
     taxonomy_type: str = Field(
         default="blooms",
-        description="Taxonomy framework to apply: 'blooms', 'webb', 'solo', 'fink', or 'custom'."
+        description="Taxonomy framework to apply: 'blooms', 'webb', 'solo', 'fink', or 'custom'.",
     )
     custom_taxonomy_description: Optional[str] = Field(
         default=None,
-        description="If taxonomy_type='custom', provide a brief description of the taxonomy framework."
+        description="If taxonomy_type='custom', provide a brief description of the taxonomy framework.",
     )
 
     class Config:
@@ -27,13 +27,13 @@ class MapTaxonomyInput(BaseModel):
             "example": {
                 "learning_objectives": [
                     "Define photosynthesis",
-                    "Analyze the impact of climate change"
+                    "Analyze the impact of climate change",
                 ],
                 "subject": "Grade 9 Science",
-                "taxonomy_type": "blooms"
+                "taxonomy_type": "blooms",
             }
         }
-        
+
     @classmethod
     def normalize_learning_objectives(cls, v):
         """Normalize learning_objectives from various formats."""
@@ -73,7 +73,7 @@ TAXONOMY_DESCRIPTIONS = {
     4. Human Dimension - learning about oneself and others
     5. Caring - developing new feelings, interests, values
     6. Learning How to Learn - becoming a better student
-"""
+""",
 }
 
 
@@ -85,19 +85,21 @@ def map_taxonomy(
     custom_taxonomy_description: Optional[str] = None,
 ) -> str:
     """
-        - Maps each learning objective to the appropriate level in the chosen 
-          educational taxonomy framework using LLM analysis.
-        - Supports Bloom's, Webb's DOK, SOLO, Fink's, or custom taxonomies.
-        - Returns a Markdown formatted taxonomy mapping table.
+    - Maps each learning objective to the appropriate level in the chosen
+      educational taxonomy framework using LLM analysis.
+    - Supports Bloom's, Webb's DOK, SOLO, Fink's, or custom taxonomies.
+    - Returns a Markdown formatted taxonomy mapping table.
     """
     # Normalize inputs
-    learning_objectives = MapTaxonomyInput.normalize_learning_objectives(learning_objectives)
-    
+    learning_objectives = MapTaxonomyInput.normalize_learning_objectives(
+        learning_objectives
+    )
+
     if not learning_objectives:
         return "## Taxonomy Mapping\n\nNo learning objectives provided."
-    
+
     taxonomy_type = taxonomy_type.lower()
-    
+
     # Get taxonomy description
     if taxonomy_type == "custom":
         if not custom_taxonomy_description:
@@ -106,19 +108,20 @@ def map_taxonomy(
         taxonomy_name = "Custom Taxonomy"
     else:
         taxonomy_desc = TAXONOMY_DESCRIPTIONS.get(
-            taxonomy_type, 
-            TAXONOMY_DESCRIPTIONS["blooms"]
+            taxonomy_type, TAXONOMY_DESCRIPTIONS["blooms"]
         )
         taxonomy_name = {
             "blooms": "Bloom's Taxonomy",
             "webb": "Webb's Depth of Knowledge",
             "solo": "SOLO Taxonomy",
-            "fink": "Fink's Taxonomy"
+            "fink": "Fink's Taxonomy",
         }.get(taxonomy_type, "Bloom's Taxonomy")
-    
+
     # Build objectives list for prompt
-    objectives_text = "\n".join([f"{i+1}. {obj}" for i, obj in enumerate(learning_objectives)])
-    
+    objectives_text = "\n".join(
+        [f"{i+1}. {obj}" for i, obj in enumerate(learning_objectives)]
+    )
+
     # Create LLM prompt
     system_prompt = f"""You are an expert educational taxonomist specializing in curriculum design.
 
@@ -153,19 +156,19 @@ Please map each objective to the appropriate taxonomy level."""
 
     try:
         response = call_llm(user_prompt, system_prompt=system_prompt)
-        
-        if response and hasattr(response, 'content'):
+
+        if response and hasattr(response, "content"):
             content = response.content.strip()
-            
+
             # Add header if not present
             if not content.startswith("#"):
                 content = f"## {taxonomy_name} Mapping\n\n{content}"
-            
+
             return content
         else:
             # Fallback if LLM fails
             return _fallback_mapping(learning_objectives, taxonomy_name)
-            
+
     except Exception as e:
         return f"## Error\n\nFailed to map taxonomy: {str(e)}\n\n{_fallback_mapping(learning_objectives, taxonomy_name)}"
 
@@ -178,24 +181,30 @@ def _fallback_mapping(objectives: List[str], taxonomy_name: str) -> str:
         "| Objective | Level |",
         "|-----------|-------|",
     ]
-    
+
     for obj in objectives:
         # Simple heuristic based on common verbs
         obj_lower = obj.lower()
-        if any(v in obj_lower for v in ["remember", "recall", "define", "list", "identify"]):
+        if any(
+            v in obj_lower for v in ["remember", "recall", "define", "list", "identify"]
+        ):
             level = "Remember/Recall"
-        elif any(v in obj_lower for v in ["create", "design", "synthesize", "construct"]):
+        elif any(
+            v in obj_lower for v in ["create", "design", "synthesize", "construct"]
+        ):
             level = "Create/Design"
         elif any(v in obj_lower for v in ["evaluate", "critique", "justify", "assess"]):
             level = "Evaluate"
-        elif any(v in obj_lower for v in ["analyze", "compare", "differentiate", "examine"]):
+        elif any(
+            v in obj_lower for v in ["analyze", "compare", "differentiate", "examine"]
+        ):
             level = "Analyze"
         elif any(v in obj_lower for v in ["apply", "execute", "implement", "use"]):
             level = "Apply"
         else:
             level = "Understand"
-        
+
         obj_display = obj[:70] + "..." if len(obj) > 70 else obj
         lines.append(f"| {obj_display} | **{level}** |")
-    
+
     return "\n".join(lines)

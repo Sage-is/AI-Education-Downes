@@ -39,20 +39,20 @@ def test_multiline_in_fstring():
     description = """This is a tool
 that does multiple things
 and has multiple lines"""
-    
+
     # Simulate how it would be used in an f-string with indentation
     result = f"""Tool information:
     Name: example_tool
     Description: {indent_multiline(description, 17)}
     Status: active"""
-    
+
     expected = """Tool information:
     Name: example_tool
     Description: This is a tool
                  that does multiple things
                  and has multiple lines
     Status: active"""
-    
+
     assert result == expected, f"Expected:\n{expected}\n\nGot:\n{result}"
     print("✓ F-string usage test passed")
 
@@ -86,13 +86,13 @@ def test_complex_tool_description():
     
     This tool creates measurable, actionable objectives for curriculum design.
     Each objective specifies what learners will be able to do."""
-    
+
     result = f"- tool_name:\n{indent_multiline(tool_desc, 4)}"
-    
+
     # Check that the result is formatted correctly
     # First line of description is NOT indented (it's the "first" line)
     # But subsequent lines ARE indented
-    lines = result.split('\n')
+    lines = result.split("\n")
     assert lines[0] == "- tool_name:"
     # The function treats the first content line as unindented
     assert "Generate learning objectives" in lines[1]

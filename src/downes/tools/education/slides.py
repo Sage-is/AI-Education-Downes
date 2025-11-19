@@ -79,7 +79,10 @@ def build_slide_deck(
 
     system_prompt = """You are an instructional designer who writes Reveal.js Markdown slide decks.\nRules:\n- Start with a title slide containing # Title and key metadata as bullet list or subheading.\n- Separate slides using a line that contains only --- and a blank line after.\n- Each content slide must start with ## Slide Title.\n- Include short bullet lists or concise paragraphs only; keep each slide under 60 words.\n- When notes are requested, add a blank line followed by Notes: and a short presenter note.\n- Mirror the provided slide sections and learning objectives succinctly.\n- Do not wrap the response in triple backticks or commentary."""
 
-    objectives_text = "\n".join(learning_objectives or []) or "Emphasize key takeaways and applied practice."
+    objectives_text = (
+        "\n".join(learning_objectives or [])
+        or "Emphasize key takeaways and applied practice."
+    )
     sections_text = " | ".join(sections)
 
     user_prompt = (
@@ -168,15 +171,22 @@ def _fallback_slide_deck(
                     "",
                 ]
             )
-        lines.extend(["---", "",])
+        lines.extend(
+            [
+                "---",
+                "",
+            ]
+        )
 
-    lines.extend([
-        "## Slide Finale: Commit to Action",
-        "",
-        f"- {call_to_action or 'Encourage participants to apply the lesson within 48 hours.'}",
-        "- Offer a way to follow up or share evidence",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Slide Finale: Commit to Action",
+            "",
+            f"- {call_to_action or 'Encourage participants to apply the lesson within 48 hours.'}",
+            "- Offer a way to follow up or share evidence",
+            "",
+        ]
+    )
     if include_notes:
         lines.extend(["Notes:", "Close with gratitude and point to follow-up support."])
 

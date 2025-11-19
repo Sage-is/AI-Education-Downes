@@ -27,7 +27,7 @@ class DesignAssessmentsInput(BaseModel):
         if not result:
             raise ValueError("learning_objectives cannot be empty")
         return result
-    
+
     @field_validator("assessment_types", mode="before")
     @classmethod
     def normalize_assessment_types(cls, v):
@@ -49,8 +49,8 @@ def design_assessments(
     rubric_scale: Optional[List[str]] = None,
 ) -> str:
     """
-        - Designs aligned assessments and draft rubrics for each objective.
-        - Returns assessments in clean Markdown format.
+    - Designs aligned assessments and draft rubrics for each objective.
+    - Returns assessments in clean Markdown format.
     """
     rubric_scale = rubric_scale or ["Exceeds", "Meets", "Approaches", "Below"]
     default_types = ["quiz", "project", "reflection", "presentation"]

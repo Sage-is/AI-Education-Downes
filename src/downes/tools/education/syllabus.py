@@ -31,7 +31,7 @@ class DraftSyllabusInput(BaseModel):
         if not result:
             raise ValueError("learning_objectives cannot be empty")
         return result
-    
+
     @field_validator("prerequisites", mode="before")
     @classmethod
     def normalize_prerequisites(cls, v):
@@ -49,9 +49,9 @@ def draft_syllabus(
     modules_count: int = 6,
 ) -> str:
     """
-        - Produces a structured syllabus outline with modules mapped to learning objectives,
-          each including a description and suggested instructional strategies.
-        - Returns a Markdown formatted syllabus.
+    - Produces a structured syllabus outline with modules mapped to learning objectives,
+      each including a description and suggested instructional strategies.
+    - Returns a Markdown formatted syllabus.
     """
     header = _build_syllabus_header(
         course_title=course_title,

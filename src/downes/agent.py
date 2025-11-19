@@ -28,7 +28,13 @@ from downes.utils.execution_helpers import (
 
 
 class Agent:
-    def __init__(this, max_steps: int = 20, max_steps_per_step: int = 5, verbose: bool = False, debug: bool = False):
+    def __init__(
+        this,
+        max_steps: int = 20,
+        max_steps_per_step: int = 5,
+        verbose: bool = False,
+        debug: bool = False,
+    ):
         this.logger = Logger(verbose=verbose)
         this.max_steps = max_steps  # global safety cap
         this.max_steps_per_step = max_steps_per_step
@@ -37,12 +43,32 @@ class Agent:
         this.debug = debug
 
         this.llm = SimpleNamespace(
-            plan_steps=bind_llm_call(plan_steps_impl, this.logger, this.debug, this.verbose, this.vault),
-            plan_next_actions=bind_llm_call(plan_next_actions_impl, this.logger, this.debug, this.verbose, this.vault),
-            ask_if_done=bind_llm_call(ask_if_done_impl, this.logger, this.debug, this.verbose, this.vault),
-            is_goal_achieved=bind_llm_call(is_goal_achieved_impl, this.logger, this.debug, this.verbose, this.vault),
-            optimize_tool_args=bind_llm_call(optimize_tool_args_impl, this.logger, this.debug, this.verbose, this.vault),
-            generate_answer=bind_llm_call(generate_answer_impl, this.logger, this.debug, this.verbose, this.vault),
+            plan_steps=bind_llm_call(
+                plan_steps_impl, this.logger, this.debug, this.verbose, this.vault
+            ),
+            plan_next_actions=bind_llm_call(
+                plan_next_actions_impl,
+                this.logger,
+                this.debug,
+                this.verbose,
+                this.vault,
+            ),
+            ask_if_done=bind_llm_call(
+                ask_if_done_impl, this.logger, this.debug, this.verbose, this.vault
+            ),
+            is_goal_achieved=bind_llm_call(
+                is_goal_achieved_impl, this.logger, this.debug, this.verbose, this.vault
+            ),
+            optimize_tool_args=bind_llm_call(
+                optimize_tool_args_impl,
+                this.logger,
+                this.debug,
+                this.verbose,
+                this.vault,
+            ),
+            generate_answer=bind_llm_call(
+                generate_answer_impl, this.logger, this.debug, this.verbose, this.vault
+            ),
         )
 
     def run(this, query: str):
@@ -77,7 +103,9 @@ class Agent:
 
         # If no steps were created, the query is likely out of scope.
         if no(steps):
-            return finalize_run(this.llm.generate_answer, query, step_outputs, this.logger, this.vault)
+            return finalize_run(
+                this.llm.generate_answer, query, step_outputs, this.logger, this.vault
+            )
 
         # 2. Loop through steps until all steps are complete or the max steps are reached.
         while any(not the_step.done for the_step in steps):
@@ -141,17 +169,22 @@ class Agent:
                     action_sig = f"{tool_name}:{optimized_args}"
                     if detect_loop(last_actions, action_sig, this.logger):
                         safety_stop = True
-                        safety_stop_reason = safety_stop_reason or "Potential action loop detected — pausing for human assistance."
+                        safety_stop_reason = (
+                            safety_stop_reason
+                            or "Potential action loop detected — pausing for human assistance."
+                        )
                         break
 
                     # Execute the tool.
                     tool_to_run = get_tool(tool_name)
-                    if tool_to_run and confirm_action(
-                        tool_name, str(optimized_args)
-                    ):
+                    if tool_to_run and confirm_action(tool_name, str(optimized_args)):
                         try:
                             result = execute_tool(
-                                tool_to_run, tool_name, optimized_args, this.logger, this.debug
+                                tool_to_run,
+                                tool_name,
+                                optimized_args,
+                                this.logger,
+                                this.debug,
                             )
                             this.logger.log_tool_run(optimized_args, result)
                             this.vault.save_artifact(
@@ -159,9 +192,7 @@ class Agent:
                                 artifact_name=tool_name,
                                 content=result,
                             )
-                            output = format_output(
-                                tool_name, optimized_args, result
-                            )
+                            output = format_output(tool_name, optimized_args, result)
                             step_outputs.append(output)
                             step_step_outputs.append(output)
                         except Exception as e:
@@ -181,7 +212,9 @@ class Agent:
                     break
 
                 # Step-level introspection: Check if the step is complete.
-                if this.llm.ask_if_done(the_step.description, "\n".join(step_step_outputs)):
+                if this.llm.ask_if_done(
+                    the_step.description, "\n".join(step_step_outputs)
+                ):
                     mark_step_done(the_step, this.logger)
                     break
 

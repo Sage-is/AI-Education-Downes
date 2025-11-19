@@ -32,10 +32,10 @@ def generate_learning_objectives(
     duration_weeks: Optional[int] = None,
     outcomes_count: int = 5,
 ) -> str:
-    """ 
-        - Drafts clear, measurable learning objectives using action verbs and
-          observable outcomes tailored to the audience and level.
-        - Returns objectives in clean Markdown format.
+    """
+    - Drafts clear, measurable learning objectives using action verbs and
+      observable outcomes tailored to the audience and level.
+    - Returns objectives in clean Markdown format.
     """
     header = _build_objectives_header(
         topic=topic,

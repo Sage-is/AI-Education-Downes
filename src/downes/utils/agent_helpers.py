@@ -24,11 +24,11 @@ def is_affirmative(text: str) -> bool:
 def normalize_arg_value(value):
     """
     Convert stringified JSON values to Python types.
-    
+
     LLMs often pass JSON-serialized values as strings (e.g., 'null', '[1,2,3]')
     instead of proper Python types. This method normalizes them to prevent
     Pydantic validation errors.
-    
+
     Handles:
     - 'null'/'none' → None (for Optional fields)
     - '[...]' → list (for List fields)
@@ -36,17 +36,17 @@ def normalize_arg_value(value):
     """
     if isinstance(value, str):
         stripped = value.strip()
-        
+
         # Handle JSON null
-        if stripped.lower() in ('null', 'none', ''):
+        if stripped.lower() in ("null", "none", ""):
             return None
-        
+
         # Handle JSON lists (including malformed ones)
         if stripped.startswith("["):
             # Check for malformed/incomplete JSON
             if not stripped.endswith("]") or len(stripped) <= 2:
                 return []  # Return empty list for malformed JSON
-            
+
             try:
                 try:
                     parsed = json.loads(stripped)
@@ -56,7 +56,7 @@ def normalize_arg_value(value):
                     return parsed
             except Exception:
                 return []  # Return empty list if parsing fails
-    
+
     return value
 
 
@@ -68,11 +68,15 @@ def format_output(
     return f"{prefix} {tool_name} with args {args}: {result_or_error}"
 
 
-def bind_llm_call(fn: Callable, logger: Logger, debug: bool, verbose: bool, vault: Vault):
+def bind_llm_call(
+    fn: Callable, logger: Logger, debug: bool, verbose: bool, vault: Vault
+):
     """Bind logger, debug, verbose, and vault context to an LLM helper."""
 
     def _call(*args, **kwargs):
-        return fn(*args, logger=logger, debug=debug, verbose=verbose, vault=vault, **kwargs)
+        return fn(
+            *args, logger=logger, debug=debug, verbose=verbose, vault=vault, **kwargs
+        )
 
     return _call
 

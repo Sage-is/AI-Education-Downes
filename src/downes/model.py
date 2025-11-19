@@ -104,20 +104,22 @@ def call_llm(
             if verbose:
                 start_time = time.time()
                 print(f"\n[LLM] Calling {config['model']}...")
-            
+
             response = chain.invoke({"prompt": prompt})
-            
+
             if verbose:
                 elapsed = time.time() - start_time
                 print(f"[LLM] Response received in {elapsed:.2f}s")
-                if hasattr(response, 'response_metadata'):
+                if hasattr(response, "response_metadata"):
                     metadata = response.response_metadata
-                    if 'token_usage' in metadata:
-                        usage = metadata['token_usage']
-                        print(f"[LLM] Tokens - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
-                              f"Completion: {usage.get('completion_tokens', 'N/A')}, "
-                              f"Total: {usage.get('total_tokens', 'N/A')}")
-            
+                    if "token_usage" in metadata:
+                        usage = metadata["token_usage"]
+                        print(
+                            f"[LLM] Tokens - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                            f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                            f"Total: {usage.get('total_tokens', 'N/A')}"
+                        )
+
             return response
         except APIConnectionError as e:
             if attempt == 2:  # Last attempt

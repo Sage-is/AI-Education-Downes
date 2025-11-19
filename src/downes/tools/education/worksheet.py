@@ -19,7 +19,9 @@ DEFAULT_DIFFERENTIATION = ["All Learners", "Needs Support", "Ready for More"]
 class WorksheetInput(BaseModel):
     topic: str = Field(description="Primary topic or theme for the worksheet.")
     audience: str = Field(description="Intended learners (grade level or profile).")
-    skill_focus: str = Field(description="Core skill, standard, or competency emphasized.")
+    skill_focus: str = Field(
+        description="Core skill, standard, or competency emphasized."
+    )
     estimated_time_minutes: int = Field(
         default=30,
         description="Approximate time for completion.",
@@ -85,7 +87,10 @@ def design_worksheet(
 
     system_prompt = """You create printable worksheets for educators using Markdown.\nStructure requirements:\n1. Title slide style header: # Worksheet: <topic>.\n2. Overview block that lists audience, skill focus, estimated time, and materials as bullets.\n3. One section per provided label with `## <Section>` heading containing: \n   - 1 sentence framing text.\n   - 2-3 numbered tasks or prompts aligned to objectives.\n   - Optional mini-table or checklist when it strengthens clarity.\n4. Include a `### Differentiation` section with one bullet per tier that explains how to adapt a task.\n5. If an answer key is requested, end with `### Answer Key` summarizing expected responses.\n6. Avoid extra commentary, YAML, or fenced code blocks.\n7. Keep tone encouraging and directions student-facing."""
 
-    objectives_block = "\n".join(learning_objectives or []) or "Support learners in demonstrating understanding."
+    objectives_block = (
+        "\n".join(learning_objectives or [])
+        or "Support learners in demonstrating understanding."
+    )
     materials_block = ", ".join(materials or ["Pencil", "Notebook"])
     sections_line = " | ".join(section_labels)
 
@@ -171,7 +176,9 @@ def _fallback_worksheet(
 
     builder.add_heading("Differentiation", level=3)
     for tier in tiers:
-        builder.add_text(f"- **{tier}:** Adjust the tasks with sentence starters, exemplars, or stretch goals.")
+        builder.add_text(
+            f"- **{tier}:** Adjust the tasks with sentence starters, exemplars, or stretch goals."
+        )
     builder.add_blank()
 
     builder.add_heading("Evidence Tracker", level=3)
