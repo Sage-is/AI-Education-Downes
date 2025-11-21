@@ -12,7 +12,7 @@ class SearxSearchInput(BaseModel):
 
 @tool(args_schema=SearxSearchInput)
 def searx_search(query: str, max_results: int = 10) -> str:
-    """Search via SearXNG (HTML fallback) and return Markdown."""
+    """Search via SearXNG (HTML fallback) and return Markdown. Note only ever use one `site:` filter per query."""
     url = os.getenv("SEARXNG_INSTANCE_URL")
     if not url:
         return "Error: SEARXNG_INSTANCE_URL not set."

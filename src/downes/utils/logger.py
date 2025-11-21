@@ -1,11 +1,12 @@
 from downes.utils.ui import UI
+from typing import Optional
 
 
 class Logger:
     """Logger that uses the new interactive UI system."""
 
-    def __init__(this, verbose: bool = False):
-        this.ui = UI()
+    def __init__(this, verbose: bool = False, ui: Optional[UI] = None):
+        this.ui = ui if ui else UI()
         this.log = []
         this.verbose = verbose
 

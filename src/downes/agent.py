@@ -1,8 +1,7 @@
-
-
 from downes.tools import get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
+from typing import Optional
 from downes.utils.agent_helpers import (
     normalize_arg_value,
     format_output,
@@ -34,8 +33,9 @@ class Agent:
         max_steps_per_step: int = 5,
         verbose: bool = False,
         debug: bool = False,
+        logger: Logger = None,
     ):
-        this.logger = Logger(verbose=verbose)
+        this.logger = logger if logger else Logger(verbose=verbose)
         this.max_steps = max_steps  # global safety cap
         this.max_steps_per_step = max_steps_per_step
         this.vault = Vault()
@@ -181,12 +181,12 @@ class Agent:
                     # Detect and prevent repetitive action loops.
                     action_sig = f"{tool_name}:{optimized_args}"
                     if detect_loop(last_actions, action_sig, this.logger):
-                        safety_stop = True
-                        safety_stop_reason = (
-                            safety_stop_reason
-                            or "Potential action loop detected — pausing for human assistance."
-                        )
-                        break
+                        # Instead of stopping, warn the LLM to encourage replanning/adjusting
+                        warning = f"SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}. This is a loop. You MUST change your approach or arguments."
+                        step_step_outputs.append(warning)
+                        step_count += 1
+                        per_step_steps += 1
+                        continue
 
                     # Execute the tool.
                     tool_to_run = get_tool(tool_name)
@@ -224,17 +224,18 @@ class Agent:
                 if safety_stop:
                     break
 
-                # Step-level introspection: Check if the step is complete.
-                if this.llm.ask_if_done(
-                    the_step.description, "\n".join(step_step_outputs)
-                ):
-                    mark_step_done(the_step, this.logger)
-                    break
+                # Step-level introspection removed to save tokens.
+                # We rely on plan_next_actions to return no tool calls when done.
+                # if this.llm.ask_if_done(
+                #     the_step.description, "\n".join(step_step_outputs)
+                # ):
+                #     mark_step_done(the_step, this.logger)
+                #     break
 
-            # Global introspection: Check if the overall goal is achieved.
-            if the_step.done and this.llm.is_goal_achieved(query, step_outputs):
-                this.logger._log("Main goal achieved. Finalizing answer.")
-                break
+            # Global introspection removed. We trust the plan and execute all steps.
+            # if the_step.done and this.llm.is_goal_achieved(query, step_outputs):
+            #     this.logger._log("Main goal achieved. Finalizing answer.")
+            #     break
 
             if safety_stop:
                 break

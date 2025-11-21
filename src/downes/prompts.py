@@ -146,6 +146,7 @@ argument_name: value
 another_argument: another value
 list_argument: [item1, item2, item3]
 ```
+Remember the Current date is: {current_date}
 
 Only include parameters that exist in the tool's schema."""
 
