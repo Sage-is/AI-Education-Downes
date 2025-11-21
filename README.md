@@ -1,6 +1,6 @@
 # Downes 🤖
 
-## Version v0.0.1
+## Version v0.1.0
 
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995. 
 
