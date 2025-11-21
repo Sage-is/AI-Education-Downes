@@ -1,116 +1,62 @@
 import os
-from typing import List, Optional
 import requests
+from bs4 import BeautifulSoup
 from langchain.tools import tool
 from pydantic import BaseModel, Field
-from datetime import datetime
-
-from downes.tools.search.models import SearchResult
 
 
 class SearxSearchInput(BaseModel):
-    query: str = Field(description="Search query (education/topic keywords).")
-    max_results: int = Field(
-        default=10, description="Maximum number of results to return."
-    )
-    categories: Optional[List[str]] = Field(
-        default=None,
-        description="Optional SearXNG categories (e.g., ['science','files','it']).",
-    )
-    language: str = Field(
-        default="en", description="Language code for results (RFC 5646)."
-    )
-    instance_url: Optional[str] = Field(
-        default=None,
-        description="Override SEARXNG_INSTANCE_URL env var with a specific instance base URL.",
-    )
-    safe: bool = Field(
-        default=True, description="Enable SearXNG safe search filtering if supported."
-    )
-    education_bias: bool = Field(
-        default=True,
-        description="If True, expands query with curriculum / pedagogy modifiers.",
-    )
+    query: str = Field(description="Search query.")
+    max_results: int = Field(default=10, description="Max results.")
 
 
 @tool(args_schema=SearxSearchInput)
-def searx_search(
-    query: str,
-    max_results: int = 10,
-    categories: Optional[List[str]] = None,
-    language: str = "en",
-    instance_url: Optional[str] = None,
-    safe: bool = True,
-    education_bias: bool = True,
-) -> List[SearchResult]:
-    """
-    Perform a meta-search via a SearXNG instance, returning normalized search results.
+def searx_search(query: str, max_results: int = 10) -> str:
+    """Search via SearXNG (HTML fallback) and return Markdown. Note only ever use one `site:` filter per query."""
+    url = os.getenv("SEARXNG_INSTANCE_URL")
+    if not url:
+        return "Error: SEARXNG_INSTANCE_URL not set."
 
-    Features:
-    - Education bias adds terms like curriculum, syllabus, "learning objectives", rubric, OER
-    - Uses JSON API output from SearXNG
-    - Respects categories if provided
-
-    Configuration:
-    - Set SEARXNG_INSTANCE_URL env var to e.g. https://searx.tiekoetter.com
-    - Tool parameter instance_url overrides the environment variable
-    """
-    base = instance_url or os.getenv("SEARXNG_INSTANCE_URL")
-    if not base:
-        # No instance configured; fail gracefully with empty list.
-        return []
-    base = base.rstrip("/")
-
-    expanded_query = query
-    if education_bias:
-        edu_terms = [
-            'curriculum',
-            'syllabus',
-            '"learning objectives"',
-            '"lesson plan"',
-            'rubric',
-            'OER',
-            '"open educational resources"',
-        ]
-        expanded_query = f"{query} (" + " OR ".join(edu_terms) + ")"
-
-    params = {
-        "q": expanded_query,
-        "format": "json",
-        "language": language,
-        "safesearch": 1 if safe else 0,
-        "categories": ",".join(categories) if categories else None,
+    # Use HTML endpoint because JSON API (used by SearxSearchWrapper) returns 403
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    # Remove None values
-    params = {k: v for k, v in params.items() if v is not None}
+    params = {
+        "q": query,
+        "categories": "general",
+        "language": "auto",
+        "safesearch": "0",
+        "format": "html",
+    }
 
     try:
-        resp = requests.get(f"{base}/search", params=params, timeout=15)
-    except Exception:
-        return []
-    if resp.status_code != 200:
-        return []
-    try:
-        data = resp.json()
-    except Exception:
-        return []
+        resp = requests.get(
+            f"{url.rstrip('/')}/search", params=params, headers=headers, timeout=10
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        return f"Search failed: {e}"
 
-    results: List[SearchResult] = []
-    for r in data.get("results", [])[: max_results * 2]:
-        # Basic filtering for missing fields
-        title = r.get("title") or "Untitled"
-        url = r.get("url") or r.get("link") or ""
-        if not url:
+    soup = BeautifulSoup(resp.text, "html.parser")
+    results = []
+
+    # Parse standard SearXNG HTML results
+    for res in soup.select(".result")[:max_results]:
+        link_tag = res.select_one("h3 a, h4 a")
+        if not link_tag:
             continue
-        # Attempt to parse a date-like field if present
-        published_date = None
-        for key in ["publishedDate", "published", "date"]:
-            if key in r and isinstance(r[key], str):
-                try:
-                    published_date = datetime.fromisoformat(r[key].replace("Z", "+00:00"))
-                except Exception:
-                    published_date = None
-        results.append(SearchResult(title=title, url=url, published_date=published_date))
-        if len(results) >= max_results:
-            break
-    return results
+
+        title = link_tag.get_text(strip=True)
+        href = link_tag.get("href")
+        snippet_tag = res.select_one(".content")
+        snippet = (
+            snippet_tag.get_text(strip=True).replace("\n", " ") if snippet_tag else ""
+        )
+
+        results.append(f"- [{title}]({href}) - {snippet}")
+
+    if not results:
+        return "_No results found._"
+
+    return f"## Search: {query}\n" + "\n".join(results)
+

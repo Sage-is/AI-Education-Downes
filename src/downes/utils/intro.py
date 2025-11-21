@@ -20,7 +20,7 @@ def print_intro():
     print(f"{LIGHT_BLUE}{'═' * box_width}{RESET}")
     print()
 
-    # ASCII art 
+    # ASCII art
     downes_art = f"""{BOLD}{LIGHT_BLUE}
 
 
@@ -36,6 +36,8 @@ def print_intro():
 ╟┤     ██████████  ░░██████   ░░████░████    ████ █████░░██████  ██████     ├╢
 ╟┤    ░░░░░░░░░░    ░░░░░░     ░░░░ ░░░░    ░░░░ ░░░░░  ░░░░░░  ░░░░░░      ├╢
 ╟┤                                                                          ├╢
+╟┤            ** Your AI assistant for curriculum development **            ├╢
+╟┤                                                                          ├╢
 ╟┼┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┬┼╢
 ╚╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╝
 
@@ -44,6 +46,6 @@ def print_intro():
 
     print(downes_art)
     print()
-    print("Your AI assistant for education analysis.")
+    print(".")
     print("Ask me any questions. Type 'exit' or 'quit' to end.")
     print()

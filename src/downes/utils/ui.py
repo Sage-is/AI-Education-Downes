@@ -70,12 +70,22 @@ class Spinner:
         this.message = message
 
 
-def show_progress(message: str, success_message: str = ""):
-    """Decorator to show progress spinner while a function executes."""
+def show_progress(message: str, success_message: str = "", enabled: bool = True):
+    """Decorator to show progress spinner while a function executes.
+
+    Args:
+        message: The message to display while running
+        success_message: Optional message to display on success
+        enabled: Whether to actually show the spinner (for debug/verbose modes)
+    """
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if not enabled:
+                # Skip spinner entirely in debug mode
+                return func(*args, **kwargs)
+
             spinner = Spinner(message, color=Colors.CYAN)
             spinner.start()
             try:
@@ -128,26 +138,26 @@ class UI:
         """Print the user's query in the same style as   ASCII art."""
         print(f"\n{Colors.BOLD}{Colors.LIGHT_BLUE}You: {query}{Colors.ENDC}\n")
 
-    def print_task_list(this, tasks):
-        """Print a clean list of planned tasks."""
-        if not tasks:
+    def print_step_list(this, steps):
+        """Print a clean list of planned steps."""
+        if not steps:
             return
-        this.print_header("Planned Tasks")
-        for i, task in enumerate(tasks):
+        this.print_header("Planned Steps")
+        for i, step in enumerate(steps):
             status = "+"
             color = Colors.DIM
-            desc = task.get("description", task)
+            desc = step.get("description", step)
             print(f"{Colors.BLUE}│{Colors.ENDC} {color}{status}{Colors.ENDC} {desc}")
         print(f"{Colors.BLUE}╰{'─' * 50}{Colors.ENDC}\n")
 
-    def print_task_start(this, task_desc: str):
-        """Print when starting a task."""
-        print(f"\n{Colors.BOLD}{Colors.CYAN}▶ Task:{Colors.ENDC} {task_desc}")
+    def print_step_start(this, step_desc: str):
+        """Print when starting a step."""
+        print(f"\n{Colors.BOLD}{Colors.CYAN}▶ Step:{Colors.ENDC} {step_desc}")
 
-    def print_task_done(this, task_desc: str):
-        """Print when a task is completed."""
+    def print_step_done(this, step_desc: str):
+        """Print when a step is completed."""
         print(
-            f"{Colors.GREEN}  ✓ Completed{Colors.ENDC} {Colors.DIM}│ {task_desc}{Colors.ENDC}"
+            f"{Colors.GREEN}  ✓ Completed{Colors.ENDC} {Colors.DIM}│ {step_desc}{Colors.ENDC}"
         )
 
     def print_tool_params(this, params: str):
@@ -228,3 +238,48 @@ class UI:
     def print_warning(this, message: str):
         """Print a warning message."""
         print(f"{Colors.YELLOW}⚠ Warning:{Colors.ENDC} {message}")
+
+    def prompt_for_input(this, prompt_text: str, default: str = "") -> str:
+        """Prompt user for input with optional default value."""
+        if default:
+            prompt_text = f"{prompt_text} [{default}]: "
+        else:
+            prompt_text = f"{prompt_text}: "
+
+        try:
+            response = input(f"{Colors.CYAN}{prompt_text}{Colors.ENDC}").strip()
+            return response if response else default
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return default
+
+    def confirm(this, question: str, default: bool = True) -> bool:
+        """Ask a yes/no question and return boolean response."""
+        default_str = "Y/n" if default else "y/N"
+        response = this.prompt_for_input(
+            f"{question} ({default_str})", "y" if default else "n"
+        )
+        return response.lower() in ["y", "yes", "true", "1"] if response else default
+
+    def print_prompt_preview(
+        this, system_prompt: str, user_prompt: str, operation_name: str
+    ):
+        """Display prompt preview in debug mode."""
+        width = 80
+
+        # Header
+        print(f"\n{Colors.BOLD}{Colors.MAGENTA}{'─' * width}{Colors.ENDC}")
+        print(
+            f"{Colors.BOLD}{Colors.MAGENTA}📝 PROMPT PREVIEW: {operation_name}{Colors.ENDC}"
+        )
+        print(f"{Colors.BOLD}{Colors.MAGENTA}{'─' * width}{Colors.ENDC}\n")
+
+        # System Prompt
+        print(f"{Colors.BOLD}{Colors.YELLOW}[SYSTEM PROMPT]{Colors.ENDC}")
+        print(f"{Colors.DIM}{system_prompt}{Colors.ENDC}\n")
+
+        # User Prompt
+        print(f"{Colors.BOLD}{Colors.CYAN}[USER PROMPT]{Colors.ENDC}")
+        print(f"{user_prompt}\n")
+
+        print(f"{Colors.BOLD}{Colors.MAGENTA}{'─' * width}{Colors.ENDC}\n")

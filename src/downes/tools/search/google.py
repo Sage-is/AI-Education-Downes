@@ -37,14 +37,10 @@ def search_google_news(
     extra_terms: Optional[List[str]] = None,
 ) -> list[SearchResult]:
     """
-    Searches Google News RSS for articles/resources matching a query.
-
-    Education-focused behavior:
-    - When education_bias=True (default), the tool augments the query with
-      curriculum-related terms (e.g., "curriculum", "syllabus", "learning objectives",
-      "lesson plan", "assessment rubric", "pacing guide", "Bloom's taxonomy").
-    - You can also constrain results with site filters like 'site:.edu' or 'site:oercommons.org'.
-    - Use extra_terms to inject additional phrases.
+    - Searches Google News RSS for articles/resources matching a query.
+        - When education_bias=True (default), the tool augments the query with curriculum-related terms
+        - You can also constrain results with site filters like 'site:.edu' or 'site:oercommons.org'.
+        - Use extra_terms to inject additional phrases.
     """
     # Build enriched query for education use cases
     terms = []
@@ -64,7 +60,12 @@ def search_google_news(
         terms.extend(extra_terms)
 
     # Default site filters suitable for education discovery
-    default_sites = ['site:.edu', 'site:oercommons.org', 'site:openstax.org', 'site:khanacademy.org']
+    default_sites = [
+        "site:.edu",
+        "site:oercommons.org",
+        "site:openstax.org",
+        "site:khanacademy.org",
+    ]
     sites = site_filters if site_filters is not None else default_sites
 
     # Build final query string

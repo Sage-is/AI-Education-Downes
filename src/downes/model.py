@@ -2,8 +2,7 @@ import os
 import time
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from pydantic import BaseModel
-from typing import Type, List, Optional
+from typing import List, Optional
 from langchain_core.tools import BaseTool
 from langchain_core.messages import AIMessage
 from openai import APIConnectionError
@@ -59,8 +58,8 @@ def call_llm(
     prompt: str,
     model: Optional[str] = None,
     system_prompt: Optional[str] = None,
-    output_schema: Optional[Type[BaseModel]] = None,
     tools: Optional[List[BaseTool]] = None,
+    verbose: bool = False,
 ) -> AIMessage:
     """
     Call the LLM with the given prompt.
@@ -72,11 +71,10 @@ def call_llm(
         prompt: The user prompt
         model: Model name (overrides LLM_MODEL env var)
         system_prompt: System prompt (default: DEFAULT_SYSTEM_PROMPT)
-        output_schema: Pydantic model for structured output
         tools: List of tools to bind to the LLM
 
     Returns:
-        AIMessage with the response
+        AIMessage with the response (text content or tool calls)
     """
     final_system_prompt = system_prompt if system_prompt else DEFAULT_SYSTEM_PROMPT
     # Escape braces in system prompt to avoid ChatPromptTemplate variable parsing
@@ -95,20 +93,37 @@ def call_llm(
     # Initialize the LLM with configuration
     llm = ChatOpenAI(**config)
 
-    # Add structured output or tools to the LLM.
-    runnable = llm
-    if output_schema:
-        runnable = llm.with_structured_output(output_schema, method="function_calling")
-    elif tools:
-        runnable = llm.bind_tools(tools)
+    # Bind tools if provided
+    runnable = llm.bind_tools(tools) if tools else llm
 
     chain = prompt_template | runnable
 
     # Retry logic for transient connection errors
     for attempt in range(3):
         try:
-            return chain.invoke({"prompt": prompt})
+            if verbose:
+                start_time = time.time()
+                print(f"\n[LLM] Calling {config['model']}...")
+
+            response = chain.invoke({"prompt": prompt})
+
+            if verbose:
+                elapsed = time.time() - start_time
+                print(f"[LLM] Response received in {elapsed:.2f}s")
+                if hasattr(response, "response_metadata"):
+                    metadata = response.response_metadata
+                    if "token_usage" in metadata:
+                        usage = metadata["token_usage"]
+                        print(
+                            f"[LLM] Tokens - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                            f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                            f"Total: {usage.get('total_tokens', 'N/A')}"
+                        )
+
+            return response
         except APIConnectionError as e:
             if attempt == 2:  # Last attempt
                 raise
+            if verbose:
+                print(f"[LLM] Connection error (attempt {attempt + 1}/3), retrying...")
             time.sleep(0.5 * (2**attempt))  # 0.5s, 1s backoff
