@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Downes Agent</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f0f2f5; color: #333; }
         h1 { text-align: center; color: #1a237e; }
@@ -14,7 +15,21 @@
         .step-start { color: #00695c; font-weight: 600; border-left: 4px solid #00695c; background: #f0f4c3; }
         .step-done { color: #2e7d32; margin-left: 20px; font-size: 0.9em; }
         .tool-run { color: #455a64; font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace; font-size: 0.85em; margin-left: 20px; background: #eceff1; padding: 8px; border-radius: 4px; border: 1px solid #cfd8dc; }
-        .answer { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 20px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; font-size: 1.1em; color: #1b5e20; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Answer Styles */
+        .answer { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 0; border-radius: 8px; margin-top: 20px; color: #1b5e20; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+        .answer-toolbar { background: #c8e6c9; padding: 8px 12px; display: flex; justify-content: flex-end; gap: 8px; border-bottom: 1px solid #a5d6a7; }
+        .answer-btn { background: white; border: 1px solid #81c784; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .answer-btn:hover { background: #f1f8e9; }
+        .answer-content { padding: 20px; line-height: 1.6; }
+        .answer-content h1, .answer-content h2, .answer-content h3 { margin-top: 0; color: #1b5e20; }
+        .answer-content code { background: #c8e6c9; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .answer-content pre { background: #1b5e20; color: #e8f5e9; padding: 12px; border-radius: 6px; overflow-x: auto; }
+        .answer-content pre code { background: transparent; color: inherit; padding: 0; }
+        .answer-content ul, .answer-content ol { padding-left: 20px; }
+        .answer-content blockquote { border-left: 4px solid #81c784; margin: 0; padding-left: 16px; color: #558b2f; font-style: italic; }
+        .answer-raw { padding: 20px; white-space: pre-wrap; font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace; display: none; background: #f9fbe7; color: #33691e; font-size: 0.9em; }
+
         .error { color: #c62828; background: #ffebee; border: 1px solid #ffcdd2; }
         .input-area { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; }
         input[type="text"] { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; transition: border-color 0.2s; }
@@ -28,6 +43,21 @@
         #messages::-webkit-scrollbar-track { background: #f1f1f1; }
         #messages::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 4px; }
         #messages::-webkit-scrollbar-thumb:hover { background: #9e9e9e; }
+
+        /* Spinner */
+        .spinner-container { display: none; justify-content: center; padding: 10px; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -37,6 +67,9 @@
             <div class="message" style="color: #666; text-align: center; font-style: italic;">
                 Ready to help with your education research tasks.
             </div>
+        </div>
+        <div class="spinner-container" id="spinner-container">
+            <div class="spinner"></div>
         </div>
         <div class="input-area">
             <input type="text" id="query-input" placeholder="e.g., Create a lesson plan for Grade 9 Biology on Mitosis..." />
@@ -50,14 +83,23 @@
         const messagesDiv = document.getElementById('messages');
         const queryInput = document.getElementById('query-input');
         const sendBtn = document.getElementById('send-btn');
+        const spinnerContainer = document.getElementById('spinner-container');
+
+        function setLoading(isLoading) {
+            sendBtn.disabled = isLoading;
+            queryInput.disabled = isLoading;
+            spinnerContainer.style.display = isLoading ? 'flex' : 'none';
+            if (!isLoading) {
+                queryInput.focus();
+            }
+        }
 
         sendBtn.addEventListener('click', () => {
             const query = queryInput.value.trim();
             if (query) {
                 socket.emit('run_agent', query);
                 queryInput.value = '';
-                sendBtn.disabled = true;
-                queryInput.disabled = true;
+                setLoading(true);
                 // Clear previous messages or keep them? Let's keep them but maybe add a separator.
                 // messagesDiv.innerHTML = ''; 
                 addMessage('user-query', `You: ${query}`);
@@ -82,18 +124,13 @@
                 }
                 addMessage('tool-run', `⚡ Result: ${result}`);
             } else if (type === 'answer') {
-                addMessage('answer', data.answer);
-                sendBtn.disabled = false;
-                queryInput.disabled = false;
-                queryInput.focus();
+                addAnswer(data.answer);
+                setLoading(false);
             } else if (type === 'error') {
                 addMessage('error', `Error: ${data.message}`);
-                sendBtn.disabled = false;
-                queryInput.disabled = false;
+                setLoading(false);
             } else if (type === 'done') {
-                sendBtn.disabled = false;
-                queryInput.disabled = false;
-                queryInput.focus();
+                setLoading(false);
             }
         });
 
@@ -103,6 +140,99 @@
             div.textContent = text;
             messagesDiv.appendChild(div);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addAnswer(markdownText) {
+            if (!markdownText) return;
+
+            const div = document.createElement('div');
+            div.className = 'message answer';
+
+            // Toolbar
+            const toolbar = document.createElement('div');
+            toolbar.className = 'answer-toolbar';
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'answer-btn';
+            toggleBtn.textContent = 'Show Markdown';
+            
+            const copyHtmlBtn = document.createElement('button');
+            copyHtmlBtn.className = 'answer-btn';
+            copyHtmlBtn.textContent = 'Copy Rendered';
+
+            const copyMdBtn = document.createElement('button');
+            copyMdBtn.className = 'answer-btn';
+            copyMdBtn.textContent = 'Copy Markdown';
+
+            toolbar.appendChild(toggleBtn);
+            toolbar.appendChild(copyHtmlBtn);
+            toolbar.appendChild(copyMdBtn);
+
+            // Content Containers
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'answer-content';
+            
+            // Safe markdown parsing
+            try {
+                if (typeof marked !== 'undefined' && marked.parse) {
+                    contentDiv.innerHTML = marked.parse(markdownText);
+                } else {
+                    // Fallback if marked is not loaded
+                    contentDiv.textContent = markdownText;
+                    console.warn('Marked library not found, displaying raw text');
+                }
+            } catch (e) {
+                console.error('Error parsing markdown:', e);
+                contentDiv.textContent = markdownText;
+            }
+
+            const rawDiv = document.createElement('div');
+            rawDiv.className = 'answer-raw';
+            rawDiv.textContent = markdownText;
+
+            div.appendChild(toolbar);
+            div.appendChild(contentDiv);
+            div.appendChild(rawDiv);
+
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Event Listeners
+            let isMarkdown = false;
+            toggleBtn.onclick = () => {
+                isMarkdown = !isMarkdown;
+                if (isMarkdown) {
+                    contentDiv.style.display = 'none';
+                    rawDiv.style.display = 'block';
+                    toggleBtn.textContent = 'Show Rendered';
+                } else {
+                    contentDiv.style.display = 'block';
+                    rawDiv.style.display = 'none';
+                    toggleBtn.textContent = 'Show Markdown';
+                }
+            };
+
+            copyMdBtn.onclick = () => {
+                navigator.clipboard.writeText(markdownText).then(() => {
+                    const originalText = copyMdBtn.textContent;
+                    copyMdBtn.textContent = 'Copied!';
+                    setTimeout(() => copyMdBtn.textContent = originalText, 2000);
+                });
+            };
+
+            copyHtmlBtn.onclick = () => {
+                // Create a temporary element to copy rich text
+                const range = document.createRange();
+                range.selectNode(contentDiv);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+
+                const originalText = copyHtmlBtn.textContent;
+                copyHtmlBtn.textContent = 'Copied!';
+                setTimeout(() => copyHtmlBtn.textContent = originalText, 2000);
+            };
         }
     </script>
 </body>
