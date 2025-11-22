@@ -118,11 +118,29 @@
             } else if (type === 'step_done') {
                 addMessage('step-done', `✓ Completed: ${data.description}`);
             } else if (type === 'tool_run') {
-                let result = data.result;
-                if (result.length > 300) {
-                    result = result.substring(0, 300) + '...';
+                const result = data.result;
+                const div = document.createElement('div');
+                div.className = 'message tool-run';
+                
+                if (result.length > 150) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = `⚡ Result: ${result.substring(0, 100)}...`;
+                    summary.style.cursor = 'pointer';
+                    
+                    const content = document.createElement('div');
+                    content.textContent = result;
+                    content.style.marginTop = '8px';
+                    content.style.whiteSpace = 'pre-wrap';
+                    
+                    details.appendChild(summary);
+                    details.appendChild(content);
+                    div.appendChild(details);
+                } else {
+                    div.textContent = `⚡ Result: ${result}`;
                 }
-                addMessage('tool-run', `⚡ Result: ${result}`);
+                messagesDiv.appendChild(div);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             } else if (type === 'answer') {
                 addAnswer(data.answer);
                 setLoading(false);
