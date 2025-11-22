@@ -45,7 +45,10 @@ def print_intro():
 {RESET}"""
 
     print(downes_art)
+    print("Here are some examples of what I can do:")
+    print("  - Create a lesson plan for Introduction to Python")
+    print("  - Search for resources on Machine Learning ethics")
+    print("  - Generate a quiz on Music Theory for Grade 9, Royal Conservatory")
     print()
-    print(".")
-    print("Ask me any questions. Type 'exit' or 'quit' to end.")
+    print("Type 'exit' or 'quit' to end.")
     print()

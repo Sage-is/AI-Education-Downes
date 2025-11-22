@@ -34,6 +34,10 @@ Plan how to run smaller and larger models side-by-side for different workflow st
 - [ ] Tag each tool/agent flow with an appropriate profile (e.g., planning → premium, drafting → fast) and expose CLI flags for overrides.
 - [ ] Add tests plus README/env.example docs covering multi-profile setup and fallback behavior.
 
+### 🛠️ Tooling & UX
+
+- [ ] Evaluate how to auto-generate the "what's possible" message in the intro based on available tools (dynamic tool discovery).
+
 ---
 
 ## Previous Weeks
