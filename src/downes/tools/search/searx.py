@@ -50,7 +50,7 @@ def searx_search(query: str, max_results: int = 10) -> str:
         href = link_tag.get("href")
         snippet_tag = res.select_one(".content")
         snippet = (
-            snippet_tag.get_text(strip=True).replace("\n", " ") if snippet_tag else ""
+            snippet_tag.get_text(separator=" ", strip=True).replace("\n", " ") if snippet_tag else ""
         )
 
         results.append(f"- [{title}]({href}) - {snippet}")
