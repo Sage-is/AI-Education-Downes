@@ -120,17 +120,8 @@ class Agent:
                 this.llm.generate_answer, query, step_outputs, this.logger, this.vault
             )
 
-        # 2. Loop through steps until all steps are complete or the max steps are reached.
-        while any(not the_step.done for the_step in steps):
-            limit_hit, safety_stop_reason = guard_step_limit(
-                step_count, this.max_steps, this.logger, safety_stop_reason
-            )
-            if limit_hit:
-                safety_stop = True
-                break
-
-            # Select the next incomplete step.
-            the_step = next(the_step for the_step in steps if not the_step.done)
+        # 2. Loop through steps sequentially.
+        for the_step in steps:
             this.logger.log_step_start(the_step.description)
 
             # Define per-step state.
