@@ -24,8 +24,16 @@ io.on('connection', (socket) => {
             env: process.env
         });
 
+        let buffer = '';
+
         pythonProcess.stdout.on('data', (data) => {
-            const lines = data.toString().split('\n');
+            buffer += data.toString();
+            const lines = buffer.split('\n');
+            
+            // The last element is either empty (if data ended with \n) 
+            // or an incomplete line. We keep it in the buffer.
+            buffer = lines.pop();
+
             for (const line of lines) {
                 if (line.trim()) {
                     try {
@@ -46,6 +54,14 @@ io.on('connection', (socket) => {
         });
 
         pythonProcess.on('close', (code) => {
+            if (buffer.trim()) {
+                try {
+                    const json = JSON.parse(buffer);
+                    socket.emit('agent_event', json);
+                } catch (e) {
+                    socket.emit('agent_event', { type: 'raw', data: buffer });
+                }
+            }
             console.log(`child process exited with code ${code}`);
             socket.emit('agent_event', { type: 'done', data: { code } });
         });
