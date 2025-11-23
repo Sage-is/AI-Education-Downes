@@ -13,9 +13,6 @@ from downes.utils import no
 from downes.llm_interaction import (
     plan_steps_impl,
     plan_next_actions_impl,
-    ask_if_done_impl,
-    is_goal_achieved_impl,
-    optimize_tool_args_impl,
     generate_answer_impl,
 )
 from downes.utils.execution_helpers import (
@@ -59,29 +56,12 @@ class Agent:
             this.verbose,
             this.vault,
         )
-        this.llm.ask_if_done = bind_llm_call(
-            ask_if_done_impl, 
-            this.logger, 
-            this.debug, 
-            this.verbose, 
-            this.vault
-        )
-        this.llm.is_goal_achieved = bind_llm_call(
-            is_goal_achieved_impl, 
-            this.logger, 
-            this.debug, 
-            this.verbose, 
-            this.vault
-        )
-        this.llm.optimize_tool_args = bind_llm_call(
-            optimize_tool_args_impl,
-            this.logger,
-            this.debug,
-            this.verbose,
-            this.vault,
-        )
         this.llm.generate_answer = bind_llm_call(
-            generate_answer_impl, this.logger, this.debug, this.verbose, this.vault
+            generate_answer_impl, 
+            this.logger, 
+            this.debug, 
+            this.verbose, 
+            this.vault
         )
 
     def run(this, query: str):
@@ -160,14 +140,9 @@ class Agent:
                     initial_args = tool_call["args"]
 
                     # Basic arg normalization: convert stringified lists to real lists
-                    initial_args = {
+                    optimized_args = {
                         k: normalize_arg_value(v) for k, v in initial_args.items()
                     }
-
-                    # Refine tool arguments for better performance.
-                    optimized_args = this.llm.optimize_tool_args(
-                        tool_name, initial_args, the_step.description
-                    )
 
                     # Detect and prevent repetitive action loops.
                     action_sig = f"{tool_name}:{optimized_args}"

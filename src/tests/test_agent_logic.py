@@ -34,10 +34,6 @@ class TestAgentLogic(unittest.TestCase):
         # Mock optimize_tool_args
         agent.llm.optimize_tool_args = MagicMock(return_value={"arg": "val"})
         
-        # Mock ask_if_done and is_goal_achieved to ensure they are NOT called
-        agent.llm.ask_if_done = MagicMock()
-        agent.llm.is_goal_achieved = MagicMock()
-        
         # Mock generate_answer
         agent.llm.generate_answer = MagicMock(return_value="Final Answer")
         
