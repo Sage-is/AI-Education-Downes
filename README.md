@@ -2,6 +2,8 @@
 
 ## Version v0.1.0
 
+![Downes Logo](./web/public/downes.png)
+
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995. 
 
 In that spirit, Downes is an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
