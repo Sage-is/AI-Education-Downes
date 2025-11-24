@@ -68,14 +68,17 @@ def format_output(
     return f"{prefix} {tool_name} with args {args}: {result_or_error}"
 
 
-def bind_llm_call(
-    fn: Callable, logger: Logger, debug: bool, verbose: bool, vault: Vault
-):
-    """Bind logger, debug, verbose, and vault context to an LLM helper."""
+def bind_llm_call(fn: Callable, agent):
+    """Bind agent context (logger, debug, verbose, vault) to an LLM helper."""
 
     def _call(*args, **kwargs):
         return fn(
-            *args, logger=logger, debug=debug, verbose=verbose, vault=vault, **kwargs
+            *args,
+            logger=agent.logger,
+            debug=agent.debug,
+            verbose=agent.verbose,
+            vault=agent.vault,
+            **kwargs,
         )
 
     return _call

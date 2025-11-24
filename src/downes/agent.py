@@ -42,27 +42,9 @@ class Agent:
         class LLM: pass
 
         this.llm = LLM()
-        this.llm.plan_steps = bind_llm_call(
-            plan_steps_impl, 
-            this.logger, 
-            this.debug, 
-            this.verbose, 
-            this.vault
-        )
-        this.llm.plan_next_actions = bind_llm_call(
-            plan_next_actions_impl,
-            this.logger,
-            this.debug,
-            this.verbose,
-            this.vault,
-        )
-        this.llm.generate_answer = bind_llm_call(
-            generate_answer_impl, 
-            this.logger, 
-            this.debug, 
-            this.verbose, 
-            this.vault
-        )
+        this.llm.plan_steps = bind_llm_call(plan_steps_impl, this)
+        this.llm.plan_next_actions = bind_llm_call(plan_next_actions_impl, this)
+        this.llm.generate_answer = bind_llm_call(generate_answer_impl, this)
 
     def run(this, query: str):
         """
