@@ -6,7 +6,7 @@
 
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995. 
 
-In that spirit, Downes is an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
+In this spirit, Downes is an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
 
 Built specifically for curriculum development, Downes transforms complex educational requests into transparent, step-by-step curriculum plans—emulating how an expert instructional designer works, but powered by advanced AI. It merges task planning, self-reflection, and educational best practices into a seamless workflow. It is more than an assistant—it is a self-driven curriculum architect that aims to bring clarity and structure to educational program development.
 
