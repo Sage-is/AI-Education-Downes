@@ -13,6 +13,7 @@ Built specifically for curriculum development, Downes transforms educational req
 100% FREE to use! No paid API keys needed for core functionality! Downes leverages powerful AI capabilities to make rapid curriculum development accessible to all educators and instructional designers.
 
 
+
 ## Overview
 
 Downes takes curriculum requests and turns them into clear, step-by-step educational development plans. Helping educators turn ideas into actionable ressources. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
