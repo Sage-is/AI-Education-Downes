@@ -127,6 +127,12 @@ export SEARXNG_INSTANCE_URL=https://searx.tiekoetter.com
 
 The agent exposes a `searx_search` tool that queries your instance with an education bias by default (curriculum, syllabus, lesson plan, rubric, OER).
 
+### Make sure to source the .env vars
+
+```
+source .env
+```
+
 ### Usage
 
 Run Downes in interactive mode:
