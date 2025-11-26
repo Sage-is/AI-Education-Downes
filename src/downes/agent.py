@@ -33,7 +33,7 @@ class Agent:
         logger: Logger = None,
     ):
         this.logger = logger if logger else Logger(verbose=verbose)
-        this.max_steps = max_steps  # global safety cap
+        this.max_steps = max_steps  
         this.max_steps_per_step = max_steps_per_step
         this.vault = Vault()
         this.verbose = verbose
@@ -127,7 +127,7 @@ class Agent:
                     # Detect and prevent repetitive action loops.
                     action_sig = f"{tool_name}:{optimized_args}"
                     if detect_loop(last_actions, action_sig, this.logger):
-                        # Instead of stopping, warn the LLM to encourage replanning/adjusting
+                        # Instead of stopping, warn the LLM and encourage replanning/adjusting
                         warning = f"""
                             SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}. 
                             This is a loop. You MUST change your approach or arguments."""
