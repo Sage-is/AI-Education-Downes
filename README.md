@@ -44,7 +44,7 @@ Downes takes curriculum requests and turns them into clear, step-by-step educati
 1. Clone the repository:
 ```bash
 git clone https://github.com/Sage-is/AI-Education-Downes.git
-cd downes
+cd AI-Education-Downes
 ```
 
 2. Install dependencies with uv:
@@ -61,6 +61,19 @@ cp env.example .env
 # OPENAI_API_KEY=your-openai-api-key
 # That's it! Ready to develop curriculum.
 ```
+
+#### Usage on Mobile (under development)
+
+##### iOS and iPad
+
+1. install iSH
+2. open iSH
+3. In the iSH terminal, install git and python `apk add python3 git`
+4. Install `apk add py3-pip`
+5. 
+
+
+**Note:** Switching away from the iSH terminal for more than a few seconds, may reset the process. 
 
 ### LLM Configuration
 
