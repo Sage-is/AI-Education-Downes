@@ -67,9 +67,9 @@ class Agent:
         this.vault.create_run_dir(query)
 
         # Initialize agent state for this run.
-        step_count = 0
+        total_steps = 0
         last_actions = []
-        step_outputs = []  # outputs from all steps
+        run_history = []  # outputs from all steps
         safety_stop = False
         safety_stop_reason = None
 
@@ -78,22 +78,20 @@ class Agent:
 
         # If no steps were created, the query is likely out of scope.
         if no(steps):
-            return finalize_run(
-                this.llm.generate_answer, query, step_outputs, this.logger, this.vault
-            )
+            return finalize_run(this, query, run_history)
 
         # 2. Loop through steps sequentially.
-        for the_step in steps:
-            this.logger.log_step_start(the_step.description)
+        for current_step in steps:
+            this.logger.log_step_start(current_step.description)
 
             # Define per-step state.
-            per_step_steps = 0
-            step_step_outputs = []  # outputs from a single step of a given step.
+            action_count = 0
+            step_history = []  # outputs from a single step of a given step.
 
             # Loop through steps of a single step until the step is complete or the max steps are reached.
-            while per_step_steps < this.max_steps_per_step:
+            while action_count < this.max_steps_per_step:
                 limit_hit, safety_stop_reason = guard_step_limit(
-                    step_count, this.max_steps, this.logger, safety_stop_reason
+                    this, total_steps, safety_stop_reason
                 )
                 if limit_hit:
                     safety_stop = True
@@ -101,18 +99,18 @@ class Agent:
 
                 # Ask the LLM for the next action to take for the current step.
                 ai_message = this.llm.plan_next_actions(
-                    the_step.description, last_outputs="\n".join(step_step_outputs)
+                    current_step.description, last_outputs="\n".join(step_history)
                 )
 
                 # If no tool is called, the step is considered complete.
                 if not ai_message.tool_calls:
-                    mark_step_done(the_step, this.logger)
+                    mark_step_done(current_step, this.logger)
                     break
 
                 # Process each tool call returned by the LLM.
                 for tool_call in ai_message.tool_calls:
                     limit_hit, safety_stop_reason = guard_step_limit(
-                        step_count, this.max_steps, this.logger, safety_stop_reason
+                        this, total_steps, safety_stop_reason
                     )
                     if limit_hit:
                         safety_stop = True
@@ -130,70 +128,79 @@ class Agent:
                     action_sig = f"{tool_name}:{optimized_args}"
                     if detect_loop(last_actions, action_sig, this.logger):
                         # Instead of stopping, warn the LLM to encourage replanning/adjusting
-                        warning = f"SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}. This is a loop. You MUST change your approach or arguments."
-                        step_step_outputs.append(warning)
-                        step_count += 1
-                        per_step_steps += 1
+                        warning = f"""
+                            SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}. 
+                            This is a loop. You MUST change your approach or arguments."""
+                        step_history.append(warning)
+                        total_steps += 1
+                        action_count += 1
                         continue
 
                     # Execute the tool.
                     tool_to_run = get_tool(tool_name)
-                    if tool_to_run and confirm_action(tool_name, str(optimized_args)):
+                    if tool_is_ready(tool_to_run) and user_confirms(tool_name, optimized_args):
                         try:
-                            result = execute_tool(
-                                tool_to_run,
-                                tool_name,
-                                optimized_args,
-                                this.logger,
-                                this.debug,
-                            )
-                            this.logger.log_tool_run(optimized_args, result)
-                            this.vault.save_artifact(
-                                step_name=the_step.description,
-                                artifact_name=tool_name,
-                                content=result,
-                            )
+                            result = run_the_tool(tool_to_run, tool_name, optimized_args, this)
+                            log_the_result(this, optimized_args, result)
+                            save_the_artifact(this, current_step, tool_name, result)
+                            
                             output = format_output(tool_name, optimized_args, result)
-                            step_outputs.append(output)
-                            step_step_outputs.append(output)
-                        except Exception as e:
-                            this.logger._log(f"Tool execution failed: {e}")
-                            error_output = format_output(
-                                tool_name, optimized_args, e, is_error=True
-                            )
-                            step_outputs.append(error_output)
-                            step_step_outputs.append(error_output)
+                            record_the_outcome(run_history, step_history, output)
+                        except Exception as error:
+                            handle_tool_error(this, tool_name, optimized_args, error, run_history, step_history)
                     else:
-                        this.logger._log(f"Invalid tool: {tool_name}")
+                        log_invalid_tool(this, tool_name)
 
-                    step_count += 1
-                    per_step_steps += 1
+                    total_steps += 1
+                    action_count += 1
 
                 if safety_stop:
                     break
-
-                # Step-level introspection removed to save tokens.
-                # We rely on plan_next_actions to return no tool calls when done.
-                # if this.llm.ask_if_done(
-                #     the_step.description, "\n".join(step_step_outputs)
-                # ):
-                #     mark_step_done(the_step, this.logger)
-                #     break
-
-            # Global introspection removed. We trust the plan and execute all steps.
-            # if the_step.done and this.llm.is_goal_achieved(query, step_outputs):
-            #     this.logger._log("Main goal achieved. Finalizing answer.")
-            #     break
 
             if safety_stop:
                 break
 
         reason = safety_stop_reason if safety_stop else None
-        return finalize_run(
-            this.llm.generate_answer,
-            query,
-            step_outputs,
-            this.logger,
-            this.vault,
-            reason=reason,
-        )
+        return finalize_run(this, query, run_history, reason=reason)
+
+# --- HyperTalk-style Helper Functions ---
+
+def tool_is_ready(tool):
+    return tool is not None
+
+def user_confirms(tool_name, args):
+    return confirm_action(tool_name, str(args))
+
+def run_the_tool(tool, name, args, agent):
+    return execute_tool(
+        tool,
+        name,
+        args,
+        agent.logger,
+        agent.debug,
+    )
+
+def log_the_result(agent, args, result):
+    agent.logger.log_tool_run(args, result)
+
+def save_the_artifact(agent, step, name, result):
+    agent.vault.save_artifact(
+        step_name=step.description,
+        artifact_name=name,
+        content=result,
+    )
+
+def record_the_outcome(run_history, step_history, output):
+    run_history.append(output)
+    step_history.append(output)
+
+def handle_tool_error(agent, tool_name, args, error, run_history, step_history):
+    agent.logger._log(f"Tool execution failed: {error}")
+    error_output = format_output(
+        tool_name, args, error, is_error=True
+    )
+    run_history.append(error_output)
+    step_history.append(error_output)
+
+def log_invalid_tool(agent, tool_name):
+    agent.logger._log(f"Invalid tool: {tool_name}")

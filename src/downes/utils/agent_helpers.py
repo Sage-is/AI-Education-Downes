@@ -85,37 +85,34 @@ def bind_llm_call(fn: Callable, agent):
 
 
 def guard_step_limit(
+    agent,
     step_count: int,
-    max_steps: int,
-    logger: Logger,
     current_reason: Optional[str],
     context: str = "Global",
     fallback_reason: str = DEFAULT_SAFETY_STOP_MESSAGE,
 ) -> tuple[bool, Optional[str]]:
     """Check step limits and provide a consistent fallback safety-stop reason."""
 
-    if check_step_limit(step_count, max_steps, logger, context):
+    if check_step_limit(step_count, agent.max_steps, agent.logger, context):
         return True, current_reason or fallback_reason
     return False, current_reason
 
 
 def finalize_run(
-    generate_answer_fn: Callable[[str, list], str],
+    agent,
     query: str,
     step_outputs: list,
-    logger: Logger,
-    vault: Vault,
     reason: Optional[str] = None,
 ) -> str:
     """Finalize the agent run: append notes, generate answer, log, and persist."""
 
     if reason:
-        logger._log(reason)
+        agent.logger._log(reason)
         step_outputs.append(reason)
 
-    answer = generate_answer_fn(query, step_outputs)
-    logger.log_summary(answer)
-    vault.save_artifact("summary", "final_answer", answer)
+    answer = agent.llm.generate_answer(query, step_outputs)
+    agent.logger.log_summary(answer)
+    agent.vault.save_artifact("summary", "final_answer", answer)
     return answer
 
 
