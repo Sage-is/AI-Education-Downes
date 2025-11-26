@@ -6,16 +6,17 @@
 
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995. 
 
-In this spirit, Downes is an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
+Stephen Downes' connectivism learning theory is instrumental in the digital age. In this spirit, we built Downes as an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
 
-Built specifically for curriculum development, Downes transforms complex educational requests into transparent, step-by-step curriculum plans—emulating how an expert instructional designer works, but powered by advanced AI. It merges task planning, self-reflection, and educational best practices into a seamless workflow. It is more than an assistant—it is a self-driven curriculum architect that aims to bring clarity and structure to educational program development.
+Built specifically for curriculum development, Downes transforms educational requests into transparent, step-by-step curriculum plans, emulating how an expert instructional designer works - but superpowered by advanced AI. It merges task planning, self-reflection, and educational best practices into a seamless workflow. Downes is more than an assistant, it is a self-driven curriculum architect that aims to bring clarity and structure to educational program development.
 
-100% FREE to use! No paid API keys needed for core functionality—Downes leverages powerful AI capabilities to make curriculum development accessible to all educators and instructional designers.
+100% FREE to use! No paid API keys needed for core functionality! Downes leverages powerful AI capabilities to make rapid curriculum development accessible to all educators and instructional designers.
+
 
 
 ## Overview
 
-Downes takes complex curriculum requests and turns them into clear, step-by-step educational development plans. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
+Downes takes curriculum requests and turns them into clear, step-by-step educational development plans. Helping educators turn ideas into actionable ressources. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
 
 **Key Capabilities:**
 - **Intelligent Curriculum Planning**: Automatically decomposes educational goals into structured learning pathways
@@ -43,7 +44,7 @@ Downes takes complex curriculum requests and turns them into clear, step-by-step
 1. Clone the repository:
 ```bash
 git clone https://github.com/Sage-is/AI-Education-Downes.git
-cd downes
+cd AI-Education-Downes
 ```
 
 2. Install dependencies with uv:
@@ -60,6 +61,19 @@ cp env.example .env
 # OPENAI_API_KEY=your-openai-api-key
 # That's it! Ready to develop curriculum.
 ```
+
+#### Usage on Mobile (under development)
+
+##### iOS and iPad
+
+1. install iSH
+2. open iSH
+3. In the iSH terminal, install git and python `apk add python3 git`
+4. Install `apk add py3-pip`
+5. 
+
+
+**Note:** Switching away from the iSH terminal for more than a few seconds, may reset the process. 
 
 ### LLM Configuration
 
@@ -125,6 +139,12 @@ export SEARXNG_INSTANCE_URL=https://searx.tiekoetter.com
 ```
 
 The agent exposes a `searx_search` tool that queries your instance with an education bias by default (curriculum, syllabus, lesson plan, rubric, OER).
+
+### Make sure to source the .env vars
+
+```
+source .env
+```
 
 ### Usage
 
