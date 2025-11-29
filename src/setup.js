@@ -206,23 +206,20 @@ class SetupWizard {
         logInfo(provider.keyHelp);
         console.log();
 
-        // API Key
-        if (provider.keyPrefix !== null || providerKey !== 'ollama' && providerKey !== 'llamacpp' && providerKey !== 'lmstudio') {
-            if (providerKey === 'ollama' || providerKey === 'llamacpp' || providerKey === 'lmstudio') {
-                this.config.OPENAI_API_KEY = 'not-needed-for-local';
-                logInfo('Using placeholder API key for local provider');
-            } else {
-                const apiKey = await this.promptSecret('Enter your API key');
-                if (apiKey) {
-                    this.config.OPENAI_API_KEY = apiKey;
-                } else {
-                    logWarning('No API key provided - you will need to set OPENAI_API_KEY later');
-                    this.config.OPENAI_API_KEY = 'your-api-key-here';
-                }
-            }
-        } else {
+        // API Key - local providers don't need real API keys
+        const isLocalProvider = ['ollama', 'llamacpp', 'lmstudio'].includes(providerKey);
+        
+        if (isLocalProvider) {
             this.config.OPENAI_API_KEY = 'not-needed-for-local';
             logInfo('Using placeholder API key for local provider');
+        } else {
+            const apiKey = await this.promptSecret('Enter your API key');
+            if (apiKey) {
+                this.config.OPENAI_API_KEY = apiKey;
+            } else {
+                logWarning('No API key provided - you will need to set OPENAI_API_KEY later');
+                this.config.OPENAI_API_KEY = 'your-api-key-here';
+            }
         }
 
         // Base URL
