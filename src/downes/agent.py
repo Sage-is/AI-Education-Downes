@@ -85,7 +85,7 @@ class Agent:
         # Save the initial task list to the vault
         task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
         this.vault.save_artifact(
-            step_name="planning",
+            step_name="00_planning",
             artifact_name="task_list",
             content=f"# Task List\n\n{task_list_content}"
         )
@@ -125,7 +125,7 @@ class Agent:
                         if steps:
                             task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
                             this.vault.save_artifact(
-                                step_name="planning",
+                                step_name="00_planning",
                                 artifact_name=f"task_list_revision_{revision_counter}",
                                 content=f"# Revised Task List (Revision {revision_counter})\n\n{task_list_content}"
                             )
@@ -151,7 +151,7 @@ class Agent:
                     if steps:
                         task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
                         this.vault.save_artifact(
-                            step_name="planning",
+                            step_name="00_planning",
                             artifact_name=f"task_list_revision_{revision_counter}",
                             content=f"# Revised Task List (Revision {revision_counter})\n\n{task_list_content}"
                         )
@@ -161,7 +161,8 @@ class Agent:
                         plan_approved = True
 
         # 2. Loop through steps sequentially.
-        for current_step in steps:
+        for i, current_step in enumerate(steps):
+            step_num = i + 1
             this.logger.log_step_start(current_step.description)
 
             # Define per-step state.
@@ -222,7 +223,7 @@ class Agent:
                         try:
                             result = run_the_tool(tool_to_run, tool_name, optimized_args, this)
                             log_the_result(this, optimized_args, result)
-                            save_the_artifact(this, current_step, tool_name, result, artifact_counter)
+                            save_the_artifact(this, current_step, step_num, tool_name, result, artifact_counter)
                             artifact_counter += 1
                             
                             output = format_output(tool_name, optimized_args, result)
@@ -264,9 +265,9 @@ def run_the_tool(tool, name, args, agent):
 def log_the_result(agent, args, result):
     agent.logger.log_tool_run(args, result)
 
-def save_the_artifact(agent, step, name, result, counter):
+def save_the_artifact(agent, step, step_num, name, result, counter):
     agent.vault.save_artifact(
-        step_name=step.description,
+        step_name=f"{step_num:02d}_{step.description}",
         artifact_name=f"{counter:02d}_{name}",
         content=result,
     )

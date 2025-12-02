@@ -112,7 +112,7 @@ def finalize_run(
 
     answer = agent.llm.generate_answer(query, step_outputs)
     agent.logger.log_summary(answer)
-    agent.vault.save_artifact("summary", "final_answer", answer)
+    agent.vault.save_artifact("99_summary", "final_answer", answer)
     return answer
 
 
