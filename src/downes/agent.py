@@ -2,6 +2,7 @@ from downes.tools import get_tool
 from downes.utils.logger import Logger
 from downes.utils.vault import Vault
 from typing import Optional
+import os
 from downes.utils.agent_helpers import (
     normalize_arg_value,
     format_output,
@@ -72,6 +73,7 @@ class Agent:
         run_history = []  # outputs from all steps
         safety_stop = False
         safety_stop_reason = None
+        artifact_counter = 1  # Counter for numbering artifacts
 
         # 1. Decompose the user query into a list of steps.
         steps = this.llm.plan_steps(query)
@@ -79,6 +81,84 @@ class Agent:
         # If no steps were created, the query is likely out of scope.
         if no(steps):
             return finalize_run(this, query, run_history)
+
+        # Save the initial task list to the vault
+        task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
+        this.vault.save_artifact(
+            step_name="planning",
+            artifact_name="task_list",
+            content=f"# Task List\n\n{task_list_content}"
+        )
+
+        # 2. Planning refinement loop (skip if only one step)
+        revision_counter = 1
+        if len(steps) > 1:
+            plan_approved = False
+            while not plan_approved:
+                this.logger.ui.print_info("\nPlanned steps:")
+                for i, step in enumerate(steps):
+                    print(f"{i+1}. {step.description}")
+                
+                user_input = this.logger.ui.prompt_for_input(
+                    "\nDo you want to modify this plan? (y/n or describe changes)"
+                )
+                
+                if user_input.lower() in ['n', 'no', '']:
+                    plan_approved = True
+                elif user_input.lower() in ['y', 'yes']:
+                    # Ask for specific changes
+                    changes = this.logger.ui.prompt_for_input(
+                        "Describe the changes you want to make to the plan"
+                    )
+                    if changes.strip():
+                        # Regenerate plan with user feedback
+                        refinement_prompt = f"""
+                        Original query: {query}
+                        Current plan:
+                        {task_list_content}
+                        
+                        User feedback: {changes}
+                        
+                        Please revise the plan based on the user's feedback.
+                        """
+                        steps = this.llm.plan_steps(refinement_prompt)
+                        if steps:
+                            task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
+                            this.vault.save_artifact(
+                                step_name="planning",
+                                artifact_name=f"task_list_revision_{revision_counter}",
+                                content=f"# Revised Task List (Revision {revision_counter})\n\n{task_list_content}"
+                            )
+                            revision_counter += 1
+                        else:
+                            this.logger.ui.print_warning("Failed to revise plan, keeping current plan")
+                            plan_approved = True
+                    else:
+                        plan_approved = True
+                else:
+                    # User provided direct changes
+                    changes = user_input
+                    refinement_prompt = f"""
+                    Original query: {query}
+                    Current plan:
+                    {task_list_content}
+                    
+                    User feedback: {changes}
+                    
+                    Please revise the plan based on the user's feedback.
+                    """
+                    steps = this.llm.plan_steps(refinement_prompt)
+                    if steps:
+                        task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
+                        this.vault.save_artifact(
+                            step_name="planning",
+                            artifact_name=f"task_list_revision_{revision_counter}",
+                            content=f"# Revised Task List (Revision {revision_counter})\n\n{task_list_content}"
+                        )
+                        revision_counter += 1
+                    else:
+                        this.logger.ui.print_warning("Failed to revise plan, keeping current plan")
+                        plan_approved = True
 
         # 2. Loop through steps sequentially.
         for current_step in steps:
@@ -142,7 +222,8 @@ class Agent:
                         try:
                             result = run_the_tool(tool_to_run, tool_name, optimized_args, this)
                             log_the_result(this, optimized_args, result)
-                            save_the_artifact(this, current_step, tool_name, result)
+                            save_the_artifact(this, current_step, tool_name, result, artifact_counter)
+                            artifact_counter += 1
                             
                             output = format_output(tool_name, optimized_args, result)
                             record_the_outcome(run_history, step_history, output)
@@ -183,10 +264,10 @@ def run_the_tool(tool, name, args, agent):
 def log_the_result(agent, args, result):
     agent.logger.log_tool_run(args, result)
 
-def save_the_artifact(agent, step, name, result):
+def save_the_artifact(agent, step, name, result, counter):
     agent.vault.save_artifact(
         step_name=step.description,
-        artifact_name=name,
+        artifact_name=f"{counter:02d}_{name}",
         content=result,
     )
 

@@ -217,7 +217,11 @@ def plan_steps_impl(
         prompt = f"""
         Project: "{query}",
 
-        **Note:** Only return the atomic steps as a markdown checklist. Each step should be a clear, actionable step that can be completed using the available tools.
+        **Note:** Only return the atomic steps as a markdown checklist. 
+        Each step should be a clear, actionable step that can be 
+        completed using the available tools. 
+        
+         **Note:** Each step should include the topic and audience level if applicable.
         """
         # Use format_for_template to auto-detect indentation
         system_prompt = format_for_template(
