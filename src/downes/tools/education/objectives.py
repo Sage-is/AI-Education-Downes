@@ -44,7 +44,7 @@ def generate_learning_objectives(
         duration_weeks=duration_weeks,
     )
 
-    system_prompt = """You are an instructional designer who specializes in writing measurable learning objectives using Bloom-inspired verbs.\nReturn ONLY a Markdown numbered list of objectives. Each objective must:\n- Start with a strong action verb\n- Specify the performance or artifact learners will produce\n- Reference the context or content focus\n- Include an accuracy or quality criteria when reasonable\nMatch the requested number of objectives exactly and avoid extra commentary."""
+    system_prompt = """You are an instructional designer who specializes in writing measurable learning objectives that ensure Meaningful Connections using Bloom-inspired verbs.\nReturn ONLY a Markdown numbered list of objectives. Each objective must:\n- Start with a strong action verb\n- Specify the performance or artifact learners will produce\n- Reference the context or content focus\n- Include an accuracy or quality criteria when reasonable\nMatch the requested number of objectives exactly and avoid extra commentary."""
 
     user_prompt = f"""Course topic: {topic}\nAudience: {audience}\nLevel: {level}\nDuration (weeks): {duration_weeks or 'unspecified'}\nRequested objective count: {outcomes_count}"""
 
