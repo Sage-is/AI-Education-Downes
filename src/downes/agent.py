@@ -78,9 +78,9 @@ class Agent:
         # 1. Decompose the user query into a list of steps.
         steps = this.llm.plan_steps(query)
 
-        # If no steps were created, the query is likely out of scope.
+        # If no steps were created, the query is likely simple enough to answer directly.
         if no(steps):
-            return finalize_run(this, query, run_history)
+            return finalize_run(this, query, run_history) # Early exit for simple queries
 
         # Save the initial task list to the vault
         task_list_content = "\n".join([f"{i+1}. {step.description}" for i, step in enumerate(steps)])
