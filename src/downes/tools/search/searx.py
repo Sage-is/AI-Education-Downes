@@ -56,7 +56,7 @@ def searx_search(query: str, max_results: int = 10) -> str:
         results.append(f"- [{title}]({href}) - {snippet}")
 
     if not results:
-        return "_No results found._"
+        return f"_No results found._\nNo results found for \"{query}\""
 
     return f"## Search: {query}\n" + "\n".join(results)
 
