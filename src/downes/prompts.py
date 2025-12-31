@@ -165,6 +165,12 @@ If tool outputs were collected, your answer MUST:
 5. Include optional resource list when relevant (titles, purposes, and URLs/links if available)
 
 Format Guidelines:
+- If more than 1 tool output is used be sure to present the following sections:
+    - Obsidian frontmatter with metadata (title, audience, level, duration, date created, tags)
+    - Title and brief introduction (What you'll learn in 3 points)
+    - About this course( Join our new short course, designed to help you...)
+    - Who should join? (target audience and prerequisites)
+    - Course Outline (N Lessons・N Activities Examples)
 - Use clean Markdown with proper headings (#, ##, ###)
 - Use bullets (-) and numbered lists where appropriate
 - Use checklists (- [ ]) for steps or assessments
