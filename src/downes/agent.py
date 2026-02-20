@@ -3,12 +3,14 @@ from downes.utils.logger import Logger
 from downes.utils.vault import Vault
 from typing import Optional
 import os
+import re
 from downes.utils.agent_helpers import (
     normalize_arg_value,
     format_output,
     bind_llm_call,
     guard_step_limit,
     finalize_run,
+    extract_content,
 )
 from downes.utils import no
 from downes.llm_interaction import (
@@ -185,6 +187,76 @@ class Agent:
 
                 # If no tool is called, the step is considered complete.
                 if not ai_message.tool_calls:
+                    llm_step_output = extract_content(ai_message).strip()
+                    if llm_step_output and indicates_tool_permission_issue(llm_step_output):
+                        fallback_tool_call = infer_fallback_tool_call(current_step.description)
+                        if fallback_tool_call:
+                            tool_name = fallback_tool_call["name"]
+                            optimized_args = {
+                                k: normalize_arg_value(v)
+                                for k, v in fallback_tool_call["args"].items()
+                            }
+
+                            action_sig = f"{tool_name}:{optimized_args}"
+                            if not detect_loop(last_actions, action_sig, this.logger):
+                                tool_to_run = get_tool(tool_name)
+                                if tool_is_ready(tool_to_run) and user_confirms(
+                                    tool_name, optimized_args
+                                ):
+                                    try:
+                                        result = run_the_tool(
+                                            tool_to_run,
+                                            tool_name,
+                                            optimized_args,
+                                            this,
+                                        )
+                                        log_the_result(this, optimized_args, result)
+                                        save_the_artifact(
+                                            this,
+                                            current_step,
+                                            step_num,
+                                            tool_name,
+                                            result,
+                                            artifact_counter,
+                                        )
+                                        artifact_counter += 1
+
+                                        output = format_output(
+                                            tool_name, optimized_args, result
+                                        )
+                                        record_the_outcome(run_history, step_history, output)
+                                        total_steps += 1
+                                        action_count += 1
+                                        continue
+                                    except Exception as error:
+                                        handle_tool_error(
+                                            this,
+                                            tool_name,
+                                            optimized_args,
+                                            error,
+                                            run_history,
+                                            step_history,
+                                        )
+
+                    cleaned_output = cleanup_llm_artifact_content(llm_step_output)
+                    if cleaned_output and is_meaningful_step_output(cleaned_output):
+                        save_the_artifact(
+                            this,
+                            current_step,
+                            step_num,
+                            "llm_response",
+                            cleaned_output,
+                            artifact_counter,
+                        )
+                        artifact_counter += 1
+
+                        output = format_output(
+                            "llm_response",
+                            {"step": current_step.description},
+                            cleaned_output,
+                        )
+                        record_the_outcome(run_history, step_history, output)
+
                     mark_step_done(current_step, this.logger)
                     break
 
@@ -286,3 +358,61 @@ def handle_tool_error(agent, tool_name, args, error, run_history, step_history):
 
 def log_invalid_tool(agent, tool_name):
     agent.logger._log(f"Invalid tool: {tool_name}")
+
+
+def is_meaningful_step_output(text: str) -> bool:
+    normalized = " ".join(text.lower().split())
+    trivial_responses = {
+        "done",
+        "complete",
+        "step complete",
+        "no tool call needed",
+        "no tool needed",
+    }
+    return normalized not in trivial_responses
+
+
+def indicates_tool_permission_issue(text: str) -> bool:
+    normalized = " ".join(text.lower().split())
+    permission_markers = [
+        "don't have permission",
+        "do not have permission",
+        "no permission",
+        "can't access web search",
+        "cannot access web search",
+        "can't use tools in this session",
+        "cannot use tools in this session",
+    ]
+    return any(marker in normalized for marker in permission_markers)
+
+
+def infer_fallback_tool_call(step_description: str) -> dict | None:
+    step_lower = step_description.lower()
+
+    if any(keyword in step_lower for keyword in ["resource", "search", "standards", "framework", ".edu", "oer"]):
+        return {
+            "name": "searx_search",
+            "args": {
+                "query": step_description,
+                "max_results": 8,
+            },
+        }
+
+    return None
+
+
+def cleanup_llm_artifact_content(text: str) -> str:
+    if not text:
+        return ""
+
+    fenced_blocks = re.findall(r"```(?:[a-zA-Z0-9_+-]+)?\n(.*?)```", text, re.DOTALL)
+    if fenced_blocks:
+        largest_block = max(fenced_blocks, key=lambda block: len(block.strip()))
+        return largest_block.strip()
+
+    sections = [section.strip() for section in re.split(r"\n\s*---+\s*\n", text) if section.strip()]
+    if sections:
+        best_section = max(sections, key=len)
+        return best_section.strip()
+
+    return text.strip()
