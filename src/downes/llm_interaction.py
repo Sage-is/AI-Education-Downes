@@ -138,6 +138,7 @@ def call_llm_safe(
     error_msg: str = "LLM call failed",
     operation_name: str = "LLM call",
     vault: Optional[Vault] = None,
+    role: Optional[str] = None,
 ):
     """Call LLM with error handling and logging."""
 
@@ -160,11 +161,16 @@ def call_llm_safe(
         "tools_bound": [getattr(t, "name", "unknown") for t in (tools or [])],
         "verbose": verbose,
         "debug": debug,
+        "role": role,
     }
 
     try:
         response = call_llm(
-            prompt, system_prompt=system_prompt, tools=tools, verbose=verbose or debug
+            prompt,
+            system_prompt=system_prompt,
+            tools=tools,
+            verbose=verbose or debug,
+            role=role,
         )
 
         if debug and response:
@@ -237,6 +243,7 @@ def plan_steps_impl(
             error_msg="Planning failed",
             operation_name="Step Planning",
             vault=vault,
+            role="planning",
         )
         steps = []
         if response:
@@ -267,6 +274,7 @@ def plan_steps_impl(
                 error_msg="Planning retry failed",
                 operation_name="Step Planning (Retry)",
                 vault=vault,
+                role="planning",
             )
             steps = (
                 parse_markdown_checklist(extract_content(response)) if response else []
@@ -312,6 +320,7 @@ def plan_next_actions_impl(
             error_msg="plan_next_actions failed",
             operation_name="Action Planning",
             vault=vault,
+            role="action",
         )
         return response if response else AIMessage(content="Failed to get actions.")
 
@@ -354,6 +363,7 @@ def generate_answer_impl(
             error_msg="Answer generation failed, using fallback",
             operation_name="Answer Generation",
             vault=vault,
+            role="answer",
         )
         if response:
             content = extract_content(response)

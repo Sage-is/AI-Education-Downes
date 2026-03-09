@@ -10,10 +10,26 @@ from openai import APIConnectionError
 from downes.prompts import DEFAULT_SYSTEM_PROMPT
 
 
-def get_llm_config():
+def _is_localhost(url: Optional[str]) -> bool:
+    """Check if a URL points to a local server."""
+    if not url:
+        return False
+    return any(host in url for host in ("localhost", "127.0.0.1", "[::1]"))
+
+
+def get_llm_config(role: Optional[str] = None):
     """
     Get LLM configuration from environment variables.
     Supports OpenAI and OpenAI-compatible APIs (OpenRouter, Ollama, llama.cpp, etc.)
+
+    When ``role`` is provided (e.g. "planning", "action", "answer"), the
+    function checks for role-specific overrides before falling back to the
+    base config:
+
+        LLM_{ROLE}_MODEL, LLM_{ROLE}_BASE_URL, LLM_{ROLE}_API_KEY,
+        LLM_{ROLE}_TEMPERATURE
+
+    Precedence: role override > base env var > default value.
 
     Environment variables:
     - OPENAI_API_KEY: API key (required for most providers, can be 'not-needed' for local)
@@ -27,11 +43,10 @@ def get_llm_config():
     - Ollama: Set OPENAI_BASE_URL=http://localhost:11434/v1 and LLM_MODEL=llama2
     - llama.cpp: Set OPENAI_BASE_URL=http://localhost:8080/v1
     """
-    # Check for custom base URL first (local/alternative providers)
+    # --- Base config (same as before) ---
     base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
 
-    # For local providers, API key is optional
-    if base_url and "localhost" in base_url:
+    if _is_localhost(base_url):
         api_key = os.getenv("OPENAI_API_KEY", "not-needed-for-local")
     else:
         api_key = os.getenv("OPENAI_API_KEY")
@@ -51,6 +66,35 @@ def get_llm_config():
     if base_url:
         config["base_url"] = base_url
 
+    # --- Role-specific overrides ---
+    if role:
+        prefix = f"LLM_{role.upper()}_"
+
+        role_model = os.getenv(f"{prefix}MODEL")
+        if role_model:
+            config["model"] = role_model
+
+        role_temp = os.getenv(f"{prefix}TEMPERATURE")
+        if role_temp:
+            config["temperature"] = float(role_temp)
+
+        role_url = os.getenv(f"{prefix}BASE_URL")
+        if role_url:
+            config["base_url"] = role_url
+
+            # If the role URL is localhost and no explicit role key, auto-set
+            role_key = os.getenv(f"{prefix}API_KEY")
+            if role_key:
+                config["api_key"] = role_key
+            elif _is_localhost(role_url):
+                config["api_key"] = "not-needed-for-local"
+            # else: inherit the base api_key (already in config)
+        else:
+            # No role URL override — still allow role-level key override
+            role_key = os.getenv(f"{prefix}API_KEY")
+            if role_key:
+                config["api_key"] = role_key
+
     return config
 
 
@@ -60,6 +104,7 @@ def call_llm(
     system_prompt: Optional[str] = None,
     tools: Optional[List[BaseTool]] = None,
     verbose: bool = False,
+    role: Optional[str] = None,
 ) -> AIMessage:
     """
     Call the LLM with the given prompt.
@@ -69,9 +114,10 @@ def call_llm(
 
     Args:
         prompt: The user prompt
-        model: Model name (overrides LLM_MODEL env var)
+        model: Model name (overrides LLM_MODEL env var and role config)
         system_prompt: System prompt (default: DEFAULT_SYSTEM_PROMPT)
         tools: List of tools to bind to the LLM
+        role: LLM role ("planning", "action", "answer") for per-role config
 
     Returns:
         AIMessage with the response (text content or tool calls)
@@ -85,8 +131,9 @@ def call_llm(
         [("system", sp_escaped), ("user", "{prompt}")]
     )
 
-    # Get LLM configuration
-    config = get_llm_config()
+    # Get LLM configuration (role-aware)
+    config = get_llm_config(role=role)
+    # Explicit model param takes highest precedence
     if model:
         config["model"] = model
 
@@ -103,7 +150,8 @@ def call_llm(
         try:
             if verbose:
                 start_time = time.time()
-                print(f"\n[LLM] Calling {config['model']}...")
+                role_tag = f" {role}" if role else ""
+                print(f"\n[LLM{role_tag}] Calling {config['model']}...")
 
             response = chain.invoke({"prompt": prompt})
 

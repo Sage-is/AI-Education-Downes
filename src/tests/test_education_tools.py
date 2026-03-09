@@ -6,6 +6,7 @@ from downes.tools.education.taxonomy import map_taxonomy
 from downes.tools.education.resources import synthesize_learning_resources
 from downes.tools.education.slides import build_slide_deck
 from downes.tools.education.worksheet import design_worksheet
+from downes.tools.education.slides import _extract_reveal_markdown
 
 
 def test_objectives():
@@ -157,6 +158,18 @@ def test_slides():
     print("✓ Slides test passed")
 
 
+def test_slides_markdown_extraction():
+    """Test extraction keeps full reveal.js markdown and drops filesystem chatter."""
+    raw = """It looks like the file write permission is being denied.\nCould you approve write permission?\n\n# AI Agents 101\n\n- Audience: high school\n\n---\n\n## What Is an Agent?\n\n- Goal-directed behavior\n- Tool use\n\nNotes:\nDefine autonomy briefly.
+"""
+
+    cleaned = _extract_reveal_markdown(raw)
+    assert cleaned.startswith("# AI Agents 101")
+    assert "write permission" not in cleaned.lower()
+    assert "\n---\n" in f"\n{cleaned}\n"
+    print("✓ Slides extraction test passed")
+
+
 def test_worksheet():
     """Test worksheet tool returns structured Markdown"""
     out = design_worksheet.run(
@@ -185,5 +198,6 @@ if __name__ == "__main__":
     test_taxonomy()
     test_resources()
     test_slides()
+    test_slides_markdown_extraction()
     test_worksheet()
     print("\n✅ All education tools smoke tests passed!")

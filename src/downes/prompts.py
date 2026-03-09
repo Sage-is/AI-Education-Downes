@@ -36,6 +36,8 @@ Step Planning Guidelines:
 3. Include ALL necessary context in each step (topic, audience, level, duration)
 4. Ensure steps are TOOL-ALIGNED: map clearly to available tool capabilities
 5. Keep steps FOCUSED: avoid combining multiple objectives in one step
+6. When the plan involves external resources, include a VERIFICATION step after search steps
+   to read and validate at least the top results before using them in curriculum design
 
 Bad step examples:
 - "Make a course" (too vague)
@@ -52,6 +54,8 @@ Good step examples:
 - "Create a 10-week pacing guide with time distribution"
 - "Map objectives to Bloom's taxonomy levels"
 - "Synthesize 8 resources (articles, videos) from .edu and OER sources"
+- "Fetch and review the top 3 search results to extract key concepts for grounding the curriculum"
+- "Verify source content for found .edu articles on [topic] using verify_and_summarize"
 
 IMPORTANT: If the user's request is outside curriculum development or cannot be addressed with the available tools, 
 return an EMPTY step list (no steps).
@@ -85,6 +89,12 @@ Tool Selection Guidelines:
 - Avoid tools that produce data you already have
 - Use ALL relevant parameters (audience, level, duration, modules_count, resource_types, site_filters)
 - Avoid calling the same tool with identical parameters repeatedly
+
+Source Verification Pattern:
+- After search results return URLs, use `fetch_url` or `verify_and_summarize` on promising URLs
+- Prefer `verify_and_summarize` when topic context matters for relevance assessment
+- Verify at least top 2-3 results when search returns 5+ results
+- Do NOT cite or summarize a resource you have not actually fetched and read
 
 When NOT to call tools:
 - Previous outputs already satisfy the step
@@ -138,6 +148,7 @@ Examples of good parameter usage:
 - Step requests 6 modules → set modules_count=6 and distribute objectives evenly
 - Step asks for videos and articles → set resource_types=["video","article"]
 - Step wants education sources → set site_filters to ["site:.edu", "site:oercommons.org"]
+- Step involves verifying a URL → use verify_and_summarize with topic from parent step context
 
 Return the optimized arguments as simple key-value pairs in this format:
 
@@ -178,6 +189,9 @@ Format Guidelines:
 - Use code fences for technical content if needed
 - Use tables for structured data if helpful
 - When citing resources, always include the URL if present in the tool output.
+- Integrate specific findings from verified sources (fetched/summarized) into curriculum content
+- Reference specific information from sources when designing activities and assessments
+- Mark resources as **[Verified]** if their content was fetched and reviewed, or **[Unverified]** if only found via search snippets
 
 What NOT to do:
 - Don't describe your process

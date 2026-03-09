@@ -27,3 +27,8 @@ downes-agent = "downes.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

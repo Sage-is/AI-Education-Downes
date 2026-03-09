@@ -79,12 +79,24 @@ class Vault:
 
         step_slug = sanitize_for_filename(step_name)
         step_dir = os.path.join(self.run_dir, step_slug)
+        os.makedirs(step_dir, exist_ok=True)
 
         artifact_slug = sanitize_for_filename(artifact_name)
 
         # Everything is Markdown now!
         ext = ".md"
-        filepath = self._ensure_unique_path(step_dir, artifact_slug, ext)
+
+        # First artifact in a step folder uses the folder name for readability.
+        has_existing_files = any(os.scandir(step_dir))
+        if not has_existing_files:
+            first_filepath = os.path.join(step_dir, f"{step_slug}{ext}")
+            filepath = (
+                first_filepath
+                if not os.path.exists(first_filepath)
+                else self._ensure_unique_path(step_dir, artifact_slug, ext)
+            )
+        else:
+            filepath = self._ensure_unique_path(step_dir, artifact_slug, ext)
 
         content_str = self._serialize_content(content)
 

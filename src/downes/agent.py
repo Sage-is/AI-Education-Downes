@@ -389,6 +389,27 @@ def indicates_tool_permission_issue(text: str) -> bool:
 def infer_fallback_tool_call(step_description: str) -> dict | None:
     step_lower = step_description.lower()
 
+    # Verification / fetching keywords → verify_and_summarize or fetch_url
+    if any(keyword in step_lower for keyword in ["verify", "review source", "check url"]):
+        # Try to extract a URL from the step description
+        url_match = re.search(r"https?://\S+", step_description)
+        if url_match:
+            return {
+                "name": "verify_and_summarize",
+                "args": {
+                    "url": url_match.group(0),
+                    "topic": step_description,
+                },
+            }
+
+    if any(keyword in step_lower for keyword in ["fetch", "read url", "open url"]):
+        url_match = re.search(r"https?://\S+", step_description)
+        if url_match:
+            return {
+                "name": "fetch_url",
+                "args": {"url": url_match.group(0)},
+            }
+
     if any(keyword in step_lower for keyword in ["resource", "search", "standards", "framework", ".edu", "oer"]):
         return {
             "name": "searx_search",

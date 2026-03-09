@@ -77,7 +77,7 @@ def build_slide_deck(
     sections = slide_sections or DEFAULT_SLIDE_SECTIONS
     total_slides = max(slide_count, len(sections))
 
-    system_prompt = """You are an instructional designer who writes Reveal.js Markdown slide decks.\nRules:\n- Start with a title slide containing # Title and key metadata as bullet list or subheading.\n- Separate slides using a line that contains only --- and a blank line after.\n- Each content slide must start with ## Slide Title.\n- Include short bullet lists or concise paragraphs only; keep each slide under 60 words.\n- When notes are requested, add a blank line followed by Notes: and a short presenter note.\n- Mirror the provided slide sections and learning objectives succinctly.\n- Do not wrap the response in triple backticks or commentary."""
+    system_prompt = """You are an instructional designer who writes Reveal.js Markdown slide decks.\nRules:\n- Return ONLY the complete slide deck markdown content as plain text.\n- Never ask for permissions, never mention file writing/saving, and never describe filesystem limitations.\n- Start with a title slide containing # Title and key metadata as bullet list or subheading.\n- Separate slides using a line that contains only --- and a blank line after.\n- Each content slide must start with ## Slide Title.\n- Include short bullet lists or concise paragraphs only; keep each slide under 60 words.\n- When notes are requested, add a blank line followed by Notes: and a short presenter note.\n- Mirror the provided slide sections and learning objectives succinctly.\n- Do not wrap the response in triple backticks or commentary."""
 
     objectives_text = (
         "\n".join(learning_objectives or [])
@@ -102,7 +102,7 @@ def build_slide_deck(
     try:
         response = call_llm(user_prompt, system_prompt=system_prompt)
         if response and hasattr(response, "content"):
-            content = response.content.strip()
+            content = _extract_reveal_markdown(response.content)
             if content:
                 return content
     except Exception:
@@ -118,6 +118,45 @@ def build_slide_deck(
         include_notes=include_notes,
         call_to_action=call_to_action,
     )
+
+
+def _extract_reveal_markdown(raw: str) -> str:
+    """Extract deck markdown and drop non-deck chatter from model responses."""
+
+    if not raw:
+        return ""
+
+    text = raw.strip()
+    if not text:
+        return ""
+
+    # Handle accidental fenced wrappers while keeping only their body.
+    if text.startswith("```") and text.endswith("```"):
+        lines = text.splitlines()
+        if len(lines) >= 3:
+            text = "\n".join(lines[1:-1]).strip()
+
+    lines = text.splitlines()
+
+    # Find the first likely slide heading and ignore any prefatory commentary.
+    start_idx = 0
+    for idx, line in enumerate(lines):
+        normalized = line.strip()
+        if normalized.startswith("#"):
+            start_idx = idx
+            break
+
+    candidate = "\n".join(lines[start_idx:]).strip()
+    if not candidate:
+        return ""
+
+    # Basic reveal.js markdown shape check.
+    has_heading = "#" in candidate
+    has_slide_separator = "\n---\n" in f"\n{candidate}\n"
+    if has_heading and has_slide_separator:
+        return candidate
+
+    return ""
 
 
 def _fallback_slide_deck(

@@ -7,6 +7,7 @@ from downes.tools.education import EDUCATION_TOOLS
 from downes.tools.search.searx import searx_search
 from downes.tools.search.google import search_google_news
 from downes.tools.web.url import fetch_url
+from downes.tools.web.verify import verify_and_summarize
 from downes.tools.wiki import wikipedia_extract_links, wikipedia_search
 
 
@@ -15,6 +16,7 @@ TOOLS: tuple[BaseTool, ...] = (
     searx_search,
     search_google_news,
     fetch_url,
+    verify_and_summarize,
     wikipedia_extract_links,
     wikipedia_search,
 )
