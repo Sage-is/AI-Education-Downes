@@ -227,7 +227,8 @@ show-version:
 	build-amd64-ghcr build-arm64-ghcr \
 	create-manifest-dockerhub create-manifest-ghcr \
 	it_build_multi_arch_push_docker_hub it_build_multi_arch_push_GHCR \
-	it_build_multi_arch_all show-version setup_env setup_env_auto setup_env_template
+	it_build_multi_arch_all show-version setup_env setup_env_auto setup_env_template \
+	require_gitflow_next
 
 
 # Version Management with Git Flow
@@ -241,27 +242,33 @@ show-version:
 #
 # The 'v' prefix is consistently preserved in all version tags and branches.
 
-minor_release:
+require_gitflow_next:
+	@if ! git flow version 2>/dev/null | grep -q 'git-flow-next'; then \
+		echo "Error: git-flow-next required (Go rewrite). Install: brew install git-flow-next"; \
+		exit 1; \
+	fi
+
+minor_release: require_gitflow_next
 	# Start a minor release with incremented minor version
 	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2+1".0"}')
 
-patch_release:
+patch_release: require_gitflow_next
 	# Start a patch release with incremented patch version
 	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2"."$$3+1}')
 
-major_release:
+major_release: require_gitflow_next
 	# Start a major release with incremented major version
 	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1+1".0.0"}')
 
-hotfix:
+hotfix: require_gitflow_next
 	# Start a hotfix with incremented patch.patch version (fourth component)
 	git flow hotfix start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{if (NF < 4) print $$1"."$$2"."$$3".1"; else print $$1"."$$2"."$$3"."$$4+1}')
 
-release_finish:
-	git flow release finish "$$(git branch --show-current | sed 's/release\///')" && git push origin develop && git push origin master && git push --tags && git checkout develop
+release_finish: require_gitflow_next
+	git flow release finish && git push origin develop && git push origin master && git push --tags && git checkout develop
 
-hotfix_finish:
-	git flow hotfix finish "$$(git branch --show-current | sed 's/hotfix\///')" && git push origin develop && git push origin master && git push --tags && git checkout develop
+hotfix_finish: require_gitflow_next
+	git flow hotfix finish && git push origin develop && git push origin master && git push --tags && git checkout develop
 
 things_clean:
 	git clean --exclude=!.env -Xdf
