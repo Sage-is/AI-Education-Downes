@@ -1,0 +1,1 @@
+Place your week 4 notebook here. In week 4 you created a knowledge base of notes for your ai so that it can cite and be a better coach.

@@ -1,0 +1,1 @@
+Place your week 3 notebook here. In week 3 you fine-tuned your ai model with examples of the behaviour you wanted for your coach.
