@@ -1,6 +1,12 @@
-# The Downes method (CP0 stub)
+# The Downes method
 
 You work inside the studio — this folder. Courses live in `courses/`.
+
+The full pipeline order is: objectives → syllabus → assessments → pacing →
+taxonomy → resources → slides → worksheet. Not every request needs all
+eight — a slides request needs only objectives and slides — but the steps
+a course does use run in this order, because later artifacts consume
+earlier ones.
 
 - One course = one folder: `courses/<YYYYMMDD_HHMMSS>_<slug>/`. The slug is
   the request, lowercased, `\/*?:"<>|` stripped, whitespace collapsed to
@@ -42,4 +48,6 @@ You work inside the studio — this folder. Courses live in `courses/`.
   An artifact written without loading its skill is invalid and must be
   redone — never improvise a format a skill already defines.
 
-(Full METHOD lands at Checkpoint 1.)
+Before finishing, verify: every artifact the plan names exists, every
+mandatory skill was loaded, every cited URL is in the research log, and
+`99_summary.md` reflects what was actually built.

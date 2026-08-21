@@ -1,0 +1,46 @@
+(version 1)
+; Downes Layer-3 containment — deny-default SBPL profile.
+; Params (inject with -D): STUDIO, TMP, HOMEDIR
+;
+; Model: a deny-default sandbox must still let dynamically-linked binaries
+; launch, which needs a broad file-READ allow (dyld shared cache, dylibs,
+; frameworks) plus executable mapping. So the fence is enforced two ways:
+;   - WRITE is deny-default; only the studio + tmp are writable.
+;   - READ is broadly allowed for the OS, then the user's private data is
+;     explicitly denied back (the parts an escaping course would exfiltrate).
+; Honest claims only: filesystem is fenced; network is TLS-only egress
+; (SBPL cannot pin hostnames — an allowlist proxy is roadmap).
+
+(deny default)
+
+; --- process launch essentials ---
+(allow process-fork process-exec)
+(allow file-map-executable)
+(allow ipc-posix-shm-read* ipc-posix-shm-write*)
+(allow signal (target same-sandbox))
+(allow sysctl-read mach-lookup system-socket)
+(allow pseudo-tty)
+(allow file-ioctl (subpath "/dev"))
+
+; --- read: allow the OS, then deny the user's private data back ---
+(allow file-read* file-read-metadata)
+(deny file-read*
+  (subpath (string-append (param "HOMEDIR") "/Documents"))
+  (subpath (string-append (param "HOMEDIR") "/Desktop"))
+  (subpath (string-append (param "HOMEDIR") "/.ssh"))
+  (subpath (string-append (param "HOMEDIR") "/Library/Keychains"))
+  (regex #"/\.(zsh|bash)_history$"))
+; ...but the studio itself is always readable, even under HOMEDIR.
+(allow file-read* (subpath (param "STUDIO")))
+
+; --- write: deny-default; only the studio and tmp ---
+(allow file-write*
+  (subpath (param "STUDIO"))
+  (subpath (param "TMP"))
+  (literal "/dev/null") (literal "/dev/tty")
+  (literal "/dev/urandom") (literal "/dev/random"))
+
+; --- network: DNS + TLS out only ---
+(allow network-outbound
+  (literal "/private/var/run/mDNSResponder")
+  (remote tcp "*:443"))

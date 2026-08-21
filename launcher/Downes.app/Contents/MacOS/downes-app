@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Downes.app shim: opens the launcher in Terminal. No picker, no paths shown.
+HERE="$(cd "$(dirname "$0")" && pwd)"
+LAUNCHER="$HERE/../../../downes.sh"          # repo layout; installer rewrites
+[ -f "$LAUNCHER" ] || LAUNCHER="$HERE/../Resources/downes.sh"
+exec open -a Terminal "$LAUNCHER"
