@@ -34,9 +34,11 @@ You work inside the studio — this folder. Courses live in `courses/`.
 - Everything must open cleanly in Obsidian. No JSON artifacts.
 - **Skills are mandatory for their artifacts.** Before writing an artifact
   whose skill exists, load that skill with the skill tool and follow its
-  output contract exactly: `01_objectives.md` requires the
-  learning-objectives skill; `02_syllabus.md` requires the syllabus skill;
-  `07_slides.md` requires the slide-deck skill.
+  output contract exactly: `01_objectives.md` → learning-objectives ·
+  `02_syllabus.md` → syllabus · `03_assessments.md` → assessments ·
+  `04_pacing.md` → pacing-guide · `05_taxonomy.md` → taxonomy-map ·
+  `06_resources.md` → learning-resources · `07_slides.md` → slide-deck ·
+  `08_worksheet.md` → worksheet.
   An artifact written without loading its skill is invalid and must be
   redone — never improvise a format a skill already defines.
 

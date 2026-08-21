@@ -55,6 +55,10 @@
     "syllabus": {
       "template": "Draft a syllabus for $ARGUMENTS",
       "agent": "downes"
+    },
+    "deck": {
+      "template": "Build a reveal.js deck for $ARGUMENTS",
+      "agent": "downes"
     }
   },
   "permission": {
