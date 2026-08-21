@@ -64,6 +64,7 @@ the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
   - [ ] harness `corpus.jsonl` + `assertions.py` (all 34 runs, 10 subset)
   - [ ] `scripts/replay.py` — hermetic tempdir studio, hard gates + advisory overlap
   - [ ] Make targets `validate_config` / `replay` / `replay_full` / `studio_test` / `ci`
+  - [~] subset replay: root-caused 0/10 → terse corpus prompts triggered the skills' "ask if missing" clarifying-question halt headless (83 tokens, reason stop, no tools); fully-specified prompts always worked. Fixed in METHOD (3c5aa9c): never ask on course requests, default + record assumptions. Behaviorally verified (terse sailing prompt now runs the pipeline). Clean 10-run number BLOCKED on free-tier throughput — a full pipeline exceeds reasonable timeouts on the exhausted Zen tier; re-run needs tier recovery or the Sage/paid route
   - [ ] advisor review: replay 10/10 subset, ≥31/34 full corpus, written triage
   - [ ] stage-1 Python removal; tag `pre-opencode`
 
