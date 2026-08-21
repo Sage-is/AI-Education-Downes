@@ -153,6 +153,20 @@
     }
   },
   {
+    "run": "20260821_220000_generate-a-lesson-and-quiz-for-a-grade-9-audience-",
+    "prompt_reconstructed": "generate a lesson and quiz for a grade 9 audience",
+    "task_list": "# Task List\n\n1. Generate 5–6 measurable learning objectives for Grade 9 students on an Introduction to Machine Learning (what ML is, learning from data, training vs. prediction, bias, everyday examples)\n2. Map the learning objectives to Bloom's Taxonomy levels to ensure cognitive depth appropriate for Grade 9\n3. Draft a single-lesson syllabus outline (~60–90 min) with module sections, descriptions, and instructional strategies for Grade 9 on Introduction to Machine Learning\n4. Design a quiz (10 questions, mixed format) aligned to the learning objectives assessing Grade 9 understanding of Machine Learning — include a rubric and answer key\n5. Synthesize a curated list of 6–8 learning resources (videos, articles, OER) for Grade 9 students and teachers on this topic",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 2
+    }
+  },
+  {
     "run": "20260220_102346_say-hello-to-the-class",
     "prompt_reconstructed": "say hello to the class",
     "task_list": "# Task List\n\n1. Say hello to the class",

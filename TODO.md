@@ -54,6 +54,11 @@ the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
 
 ## TODO
 
+- [ ] **4-lesson curriculum deliverable** #task — request: "create a 4 lesson curriculum that will be delivered"
+  - [x] Pick topic/audience (assumed: educators' PD on teaching with/about AI)
+  - [x] Author `docs/ai-educators-4lesson-curriculum.md` (objectives, Bloom's, 4 lessons, assessments, pacing, resources)
+  - [ ] Advisor/teacher review of deliverable
+
 - [ ] **Gate 1 — skills extracted, no regressions** #task — Blocked by Gate 0
   - [ ] author `downes.md`, `METHOD.md`, and all 8 SKILL.md files (Passes 1–3)
   - [ ] harness `corpus.jsonl` + `assertions.py` (all 34 runs, 10 subset)
