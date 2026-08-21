@@ -1,0 +1,1 @@
+Place your week 5 notebook here. In week 5 you created a pitfall filter by writing a list of common planning traps.
