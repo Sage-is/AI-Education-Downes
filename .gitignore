@@ -4,6 +4,7 @@
 !/.gitignore
 !/.gitattributes
 !/.editorconfig
+!/.todoscope-exclude.csv
 # Claude Code project settings are shared; settings.local.json stays local.
 !/.claude/
 !/.claude/settings.json

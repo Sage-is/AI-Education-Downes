@@ -1,117 +1,100 @@
-# TODO: AI-Education-Downes
+# Downes — Chart
 
-## 🔥 This Week (November 12, 2025)
+> Navigate chart, top → down.
+> Decisions land under `docs/decisions/`.
+> Narration in `docs/board-dossiers.md`, stubs in `docs/completed-todos.md`.
 
-### 🔥 Architecture Simplification: Markdown-First Refactoring
+## Destination
 
-**Status:** In Progress  
-**Goal:** Eliminate JSON complexity and embrace Markdown as the native output format
+Downes ships as Markdown skills on opencode 1.18.18 on the Sage.is AI-UI mini
+platform; this repo stays the curriculum-asset home. Teacher pilot (Gate 4)
+says ship.
 
-**Rationale:**
+## Notes
 
-- LLMs excel at generating clean, structured Markdown
-- JSON schemas add unnecessary complexity (prompting, validation, coercion)
-- Markdown is human-readable, making vault artifacts more accessible
-- Follows project principles: DRY, KISS, less is more
-- Built-in support for lists, checklists, headings, code blocks
+RAD rules: advisor reviews after every checkpoint, go/no-go at every gate,
+CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
 
-**Tasks:**
+## In Progress
 
-- [x] Create TODO.md with simplification plan
-- [x] Update education tools to return Markdown
-- [x] Simplify vault.py for Markdown-first storage
+- [ ] **Gate 0 — repo transition ready** #task
+  - [x] Makefile scaffold commit (68a36bd)
+  - [ ] register pass commit
+  - [ ] corpus commit
+  - [ ] CI commit
+  - [ ] advisor review
+  - [ ] record `docs/decisions/gate-0-repo-ready.md`
 
-### Fix and optimize tools
+## TODO
 
-- [x] Fix curate learning resources to not break the urls obtained from searxng by grounding outputs in parsed SearXNG hits and preserving original links.
+- [ ] **Gate 1 — skills extracted, no regressions** #task — Blocked by Gate 0
+  - [ ] author `downes.md`, `METHOD.md`, and all 8 SKILL.md files (Passes 1–3)
+  - [ ] harness `corpus.jsonl` + `assertions.py` (all 34 runs, 10 subset)
+  - [ ] `scripts/replay.py` — hermetic tempdir studio, hard gates + advisory overlap
+  - [ ] Make targets `validate_config` / `replay` / `replay_full` / `studio_test` / `ci`
+  - [ ] advisor review: replay 10/10 subset, ≥31/34 full corpus, written triage
+  - [ ] stage-1 Python removal; tag `pre-opencode`
 
-### ⏭️ Upcoming: Multi-Model LLM Routing
+- [ ] **Gate 2 — launcher + legal** #task — Blocked by Gate 0 (runs parallel to Gate 1)
+  - [ ] `docs/legal/STATUS_MATRIX.md` — GREEN/AMBER/RED, no RED, licence recommendation recorded
+  - [ ] `launcher/downes.sh` — `OPENCODE_CONFIG_DIR`, XDG under `.downes/xdg/`, disable project config + autoupdate
+  - [ ] Keychain-gated Sage key (`is.sage.downes`), Zen `public` as the floor
+  - [ ] first-launch bootstrap + `Downes.app` shim (unsigned in v1; signing backlogged)
+  - [ ] advisor review: `debug paths` inside studio, antigravity grep = 0, user db untouched
 
-Plan how to run smaller and larger models side-by-side for different workflow stages.
+- [ ] **Gate 3 — contained + installable** #task — Blocked by Gate 2
+  - [ ] fork `ai-ui-mini` @ v1.18.18 — `brand.ts` + 8-file brand surface, LICENSE byte-identical
+  - [ ] timed rebase drill onto v1.18.19 ≤ ~20 min
+  - [ ] `launcher/downes.sb` deny-default sandbox + escape test + in-anger OS-layer test
+  - [ ] brew tap `sage-is/tap/downes` clean-account install + unsigned DMG
+  - [ ] advisor review: fork diff scoped, escape tests green
+  - [ ] work the Python plumbing retention card
 
-- [ ] Expand env config to support named LLM profiles (fast/standard/premium) with dedicated keys, base URLs, and temps.
-- [ ] Update `get_llm_config`/`call_llm` to accept a profile parameter plus helper routing logic per task type.
-- [ ] Tag each tool/agent flow with an appropriate profile (e.g., planning → premium, drafting → fast) and expose CLI flags for overrides.
-- [ ] Add tests plus README/env.example docs covering multi-profile setup and fallback behavior.
+- [ ] **Gate 4 — teacher pilot ship/no-ship** #task — Blocked by Gate 3
+  - [ ] author `docs/pilot/PILOT_NOTES_TEMPLATE.md` + `GATE-4-CHECKLIST.md` mapped to DoD
+  - [ ] pilot: unaided brew install, one-line test, one authentic class task
+  - [ ] Obsidian open + navigate, export/share artifact, 15-min debrief
+  - [ ] checklist green + advisor sign-off; record `docs/decisions/gate-4-ship.md`
+  - [ ] `make minor_release` → v1.0.0
 
-### 🛠️ Tooling & UX
+### Decision cards
 
-- [ ] Evaluate how to auto-generate the "what's possible" message in the intro based on available tools (dynamic tool discovery).
+- [ ] **Skill licence** #interview — AGPL/dual; fork lives in a separate MIT repo
+  - [ ] record recommendation: platform repo MIT + upstreamable patches, this AGPL repo stays the curriculum home
+  - [ ] matrix rows GREEN/AMBER/RED with Blocks ∈ {prototype, pilot, launch}
 
-### 📖 HyperTalk-Style Readability Improvements for agent.py
+- [ ] **Windows sandbox** #research — v1 ships no OS containment
+  - [ ] record decision: "works in one folder" wording, exportable artifacts
+  - [ ] AppContainer only if demand materialises
 
-**Goal:** Make agent.py read like executable pseudo-code that non-programmers can understand.
+- [ ] **Pinned Zen model** #prototype — Blocked by Gate 2
+  - [ ] pin `opencode/big-pickle`, `nemotron-3.5-lightning-free` fallback
+  - [ ] replay distinguishes provider flake from regression
 
-**Key Principles:**
-- Names should read like prose
-- Functions should be commands or questions
-- Code should read like a well-written instruction manual
-- Make boolean conditions read as questions
-- Use early returns instead of nested conditionals
+- [ ] **searx_search hosting** #research
+  - [ ] curated SearXNG instance as the durable allowlist lock for grounded websearch
+  - [ ] port grounded `learning-resources` mode (L258) to native `websearch`
 
-**Specific Improvements to Consider:*r
+- [ ] **Fork rebase cadence** #task
+  - [ ] monthly timed rebase drill onto upstream, target ≤ ~20 min
+  - [ ] maintain the patch series (`git format-patch v1.18.18..downes/v1`)
 
-1. **Natural Language Control Structures**
-   - [ ] Replace `while action_count < max_steps_per_step` with `repeat_actions_for(step, maximum=...)`
-   - [ ] Consider helper functions like `keep_working_on(step, until_condition)`
+- [ ] **Python plumbing retention** #interview — Blocked by Gate 3
+  - [ ] weigh what of the LLM layer stays post-parity; default is removal
+  - [ ] whatever stays needs a named consumer and stays green in CI
 
-2. **Guard Clauses as Questions**
-   - [ ] Convert `if limit_hit:` to `if we_have_exceeded_step_limit():`
-   - [ ] Add `is_step_complete(ai_message)` instead of `not ai_message.tool_calls`
-   - [ ] Use `are_we_in_a_loop(last_actions, new_action)` for readability
+## Backlog
 
-3. **Variable Names as Sentences**
-   - [ ] Rename `step_history` → `what_we_learned_this_step`
-   - [ ] Rename `run_history` → `everything_we_know_so_far`
-   - [ ] Rename `action_count` → `how_many_attempts`
-   - [ ] Rename `current_step` → `each_step` in loops
+- [ ] **Notarized DMG distribution** — Apple Developer enrollment, Developer ID, notarytool + staple; v1 ships brew tap + unsigned DMG
+- fog: Tauri GUI with startr.style + startr.swap, Sage gateway api.sage.is, allowlist proxy, corpus growth, Obsidian polish
 
-4. **Function Names as Imperatives/Commands (HyperTalk-style)**
-   - [ ] `save_the_artifact()` → `put_result_in_vault()`
-   - [ ] Consider `tell_logger_about(result)`, `ask_llm_what_to_do_next()`
-   - [ ] Use `announce_step_start()`, `remember_success()`
+## Out of scope
 
-5. **Named Constants with Context**
-   - [ ] Define `REASONABLE_ATTEMPTS_PER_STEP = 5`
-   - [ ] Define `SAFETY_LIMIT_FOR_TOTAL_ACTIONS = 20`
+- Multi-model routing — superseded by opencode native model config.
+- HyperTalk agent.py readability — superseded; narration preserved in `docs/board-dossiers.md`.
+- Intro auto-generation — superseded by native skill discovery.
 
-6. **Comments as Narration/Chapters**
-   - [ ] Add chapter-style comments: `# === CHAPTER 1: Understanding What The User Wants ===`
-   - [ ] Use narrative comments that explain the "why" not just the "what"
+## Done
 
-7. **Eliminate Nested Conditions**
-   - [ ] Extract nested loops into `work_on_single_step(step, agent)` function
-   - [ ] Use early returns with clear messaging
-   - [ ] Flatten the main loop for better readability
-
-8. **Domain-Specific Mini-Language**
-   - [ ] Consider a `StepRunner` class with fluent interface: `.work_through(all_steps)`, `.complete(step)`
-   - [ ] Add method chaining for readability
-
-9. **State as a Story**
-   - [ ] Create `RunningStory` class to collect scattered variables into narrative object
-   - [ ] Properties: `original_question`, `everything_we_learned`, `current_chapter`, `why_we_stopped`
-
-10. **Main Loop as Recipe**
-    - [ ] Structure `run()` with clear recipe steps in docstring and implementation
-    - [ ] Extract: `prepare_for_new_run()`, `ask_llm_to_make_plan()`, `work_on_step()`, `summarize_everything()`
-
-11. **Error Handling as Conversation**
-    - [ ] Create `try_to_run_tool()` that returns `(success, result_or_error_message)`
-    - [ ] Add functions: `tell_user_it_worked()`, `apologize_for_failure()`
-
-12. **Type Hints as Documentation**
-    - [ ] Add type aliases: `UserQuery = str`, `StepDescription = str`, `WhatWeLearned = str`, `WhyWeStopped = str | None`
-    - [ ] Use these in function signatures for self-documenting code
-
-**References:**
-- See detailed examples and code snippets in conversation history (2025-11-26)
-- Goal: Make code understandable to non-programmers while maintaining functionality
-
----
-
-## Previous Weeks
-
-### Completed Work
-
-Completed work will be moved here in reverse chronological order.
+- [x] Markdown-First Refactoring — stub at `docs/completed-todos.md`
+- [x] SearXNG URL preservation fix — stub at `docs/completed-todos.md`

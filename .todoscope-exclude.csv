@@ -1,0 +1,7 @@
+path,reason
+vault,user data — generated curriculum runs contain checklists
+corpus,tracked regression runs contain checklists
+web,retired web adapter
+node_modules,dependency cache
+__pycache__,bytecode cache
+notebooks,course notebooks contain student-facing checklists

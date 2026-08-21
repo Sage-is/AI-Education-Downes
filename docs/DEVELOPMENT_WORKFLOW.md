@@ -13,7 +13,7 @@
 ```
 
 **NEVER start work without:**
-- Adding the task to TODO.md at the top (current week section)
+- Adding the task to TODO.md under "## In Progress" (navigate chart layout)
 - Getting approval for significant changes
 - Understanding the complete scope
 
