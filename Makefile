@@ -108,8 +108,13 @@ hotfix_finish: require_gitflow_next
 things_clean:
 	git clean --exclude='!.env*' -Xdf
 
+
+# Install (or refresh) the Downes studio at ~/Downes (or STUDIO_DIR)
+studio:
+	@bash scripts/install_studio.sh $(STUDIO_DIR)
+
 # 11. .PHONY declarations
 .PHONY: help show_vars verify require_gitflow_next \
 	minor_release patch_release major_release hotfix \
 	release_finish hotfix_finish things_clean \
-	release
+	release studio

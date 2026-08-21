@@ -15,6 +15,19 @@ says ship.
 RAD rules: advisor reviews after every checkpoint, go/no-go at every gate,
 CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
 
+CP0 gate note (2026-08-21): GREEN — one-line test passed all six checks
+(exit 0, course folder with all 8 artifacts, structure greps, skill tool
+fired 2×, zero "openai" anywhere, posture probes hold: bash refused, /tmp
+write denied, studio write allowed). Config deltas vs the briefing, all in
+studio/opencode.json: sage provider stripped (NXDOMAIN) · `{file:}` prompt
+syntax · mcp deferred (no downes-mcp binary) · deck command deferred to CP1 ·
+autoupdate false during delivery · webfetch deny (ask auto-rejects and kills
+non-interactive runs; websearch works and stays) · provider whitelist pins
+the picker to 2 free models (Zen otherwise exposes 20 gpt-* entries) ·
+agent steps 60 · model pinned nemotron-3.5-lightning-free (see Pinned Zen
+model card). Harness env: OPENCODE_DISABLE_EXTERNAL_SKILLS=1 so a dev
+machine's ~/.claude skills stay out of the studio.
+
 ## In Progress
 
 - [ ] **Gate 0 — repo transition ready** #task
@@ -68,7 +81,8 @@ CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
   - [ ] AppContainer only if demand materialises
 
 - [ ] **Pinned Zen model** #prototype — Blocked by Gate 2
-  - [ ] pin `opencode/big-pickle`, `nemotron-3.5-lightning-free` fallback
+  - [x] CP0 evidence: big-pickle failed the one-line test 3× (ends turn mid-plan); nemotron-3.5-lightning-free completed the full 8-artifact pipeline — pinned as model, big-pickle kept as small_model
+  - [ ] formal judgment via corpus replay at Gate 2
   - [ ] replay distinguishes provider flake from regression
 
 - [ ] **searx_search hosting** #research

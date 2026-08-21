@@ -1,0 +1,79 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "educator",
+  "share": "disabled",
+  "autoupdate": false,
+  "default_agent": "downes",
+  "enabled_providers": [
+    "opencode"
+  ],
+  "model": "opencode/nemotron-3.5-lightning-free",
+  "small_model": "opencode/big-pickle",
+  "provider": {
+    "opencode": {
+      "options": {
+        "apiKey": "public"
+      },
+      "whitelist": [
+        "big-pickle",
+        "nemotron-3.5-lightning-free"
+      ]
+    }
+  },
+  "instructions": [
+    ".downes/METHOD.md"
+  ],
+  "skills": {
+    "paths": [
+      ".downes/skills"
+    ]
+  },
+  "agent": {
+    "downes": {
+      "mode": "primary",
+      "description": "Design curriculum: objectives, syllabus, assessment, pacing.",
+      "prompt": "{file:.downes/prompts/downes.md}",
+      "steps": 60,
+      "permission": {
+        "bash": "deny",
+        "edit": "allow"
+      }
+    },
+    "build": {
+      "mode": "primary",
+      "description": "Turn a finished curriculum into a running artifact.",
+      "permission": {
+        "bash": "ask"
+      }
+    }
+  },
+  "command": {
+    "objectives": {
+      "template": "Draft measurable objectives for $ARGUMENTS",
+      "agent": "downes"
+    },
+    "syllabus": {
+      "template": "Draft a syllabus for $ARGUMENTS",
+      "agent": "downes"
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "*": "deny"
+    },
+    "edit": {
+      "*": "deny",
+      "~/Downes/**": "allow"
+    },
+    "bash": {
+      "*": "ask",
+      "rm *": "deny",
+      "curl *": "deny"
+    },
+    "read": "allow",
+    "webfetch": "deny",
+    "skill": {
+      "*": "allow"
+    }
+  }
+}
