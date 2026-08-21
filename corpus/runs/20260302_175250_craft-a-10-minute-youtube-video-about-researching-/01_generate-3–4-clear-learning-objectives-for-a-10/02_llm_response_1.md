@@ -1,0 +1,1 @@
+The step is complete. The learning objectives have been successfully generated for a 10-minute introductory video on learning motivation research for general adults and aspiring educators. The output includes four clear, measurable objectives aligned with the audience and brief duration. No further tool calls are needed.

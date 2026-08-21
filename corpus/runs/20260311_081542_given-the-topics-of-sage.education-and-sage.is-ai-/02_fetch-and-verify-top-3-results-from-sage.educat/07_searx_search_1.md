@@ -1,0 +1,4 @@
+## Search: site:sage.is
+- [Sage: Open-source, private & secure AI platform for teams](https://sage.is/) - The best open‑source alternative to proprietary AI platforms. Private by design, self‑hosted or managed. Build, deploy, and collaborate with AI agents in ...
+- [Pricing - Sage](https://sage.is/programs/) - For over 20 years, teams and companies have invested in themselves by implementing Sage for AI management. You're in good company.
+- [Where we came from - Sage](https://sage.is/about/) - Hey there :) I'm Izzy Plante, one of the co-founders here. I run Startr — the business that makes Sage — and teaching for 20.

@@ -1,0 +1,6 @@
+## Search: video claims support open educational resources site:oercommons.org
+- [Videos for the Classroom CollectionResources- OER Commons](https://oercommons.org/curated-collections/570) - Help Center · About Hubs · Services · OER 101. Add OER. {% trans. Open Author. Create a standalone learning module, lesson, assignment, assessment or activity.
+- [OER Commons](https://oercommons.org/) - OER Commons is a dynamic digital library and network. Explore open education resources and join our network of educators dedicated to curriculum improvement.
+- [OER Commons](https://www.oercommons.org/) - OER Commons is a dynamic digital library and network. Explore open education resources and join our network of educators dedicated to curriculum ...
+- [ClaimSupportQuestion- Plate Tectonics | OER Commons](https://oercommons.org/courseware/lesson/77899) - Claim- Support -Question technique to activate background knowledge and get students to think deeper. This activity is over Plate Tectonics and is meant to be carried out on a Google Doc.
+- [Understanding Creative Commons, OER, and Visual Literacy to ...](https://oercommons.org/courseware/lesson/69365/student/?section=9) - ... support their course's learning outcomes. It can be so tempting to select any image found in a Google search or a video from YouTube and embed it directly ...

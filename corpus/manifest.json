@@ -1,0 +1,189 @@
+[
+  {
+    "run": "20251210_131137_craft-a-4-week-curriulum-plan-for-grade-8-students",
+    "prompt_reconstructed": "craft a 4 week curriulum plan for grade 8 students",
+    "task_list": "# Task List\n\n1. Generate 6-8 measurable learning objectives for grade 8 students on AI literacy focusing on ethics of plagiarism and co-creation using generate_learning_objectives\n2. Draft a 4-module syllabus for a 4-week grade 8 curriculum on AI literacy ethics of plagiarism and co-creation, aligned to the generated learning objectives, using draft_syllabus\n3. Create a 4-week pacing guide allocating time for content, practice, and assessment across the 4 modules for grade 8 AI literacy ethics using create_pacing_guide\n4. Design assessments with rubrics aligned to each learning objective for grade 8 AI literacy ethics of plagiarism and co-creation using design_assessments\n5. Map the generated learning objectives to Bloom's taxonomy levels for grade 8 AI literacy ethics using map_taxonomy\n6. Synthesize a list of 10 learning resources (videos, articles, OER) for grade 8 on AI ethics of plagiarism and co-creation using synthesize_learning_resources, incorporating searx_search for .edu and OER sites if needed",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-6-8-measurable-learning-objectives-for",
+        "02_draft-a-4-module-syllabus-for-a-4-week-grade-8-",
+        "03_design-4-classroom-ready-worksheets,-one-per-mo",
+        "04_create-a-4-week-pacing-guide-allocating-time-fo",
+        "05_design-assessments-with-rubrics-aligned-to-each",
+        "06_map-the-generated-learning-objectives-to-bloom'",
+        "07_synthesize-a-list-of-10-learning-resources-(vid",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 22
+    }
+  },
+  {
+    "run": "20251210_084515_draft-a-slideshow-on-sailing",
+    "prompt_reconstructed": "draft a slideshow on sailing",
+    "task_list": "# Task List\n\n1. Generate reveal.js-ready Markdown slides for a lesson or talk on sailing (general audience)",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-reveal.js-ready-markdown-slides-for-a-",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 3
+    }
+  },
+  {
+    "run": "20260220_133842_craft-a-10-minute-class-on-oral-health-and-adressi",
+    "prompt_reconstructed": "craft a 10 minute class on oral health and adressi",
+    "task_list": "# Task List\n\n1. Generate 3–4 measurable learning objectives for a 10-minute class on oral health focusing on identifying and addressing small oral ulcers (aphthous ulcers) where the gums meet the cheek, targeted at a general adult audience\n2. Map the generated learning objectives to Bloom's taxonomy levels to ensure appropriate cognitive demand for a brief introductory class\n3. Draft a 2–3 module syllabus for the 10-minute oral health class aligned to the objectives (e.g., anatomy/identification, causes & prevention, home treatment of gum-line ulcers), with suggested instructional strategies\n4. Create a pacing guide distributing the 10 minutes across content delivery, visual demonstration, and Q&A for the oral ulcer class\n5. Design a brief formative assessment (e.g., 3–5 question quiz or checklist) with a rubric aligned to each learning objective on oral ulcer identification and care\n6. Synthesize 5–6 learning resources (articles, videos, patient handouts) from .edu, .gov, and OER sources on aphthous ulcers, oral hygiene, and gum-line ulcer treatment\n7. Generate a 10-slide reveal.js slide deck for the 10-minute oral health class covering ulcer identification, causes, home care, and when to seek professional help\n8. Design a one-page take-home worksheet with 3–4 activities for learners on recognizing oral ulcers, proper oral hygiene steps, and a self-care action plan",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-3–4-measurable-learning-objectives-for",
+        "02_map-the-generated-learning-objectives-to-bloom'",
+        "03_draft-a-2–3-module-syllabus-for-the-10-minute-o",
+        "04_create-a-pacing-guide-distributing-the-10-minut",
+        "05_design-a-brief-formative-assessment-(e.g.,-3–5-",
+        "06_synthesize-5–6-learning-resources-(articles,-vi",
+        "07_generate-a-10-slide-reveal.js-slide-deck-for-th",
+        "08_design-a-one-page-take-home-worksheet-with-3–4-",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 10
+    }
+  },
+  {
+    "run": "20260218_091025_create-a-lesson-plan-on-ai-ethics-in-middle-school",
+    "prompt_reconstructed": "create a lesson plan on ai ethics in middle school",
+    "task_list": "# Task List\n\n1. Generate measurable learning objectives for a lesson on AI ethics for middle school students.\n2. Draft a lesson outline or syllabus for the AI ethics topic, mapping content to the learning objectives.\n3. Synthesize a list of learning resources (articles, videos) on AI ethics appropriate for middle school students.\n4. Design assessments and rubrics aligned to the learning objectives for the AI ethics lesson.\n5. Build a slide deck presentation for the AI ethics lesson tailored to middle schoolers.\n6. Design a classroom-ready worksheet with activities for the AI ethics lesson.",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-measurable-learning-objectives-for-a-l",
+        "02_draft-a-lesson-outline-or-syllabus-for-the-ai-e",
+        "03_synthesize-a-list-of-learning-resources-(articl",
+        "04_design-assessments-and-rubrics-aligned-to-the-l",
+        "05_build-a-slide-deck-presentation-for-the-ai-ethi",
+        "06_design-a-classroom-ready-worksheet-with-activit",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 12
+    }
+  },
+  {
+    "run": "20260220_105523_craft-a-lesson-plan-for-grade-9-english",
+    "prompt_reconstructed": "craft a lesson plan for grade 9 english",
+    "task_list": "# Task List\n\n1. Generate 5–7 measurable learning objectives for a Grade 9 English lesson plan using action verbs appropriate for high school level\n2. Map each Grade 9 English learning objective to Bloom's Taxonomy levels to ensure coverage across cognitive domains\n3. Draft a structured syllabus outline for the Grade 9 English lesson plan with modules aligned to the learning objectives, including descriptions and suggested instructional strategies\n4. Design assessments with rubrics aligned to each Grade 9 English learning objective\n5. Create a pacing guide for the Grade 9 English lesson plan allocating time to content delivery, practice, and assessment across modules\n6. Synthesize 6–8 learning resources (articles, videos, OER materials) for Grade 9 English from .edu and OER sources\n7. Design a classroom-ready worksheet with activities aligned to the Grade 9 English learning objectives\n8. Generate a slide deck in reveal.js-ready Markdown for a key Grade 9 English lesson topic",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-5–7-measurable-learning-objectives-for",
+        "02_map-each-grade-9-english-learning-objective-to-",
+        "03_draft-a-structured-syllabus-outline-for-the-gra",
+        "04_design-assessments-with-rubrics-aligned-to-each",
+        "05_create-a-pacing-guide-for-the-grade-9-english-l",
+        "06_synthesize-6–8-learning-resources-(articles,-vi",
+        "07_design-a-classroom-ready-worksheet-with-activit",
+        "08_generate-a-slide-deck-in-reveal.js-ready-markdo",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 10
+    }
+  },
+  {
+    "run": "20260227_134624_generate-a-lesson-and-quiz-for-a-grade-9-audience-",
+    "prompt_reconstructed": "generate a lesson and quiz for a grade 9 audience",
+    "task_list": "# Task List\n\n1. Search for resources on Hofstadter's *I Am A Strange Loop* concepts (self-reference, consciousness, strange loops) suitable for Grade 9 audience\n2. Search for resources connecting strange loops / recursive self-reference to Generative AI and AI Agents for Grade 9 level\n3. Verify and summarize the top 3 results from each search to extract key concepts for grounding the lesson\n4. Generate 5–6 measurable learning objectives for Grade 9 students covering *I Am A Strange Loop*, self-referential systems, Generative AI, and AI Agents\n5. Map the learning objectives to Bloom's Taxonomy levels to ensure cognitive depth appropriate for Grade 9\n6. Draft a single-lesson syllabus outline (approx. 60–90 min) with module sections, descriptions, and instructional strategies for Grade 9 on Hofstadter's strange loops, Generative AI, and Agents\n7. Build a 10–12 slide reveal.js-ready slide deck for the Grade 9 lesson covering strange loops, self-reference in AI, Generative AI basics, and AI Agents\n8. Design a worksheet with 5–6 activities for Grade 9 students to explore strange loop concepts and their connection to Generative AI and Agents\n9. Design a quiz (10 questions, mixed format) aligned to the learning objectives assessing Grade 9 understanding of *I Am A Strange Loop*, Generative AI, and AI Agents — include a rubric\n10. Synthesize a curated list of 6–8 learning resources (videos, articles, OER) grounded in verified URLs for Grade 9 students and teachers on this topic",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "02_search-for-resources-connecting-strange-loops-r",
+        "05_map-the-learning-objectives-to-bloom's-taxonomy",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 5
+    }
+  },
+  {
+    "run": "20260302_175250_craft-a-10-minute-youtube-video-about-researching-",
+    "prompt_reconstructed": "craft a 10 minute youtube video about researching",
+    "task_list": "# Task List\n\n1. Generate 3–4 clear learning objectives for a 10-minute introductory video on learning motivation research (audience: general adults / aspiring educators)\n2. Search for key sources on learning motivation theories (e.g., intrinsic/extrinsic motivation, Self-Determination Theory, growth mindset) using `searx_search` and `wikipedia_search`\n3. Verify and summarize the top 3 results to extract core concepts and credible findings to ground the video content\n4. Synthesize 5–6 learning resources (articles, research summaries, videos) from `.edu` and OER sources to support the video's claims\n5. Build a reveal.js-ready slide deck structured as a 10-minute video script (hook → theory overview → research evidence → takeaways → call-to-action)",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_generate-3–4-clear-learning-objectives-for-a-10",
+        "02_search-for-key-sources-on-learning-motivation-t",
+        "03_verify-and-summarize-the-top-3-results-to-extra",
+        "04_synthesize-5–6-learning-resources-(articles,-re",
+        "05_build-a-reveal.js-ready-slide-deck-structured-a",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 23
+    }
+  },
+  {
+    "run": "20260311_081542_given-the-topics-of-sage.education-and-sage.is-ai-",
+    "prompt_reconstructed": "given the topics of sage.education and sage.is ai",
+    "task_list": "# Task List\n\n1. Search for Sage.Education and Sage.is platform overviews to understand their AI-UI features, pedagogical approach, and target audience\n2. Fetch and verify top 3 results from Sage.Education and Sage.is to extract key concepts, tools, and design philosophy for grounding the curriculum\n3. Search Wikipedia and OER sources for \"maker mindset education\" and \"maker pedagogy frameworks\" to establish foundational principles\n4. Verify and summarize top 3 maker mindset resources for relevance to AI literacy and hands-on learning\n5. Search for existing AI literacy curricula from .edu and OER sources (e.g., MIT, Stanford, oercommons.org) targeting K-12 or higher ed audiences\n6. Synthesize 10 learning resources (articles, videos, tools) covering LLMs, AI-UI, prompt engineering, and maker mindset from verified .edu and OER sources\n7. Generate 10 measurable learning objectives for an AI + Maker Mindset curriculum (mixed audience: secondary/post-secondary), spanning conceptual understanding through applied creation\n8. Map all 10 learning objectives to Bloom's Taxonomy levels to ensure coverage from foundational recall through synthesis and creation\n9. Draft a 8-module syllabus aligned to the objectives, with each module targeting a specific AI/maker theme (e.g., \"What is an LLM?\", \"Prompting as Design\", \"Build with AI\", \"Ethics & Agency\"), including suggested instructional strategies and workshop activities\n10. Design assessments and rubrics for each module aligned to learning objectives, emphasizing project-based and portfolio-style evidence\n11. Create a pacing guide distributing time across the 8 modules, balancing concept instruction, maker workshop time, peer critique, and assessment\n12. Build a 12-slide introductory slide deck on \"AI with a Maker Mindset\" for the course kickoff session (secondary/post-secondary audience)\n13. Design a Workshop 1 worksheet: \"Explore an LLM — Prompt, Observe, Iterate\" (hands-on, beginner level)\n14. Design a Workshop 2 worksheet: \"AI-UI Remix — Redesign a Sage.is Interface with a Maker Lens\" (intermediate, design-thinking focus)\n15. Design a Workshop 3 worksheet: \"Build a Mini-Project Using an LLM as a Co-Creator\" (applied/capstone activity, all levels)\n16. Search Google News for recent developments in AI education, AI-UI tools, and maker-focused AI programs to surface contemporary examples and case studies\n17. Verify and summarize top 3 news results for relevance and accuracy before incorporating into resources or syllabus",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_search-for-sage.education-and-sage.is-platform-",
+        "02_fetch-and-verify-top-3-results-from-sage.educat",
+        "03_search-wikipedia-and-oer-sources-for-maker-mind",
+        "04_verify-and-summarize-top-3-maker-mindset-resour",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 22
+    }
+  },
+  {
+    "run": "20260220_102346_say-hello-to-the-class",
+    "prompt_reconstructed": "say hello to the class",
+    "task_list": "# Task List\n\n1. Say hello to the class",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 2
+    }
+  },
+  {
+    "run": "20260225_203107_create-a-4-lesson-curiculum-that-will-be-delivered",
+    "prompt_reconstructed": "create a 4 lesson curiculum that will be delivered",
+    "task_list": "# Task List\n\n1. Search for educational resources on maker mindset, AI literacy, and the impact of consumer AI platforms on youth agency\n2. Verify and summarize top 3-5 sources to extract key concepts and talking points for grounding the curriculum\n3. Synthesize a curated list of 8-10 learning resources (articles, videos, OER) from .edu and reputable sources\n4. Generate 4-6 measurable learning objectives appropriate for middle/high school students\n5. Draft a 4-module syllabus with lesson descriptions and video-appropriate instructional strategies\n6. Design aligned assessments with rubrics for each lesson objective",
+    "expected": {
+      "step_dirs": [
+        "00_planning",
+        "01_search-for-educational-resources-on-maker-minds",
+        "02_verify-and-summarize-top-3-5-sources-to-extract",
+        "03_synthesize-a-curated-list-of-8-10-learning-reso",
+        "04_generate-4-6-measurable-learning-objectives-app",
+        "05_draft-a-4-module-syllabus-with-lesson-descripti",
+        "06_design-aligned-assessments-with-rubrics-for-eac",
+        "99_summary"
+      ],
+      "has_planning": true,
+      "has_summary": true,
+      "file_count": 13
+    }
+  }
+]
