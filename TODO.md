@@ -28,6 +28,20 @@ agent steps 60 · model pinned nemotron-3.5-lightning-free (see Pinned Zen
 model card). Harness env: OPENCODE_DISABLE_EXTERNAL_SKILLS=1 so a dev
 machine's ~/.claude skills stay out of the studio.
 
+CP0 review findings (Alexander, 2026-08-21), both fixed and re-proven green:
+(1) NN_ artifact numbering was lost — METHOD now fixes numbers per artifact
+type (00_plan … 08_worksheet, 90_research, 99_summary; gaps allowed, never
+renumber). (2) Search results were invisible — 90_research.md is now the
+research log holding verbatim websearch output; and one run FABRICATED the
+entire log (fake queries, dates, URLs, [Verified] tags, zero websearch
+calls) — METHOD now forbids [Verified] without a webfetch in-run, forbids
+invented dates, and requires the log to record only tool-executed searches.
+Third finding while fixing: runs sometimes skip the skill tool and
+improvise formats — skills are now mandatory per artifact in METHOD, and
+the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
+[Verified] tags. Zen flake note: one run died provider-side mid-pipeline
+(zero-token completion, exit 0) — the harness retry rule stands.
+
 ## In Progress
 
 - [ ] **Gate 0 — repo transition ready** #task

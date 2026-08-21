@@ -25,7 +25,7 @@ Match the requested number of objectives exactly and avoid extra commentary.
 
 ## Output contract
 
-Write `objectives.md` in the current course folder. The file must contain
+Write `01_objectives.md` in the current course folder. The file must contain
 only, in this order:
 
 ```markdown
