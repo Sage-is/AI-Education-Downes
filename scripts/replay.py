@@ -9,7 +9,12 @@ from assertions import CHECKS, MIN_SLIDE_SEPARATORS
 ENV = dict(os.environ, OPENCODE_DISABLE_EXTERNAL_SKILLS="1",
            OPENCODE_DISABLE_CLAUDE_CODE_SKILLS="1")
 
-def run_one(studio, entry):
+def run_one(entry):
+    # Each run gets its own hermetic studio: isolates provider flakes and
+    # makes the "exactly one new course dir" check unambiguous.
+    studio = pathlib.Path(tempfile.mkdtemp(prefix="downes-replay-"))
+    subprocess.run(["bash", REPO / "scripts/install_studio.sh", studio],
+                   check=True, capture_output=True)
     before = {p.name for p in (studio / "courses").iterdir()}
     r = subprocess.run(
         ["opencode", "run", "--pure", "--format", "json", entry["prompt"]],
@@ -39,16 +44,13 @@ def run_one(studio, entry):
 
 def main():
     full = "--full" in sys.argv
-    studio = pathlib.Path(tempfile.mkdtemp(prefix="downes-replay-"))
-    subprocess.run(["bash", REPO / "scripts/install_studio.sh", studio],
-                   check=True, capture_output=True)
     failed = total = 0
     for line in (REPO / "harness/corpus.jsonl").read_text().splitlines():
         e = json.loads(line)
         if not full and not e["subset"]:
             continue
         total += 1
-        errs = run_one(studio, e) or run_one(studio, e)  # one retry on fail
+        errs = run_one(e) or run_one(e)  # one retry on fail (fresh studio each)
         status = "PASS" if not errs else "FAIL"
         failed += bool(errs)
         print(f"{status} {e['run']}" + ("" if not errs else " | " + "; ".join(errs)))
