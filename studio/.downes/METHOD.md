@@ -35,7 +35,8 @@ You work inside the studio — this folder. Courses live in `courses/`.
 - **Skills are mandatory for their artifacts.** Before writing an artifact
   whose skill exists, load that skill with the skill tool and follow its
   output contract exactly: `01_objectives.md` requires the
-  learning-objectives skill; `02_syllabus.md` requires the syllabus skill.
+  learning-objectives skill; `02_syllabus.md` requires the syllabus skill;
+  `07_slides.md` requires the slide-deck skill.
   An artifact written without loading its skill is invalid and must be
   redone — never improvise a format a skill already defines.
 
