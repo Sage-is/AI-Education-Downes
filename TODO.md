@@ -96,6 +96,7 @@ the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
 
 - [ ] **Pinned Zen model** #prototype — Blocked by Gate 2
   - [x] CP0 evidence: big-pickle failed the one-line test 3× (ends turn mid-plan); nemotron-3.5-lightning-free completed the full 8-artifact pipeline — pinned as model, big-pickle kept as small_model
+  - [x] deepseek-v4-flash (opencode-go, Alexander's key — not a shippable teacher default): full pipeline, 3/3 mandatory skills, contract-clean reveal.js deck, honest no-search research log; ran no websearch at all. Best format discipline so far; candidate if a Sage-billed deepseek route exists
   - [ ] formal judgment via corpus replay at Gate 2
   - [ ] replay distinguishes provider flake from regression
 
