@@ -1,247 +1,75 @@
-ifneq ($(shell which docker-compose 2>/dev/null),)
-    DOCKER_COMPOSE := docker-compose
-else
-    DOCKER_COMPOSE := docker compose
-endif
-
-# Load environment variables from .env if it exists
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
-
-# Configuration variables with defaults (override with .env file)
-IMAGE_NAME ?= startr/app-image
-GHCR_IMAGE_NAME ?= ghcr.io/$(IMAGE_NAME)
-GIT_TAG := $(shell git tag --sort=-v:refname | sed 's/^v//' | head -n 1)
-IMAGE_TAG := $(if $(GIT_TAG),$(GIT_TAG),latest)
-GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-ifeq ($(GIT_BRANCH),HEAD)
-    GIT_BRANCH := $(shell git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
-endif
-SAFE_GIT_BRANCH := $(subst /,-,$(GIT_BRANCH))
-SAFE_GIT_BRANCH := $(shell echo $(SAFE_GIT_BRANCH) | tr '[:upper:]' '[:lower:]')
-CONTAINER_NAME ?= app-container
-PORT_MAPPING ?= 8080:8080
-VOLUME_DATA ?= sage-open-webui:/app/backend/data
-ENV_FILE := $$(pwd)/.env:/app/.env
-FRONTEND_SRC := $$(pwd)/app/src/:/app/src/
-BACKEND_SRC := $$(pwd)/app/backend/:/app/backend/
-
-# Architectures to build for
-ARCHITECTURES ?= amd64 arm64 # Not used at the moment
-
-help: 
-	@echo "======================================================="
-	@echo "  $(IMAGE_NAME) by Startr.Cloud and Startr LLC "
-	@echo "======================================================="
-	@echo ""
-	@echo 'This is the default make command.' 
+# 1. help (default target — must come first)
+help:
+	@echo "================================================"
+	@echo "       $(OWNER)/$(PROJECT_NAME) by Startr.Cloud"
+	@echo "================================================"
+	@echo "This is the default make command."
 	@echo "This command lists available make commands."
 	@echo ""
-	@echo "Usage examples:"
-	@echo "  0) Setup .env:     make setup_env"
-	@echo "  1) Build:          make it_build"
-	@echo "  2) Run:            make it_run"
+	@echo "Usage example:"
+	@echo "    make verify"
 	@echo ""
 	@echo "Available make commands:"
 	@echo ""
-	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null \
-		| awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$$@$$'
-	@echo ""	
+	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | \
+		awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ { \
+		if ($$1 !~ "^[#.]") {print $$1}}' | \
+		sort | \
+		grep -E -v -e '^[^[:alnum:]]' -e '^$@$$'
+	@echo ""
 
-# Common docker run arguments
-DOCKER_RUN_ARGS := --rm -p $(PORT_MAPPING) \
-	--add-host=host.docker.internal:host-gateway \
-	-v $(VOLUME_DATA) \
-	-v $(ENV_FILE) \
-	--name $(CONTAINER_NAME)
+# 2. Dynamic variable extraction (mirrors startr.sh)
+PROJECTPATH := $(shell git rev-parse --show-toplevel)
+PROJECT     := $(shell echo $$(basename $(PROJECTPATH)) | tr '[:upper:]' '[:lower:]')
+# Use symbolic-ref (clean failure on empty repos) → short SHA (detached HEAD) → develop fallback.
+# Do NOT use `git rev-parse --abbrev-ref HEAD` — it prints "HEAD" to stdout AND fails on a
+# no-commits repo, producing a corrupted "HEAD develop" value.
+FULL_BRANCH := $(shell git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "develop")
+BRANCH      := $(shell echo $(FULL_BRANCH) | sed 's/.*\///' | tr '[:upper:]' '[:lower:]')
+TAG         := $(shell git describe --always --tag 2>/dev/null || echo "v0.0.0")
 
-DEV_RUN_ARGS := --rm -p $(PORT_MAPPING) \
-	--add-host=host.docker.internal:host-gateway \
-	-p 5173:5173 \
-	-v $(VOLUME_DATA) \
-	-v $(ENV_FILE) \
-	-v $(FRONTEND_SRC) \
-	--name $(CONTAINER_NAME)
+# Owner and project name extracted from git remote URL
+REMOTE_URL   := $(shell git config --get remote.origin.url 2>/dev/null || echo "unknown/unknown")
+OWNER        := $(shell echo $(REMOTE_URL) | sed -E 's|.*[:/]([^/]+)/[^/]+(.git)?$$|\1|')
+PROJECT_NAME := $(shell echo $(REMOTE_URL) | sed -E 's|.*[:/][^/]+/([^/]+)(.git)?$$|\1|' | sed 's/\.git$$//')
 
-it_stop:
-	docker rm -f $(CONTAINER_NAME)
+# Container name (used by the Docker layer when one is scaffolded)
+CONTAINER := $(PROJECT)-$(BRANCH)
 
-it_clean:
-	docker system prune -f
-	docker builder prune --force
+# 3. Load environment overrides from .env if present
+-include .env
 
-it_gone:
-	@echo "Forcefully stopping and removing $(CONTAINER_NAME)..."
-	docker stop $(CONTAINER_NAME) || true
-	docker rm -f $(CONTAINER_NAME) || true
-	@echo "Container $(CONTAINER_NAME) has been removed"
+# 4. Project-specific custom targets
+release:
+	@scripts/release.sh
 
-# Build Docker Image with Branch Name
-it_build:
-	@echo "Building Docker image with BuildKit enabled..."
-	@export DOCKER_BUILDKIT=1 && \
-	docker build --load -t $(IMAGE_NAME):$(IMAGE_TAG) \
-	            -t $(IMAGE_NAME):latest \
-	            -t $(IMAGE_NAME):$(IMAGE_TAG)-$(SAFE_GIT_BRANCH) \
-	            -t $(IMAGE_NAME):$(SAFE_GIT_BRANCH) \
-	            .
-	afplay /System/Library/Sounds/Glass.aiff
+# 8. show_vars + verify (debug / one-shot self-check)
+show_vars:
+	@echo "=== Dynamic Variables ==="
+	@echo "PROJECTPATH=$(PROJECTPATH)"
+	@echo "PROJECT=$(PROJECT)"
+	@echo "OWNER=$(OWNER)"
+	@echo "PROJECT_NAME=$(PROJECT_NAME)"
+	@echo "FULL_BRANCH=$(FULL_BRANCH)"
+	@echo "BRANCH=$(BRANCH)"
+	@echo "TAG=$(TAG)"
+	@echo "CONTAINER=$(CONTAINER)"
+	@echo "REMOTE_URL=$(REMOTE_URL)"
+	@echo ""
 
-# Build Docker Image without Cache and with Branch Name
-it_build_no_cache:
-	@echo "Building Docker image without cache and with BuildKit enabled..."
-	@export DOCKER_BUILDKIT=1 && \
-	docker build --no-cache --load -t $(IMAGE_NAME):$(IMAGE_TAG) \
-	                     -t $(IMAGE_NAME):latest \
-	                     -t $(IMAGE_NAME):$(IMAGE_TAG)-$(SAFE_GIT_BRANCH) \
-	                     -t $(IMAGE_NAME):$(SAFE_GIT_BRANCH) \
-	                     .
-	afplay /System/Library/Sounds/Glass.aiff
+# One-shot scaffold self-check. Bundles every read-only verification into a
+# single make invocation so post-scaffold testing isn't N separate processes.
+verify: show_vars require_gitflow_next
+	@echo "=== Targets defined in this Makefile ==="
+	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | \
+		awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ { \
+		if ($$1 !~ "^[#.]") {print "  " $$1}}' | \
+		sort -u | \
+		grep -E -v -e '^  [^[:alnum:]]'
+	@echo ""
+	@echo "OK: Makefile scaffold verified."
 
-
-build_slim:
-	# Build a slim version of the image from the Dockerimage
-	# Note at the moment manual use of the site is required to build the slim version
-	# we need to add selenium automation to the build process to automate this
-	# see https://github.com/slimtoolkit/slim
-	slim build --http-probe  --include-path /app/backend --include-path /app/static --continue-after=160  $(IMAGE_NAME)
-
-it_run_slim:
-	# Run the slim version of the image
-	docker run $(DOCKER_RUN_ARGS) $(IMAGE_NAME).slim:latest
-
-
-dev_run:
-	docker run $(DEV_RUN_ARGS) $(IMAGE_NAME):$(IMAGE_TAG) bash -c "/app/backend/restore_backup_start.sh dev" 
-
-# Run targets
-it_run:
-	docker run $(DOCKER_RUN_ARGS) $(IMAGE_NAME):$(IMAGE_TAG)
-
-# Combine build and dev run targets
-it_build_n_dev_run: it_build
-	afplay /System/Library/Sounds/Glass.aiff
-	@make dev_run
-
-# Combined build and run targets
-it_build_n_run: it_build
-	@make it_run
-
-it_build_n_run_no_cache: it_build_no_cache
-	@make it_run
-
-# Ensure builder target
-ensure_builder:
-	@docker buildx inspect multi-arch-builder >/dev/null 2>&1 || docker buildx create --name multi-arch-builder --use
-
-# Multi-architecture build helpers
-define build_arch
-	@make it_clean
-	@make ensure_builder	
-	docker buildx build --platform linux/$(1) \
-		-t $(2):$(1)-$(IMAGE_TAG) \
-		-t $(2):$(1)-latest \
-		--build-arg ARCH=$(1) \
-		--load . && \
-	docker push $(2):$(1)-$(IMAGE_TAG) && \
-	docker push $(2):$(1)-latest
-endef
-
-# Clean old manifests
-clean-manifests-dockerhub:
-	docker manifest rm $(IMAGE_NAME):$(IMAGE_TAG) || true
-	docker manifest rm $(IMAGE_NAME):latest || true
-
-clean-manifests-ghcr:
-	docker manifest rm $(GHCR_IMAGE_NAME):$(IMAGE_TAG) || true
-	docker manifest rm $(GHCR_IMAGE_NAME):latest || true
-
-# Build individual architectures for Docker Hub
-build-amd64-dockerhub:
-	@echo "Building AMD64 for Docker Hub"
-	$(call build_arch,amd64,$(IMAGE_NAME))
-
-build-arm64-dockerhub:
-	@echo "Building ARM64 for Docker Hub"
-	$(call build_arch,arm64,$(IMAGE_NAME))
-
-# Build individual architectures for GHCR
-build-amd64-ghcr:
-	@echo "Building AMD64 for GHCR"
-	$(call build_arch,amd64,$(GHCR_IMAGE_NAME))
-
-build-arm64-ghcr:
-	@echo "Building ARM64 for GHCR"
-	$(call build_arch,arm64,$(GHCR_IMAGE_NAME))
-
-# Create and push manifests for Docker Hub
-create-manifest-dockerhub: build-amd64-dockerhub build-arm64-dockerhub
-	@echo "Creating Docker Hub manifests for version $(IMAGE_TAG)"
-	docker manifest create \
-		$(IMAGE_NAME):$(IMAGE_TAG) \
-		$(IMAGE_NAME):amd64-$(IMAGE_TAG) \
-		$(IMAGE_NAME):arm64-$(IMAGE_TAG)
-	docker manifest push $(IMAGE_NAME):$(IMAGE_TAG)
-	docker manifest create \
-		$(IMAGE_NAME):latest \
-		$(IMAGE_NAME):amd64-latest \
-		$(IMAGE_NAME):arm64-latest
-	docker manifest push $(IMAGE_NAME):latest
-
-# Create and push manifests for GHCR
-create-manifest-ghcr: build-amd64-ghcr build-arm64-ghcr
-	@echo "Creating GHCR manifests for version $(IMAGE_TAG)"
-	docker manifest create \
-		$(GHCR_IMAGE_NAME):$(IMAGE_TAG) \
-		$(GHCR_IMAGE_NAME):amd64-$(IMAGE_TAG) \
-		$(GHCR_IMAGE_NAME):arm64-$(IMAGE_TAG)
-	docker manifest push $(GHCR_IMAGE_NAME):$(IMAGE_TAG)
-	docker manifest create \
-		$(GHCR_IMAGE_NAME):latest \
-		$(GHCR_IMAGE_NAME):amd64-latest \
-		$(GHCR_IMAGE_NAME):arm64-latest
-	docker manifest push $(GHCR_IMAGE_NAME):latest
-
-
-# Main multi-arch build targets
-it_build_multi_arch_push_docker_hub: clean-manifests-dockerhub create-manifest-dockerhub
-	@echo "Completed Docker Hub multi-arch build and push for version $(IMAGE_TAG)"
-
-# Builds and pushed to the GitHub Container Registry
-it_build_multi_arch_push_GHCR: clean-manifests-ghcr create-manifest-ghcr
-	@echo "Completed GHCR multi-arch build and push for version $(IMAGE_TAG)"
-
-# Build both registries
-it_build_multi_arch_all: it_build_multi_arch_push_docker_hub it_build_multi_arch_push_GHCR
-	@echo "Completed all multi-arch builds and pushes for version $(IMAGE_TAG)"
-
-# Utility target to show current version
-show-version:
-	@echo "Current version: $(IMAGE_TAG)"
-
-.PHONY: release it_build it_build_no_cache dev_run it_run it_build_n_run it_build_n_run_no_cache \
-	clean-manifests-dockerhub clean-manifests-ghcr \
-	build-amd64-dockerhub build-arm64-dockerhub \
-	build-amd64-ghcr build-arm64-ghcr \
-	create-manifest-dockerhub create-manifest-ghcr \
-	it_build_multi_arch_push_docker_hub it_build_multi_arch_push_GHCR \
-	it_build_multi_arch_all show-version setup_env setup_env_auto setup_env_template \
-	require_gitflow_next
-
-
-# Version Management with Git Flow
-# --------------------------------
-# These commands manage semantic versioning with Git Flow workflow.
-# All version tags start with 'v' (e.g., v1.2.3) following semantic versioning principles:
-# - major_release: Increments the first number (e.g., v1.2.3 -> v2.0.0)
-# - minor_release: Increments the second number (e.g., v1.2.3 -> v1.3.0)
-# - patch_release: Increments the third number (e.g., v1.2.3 -> v1.2.4)
-# - hotfix: Adds or increments a fourth number (e.g., v1.2.3 -> v1.2.3.1)
-#
-# The 'v' prefix is consistently preserved in all version tags and branches.
-
+# 9. Git-flow-next release/hotfix flow
 require_gitflow_next:
 	@if ! git flow version 2>/dev/null | grep -q 'git-flow-next'; then \
 		echo "Error: git-flow-next required (Go rewrite). Install: brew install git-flow-next"; \
@@ -250,49 +78,38 @@ require_gitflow_next:
 
 minor_release: require_gitflow_next
 	# Start a minor release with incremented minor version
-	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2+1".0"}')
+	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2+1".0"}') && echo "or use 'make release_finish' to finish the release"
 
 patch_release: require_gitflow_next
 	# Start a patch release with incremented patch version
-	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2"."$$3+1}')
+	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2"."$$3+1}') && echo "or use 'make release_finish' to finish the release"
 
 major_release: require_gitflow_next
 	# Start a major release with incremented major version
-	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1+1".0.0"}')
+	git flow release start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1+1".0.0"}') && echo "or use 'make release_finish' to finish the release"
 
 hotfix: require_gitflow_next
-	# Start a hotfix with incremented patch.patch version (fourth component)
-	git flow hotfix start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{if (NF < 4) print $$1"."$$2"."$$3".1"; else print $$1"."$$2"."$$3"."$$4+1}')
+	# Start a hotfix with incremented n.n.n.n version (incrementing the fourth number)
+	git flow hotfix start $$(git tag --sort=-v:refname | sed 's/^v//' | head -n 1 | awk -F'.' '{print $$1"."$$2"."$$3"."$$4+1}') && echo "or use 'make hotfix_finish' to finish the hotfix"
 
 release_finish: require_gitflow_next
 	git flow release finish && git push origin develop && git push origin master && git push --tags && git checkout develop
 
 hotfix_finish: require_gitflow_next
-	git flow hotfix finish && git push origin develop && git push origin master && git push --tags && git checkout develop
+	git flow hotfix finish && git push origin develop && git push origin master && git push --tags && git checkout master
 
+# 10. things_clean
+# WARNING: things_clean wipes ALL gitignored files including:
+#   vault/   - user data: generated curriculum runs, ~13 MB across ~2000 files.
+#              These are the archived agent outputs used as the regression
+#              corpus. Only vault/README.md is tracked and survives.
+# It preserves any file matching .env* (e.g. .env, .env.local, .env.production).
+# Use a narrower target for routine wipes.
 things_clean:
-	git clean --exclude=!.env -Xdf
+	git clean --exclude='!.env*' -Xdf
 
-
-it_deploy:
-	caprover deploy --default
-
-it_start:
-	docker start $(CONTAINER_NAME)
-
-it_start_and_build: it_build
-	docker start $(CONTAINER_NAME)
-
-it_update:
-	@echo "Updating LLM models and rebuilding container..."
-	@chmod +x update_ollama_models.sh
-	@./update_ollama_models.sh
-	@git pull
-	docker stop $(CONTAINER_NAME) || true
-	@make it_build
-	@make it_run
-# ---------------------------------------------------------------------------
-# Interactive release (full flow via ~/bin/git-release)
-# ---------------------------------------------------------------------------
-release:
-	@scripts/release.sh
+# 11. .PHONY declarations
+.PHONY: help show_vars verify require_gitflow_next \
+	minor_release patch_release major_release hotfix \
+	release_finish hotfix_finish things_clean \
+	release
