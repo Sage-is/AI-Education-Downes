@@ -75,8 +75,8 @@ the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
 - [ ] **Gate 3 — contained + installable** #task — Blocked by Gate 2
   - [ ] fork `ai-ui-mini` @ v1.18.18 — `brand.ts` + 8-file brand surface, LICENSE byte-identical
   - [ ] timed rebase drill onto v1.18.19 ≤ ~20 min
-  - [ ] `launcher/downes.sb` deny-default sandbox + escape test + in-anger OS-layer test
-  - [ ] brew tap `sage-is/tap/downes` clean-account install + unsigned DMG
+  - [x] `launcher/downes.sb` deny-default sandbox + escape test ALL GREEN + in-anger OS-layer test (session survives, no escape artifact). Model correction: broad file-READ allow needed for binaries to launch; fence is WRITE deny-default + private-data read-denies
+  - [x] brew formula authored (packaging/homebrew/downes.rb) + unsigned-DMG path documented (packaging/README.md); clean-account install pends the fork release tarball
   - [ ] advisor review: fork diff scoped, escape tests green
   - [ ] work the Python plumbing retention card
 
