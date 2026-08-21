@@ -1,56 +1,45 @@
-# Environment variables
-.env
-.env.local
-.env.*
+# Hidden-artifact allowlist: deny dotfiles and dotfolders everywhere in the
+# repo unless they are intentionally shared and explicitly included below.
+.*
+!/.gitignore
+!/.gitattributes
+!/.editorconfig
+# Claude Code project settings are shared; settings.local.json stays local.
+!/.claude/
+!/.claude/settings.json
+# *.example at any depth (no leading slash). Keep this note on its OWN line —
+# gitignore has no inline comments; a trailing comment becomes part of the pattern.
+!.*.example
 
-# Python
+# Non-dot build & runtime junk (root-anchored so vendored sub-repos keep their own)
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+/build/
+/develop-eggs/
+/dist/
+/downloads/
+/eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-
-# Virtual environments
 venv/
 env/
 ENV/
-.venv
-
-# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# IDEs
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# UV
-.uv/
-
-# Cursor files
-.cursor/
-
-# Knowledge vaults
-
+# User data: generated curriculum runs. Never committed; the README is.
 vault/*
+!vault/README.md
