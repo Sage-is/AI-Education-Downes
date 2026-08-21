@@ -63,11 +63,14 @@ the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
   - [ ] stage-1 Python removal; tag `pre-opencode`
 
 - [ ] **Gate 2 — launcher + legal** #task — Blocked by Gate 0 (runs parallel to Gate 1)
-  - [ ] `docs/legal/STATUS_MATRIX.md` — GREEN/AMBER/RED, no RED, licence recommendation recorded
-  - [ ] `launcher/downes.sh` — `OPENCODE_CONFIG_DIR`, XDG under `.downes/xdg/`, disable project config + autoupdate
-  - [ ] Keychain-gated Sage key (`is.sage.downes`), Zen `public` as the floor
-  - [ ] first-launch bootstrap + `Downes.app` shim (unsigned in v1; signing backlogged)
-  - [ ] advisor review: `debug paths` inside studio, antigravity grep = 0, user db untouched
+  - [x] `docs/legal/STATUS_MATRIX.md` — 8 rows, no RED (trademark GREEN — resolved)
+  - [x] `launcher/downes.sh` — isolation via XDG_CONFIG_HOME + OPENCODE_CONFIG + OPENCODE_PURE (OPENCODE_CONFIG_DIR does NOT redirect the global on 1.18.18 — verified by plugin_origins); XDG data/state/cache under `.downes/xdg/`; project config + autoupdate disabled
+  - [x] Keychain-gated Sage key (`is.sage.downes`), Zen `public` as the floor
+  - [x] first-launch bootstrap in the launcher
+  - [x] isolation verified: plugins [], origins [], user opencode.db untouched
+  - [ ] `Downes.app` Terminal shim (unsigned in v1; signing backlogged)
+  - [ ] live round-trip through the launcher (queued behind the Zen lane)
+  - [ ] advisor review
 
 - [ ] **Gate 3 — contained + installable** #task — Blocked by Gate 2
   - [ ] fork `ai-ui-mini` @ v1.18.18 — `brand.ts` + 8-file brand surface, LICENSE byte-identical
