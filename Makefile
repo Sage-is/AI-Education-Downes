@@ -113,8 +113,31 @@ things_clean:
 studio:
 	@bash scripts/install_studio.sh $(STUDIO_DIR)
 
+
+# Validate the studio config: strict JSON + resolved by the installed binary
+validate_config:
+	@python3 -mjson.tool studio/opencode.json >/dev/null && echo "OK: strict JSON"
+	@T=$$(mktemp -d) && bash scripts/install_studio.sh $$T >/dev/null && \
+		cd $$T && opencode --pure debug config >/dev/null && \
+		echo "OK: resolves on opencode $$(opencode --version)"
+
+# Replay the regression corpus (subset / all 34)
+replay:
+	@python3 scripts/replay.py
+
+replay_full:
+	@python3 scripts/replay.py --full
+
+# The scriptable one-line test against a fresh hermetic studio
+studio_test:
+	@bash scripts/studio_test.sh
+
+ci: validate_config studio_test replay
+	@uv run pytest src/tests -m "not live" -q
+	@python3 scripts/validate_corpus.py
+
 # 11. .PHONY declarations
 .PHONY: help show_vars verify require_gitflow_next \
 	minor_release patch_release major_release hotfix \
 	release_finish hotfix_finish things_clean \
-	release studio
+	release studio validate_config replay replay_full studio_test ci
