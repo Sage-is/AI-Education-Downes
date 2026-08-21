@@ -8,6 +8,11 @@ from downes.tools.education.slides import build_slide_deck
 from downes.tools.education.worksheet import design_worksheet
 from downes.tools.education.slides import _extract_reveal_markdown
 
+import pytest
+
+# These tests call the education tools end-to-end and need an LLM provider.
+pytestmark = pytest.mark.live
+
 
 def test_objectives():
     """Test objectives tool returns Markdown"""

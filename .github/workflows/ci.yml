@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+
+jobs:
+  offline:
+    name: Offline gate (no LLM key)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate regression corpus
+        run: python3 scripts/validate_corpus.py
+
+      - name: Schema-validate studio config (when present)
+        run: |
+          if [ -f studio/opencode.json ]; then
+            python3 -m json.tool studio/opencode.json > /dev/null
+            pipx run check-jsonschema --schemafile ci/opencode.schema.json studio/opencode.json
+          else
+            echo "studio/opencode.json not present yet — skipping (lands at Checkpoint 0)"
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Offline tests
+        run: uv run pytest src/tests -m "not live" -q

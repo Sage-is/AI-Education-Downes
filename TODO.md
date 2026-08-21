@@ -19,9 +19,9 @@ CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
 
 - [ ] **Gate 0 — repo transition ready** #task
   - [x] Makefile scaffold commit (68a36bd)
-  - [ ] register pass commit
-  - [ ] corpus commit
-  - [ ] CI commit
+  - [x] register pass commit (4124fe0)
+  - [x] corpus commit (b5e7a57)
+  - [x] CI commit — offline blocking + nightly live; test_providers.py deleted
   - [ ] advisor review
   - [ ] record `docs/decisions/gate-0-repo-ready.md`
 

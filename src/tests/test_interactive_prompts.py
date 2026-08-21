@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+
 Test script for interactive prompt editing in debug mode.
 
 This demonstrates the new interactive features:
@@ -15,6 +16,9 @@ Usage:
 Or with the agent:
     uv run downes-agent --debug "Create a Python basics course"
 """
+import pytest
+
+pytestmark = pytest.mark.skip(reason="reads stdin; cannot run under CI capture - run manually with -s; ui retires at Gate 1")
 
 from downes.utils.logger import Logger
 from downes.llm_interaction import _review_and_edit_prompt

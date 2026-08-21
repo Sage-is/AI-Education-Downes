@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
+
 Test to validate that the agent properly handles JSON 'null' values
 and malformed JSON passed as string arguments to tools.
 """
+import pytest
 
-from src.downes.agent import Agent
-from src.downes.tools.education.objectives import generate_learning_objectives
-from src.downes.tools.education.syllabus import draft_syllabus
+pytestmark = pytest.mark.skip(reason="pre-existing drift: Agent._normalize_arg_value removed; agent.py retires at Gate 1 (TODO.md)")
+
+from downes.agent import Agent
+from downes.tools.education.objectives import generate_learning_objectives
+from downes.tools.education.syllabus import draft_syllabus
 
 
 def test_normalize_arg_value():

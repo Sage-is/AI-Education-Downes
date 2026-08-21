@@ -33,3 +33,8 @@ where = ["src"]
 dev = [
     "pytest>=9.0.2",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: needs a live LLM provider (deselected in offline CI)",
+]

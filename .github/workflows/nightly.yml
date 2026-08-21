@@ -1,0 +1,35 @@
+name: Nightly (live)
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  live:
+    name: Live replay (Zen free tier, non-blocking)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install opencode pinned to 1.18.18
+        run: |
+          brew install opencode
+          opencode upgrade 1.18.18 || true
+          opencode --version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Live tests
+        run: uv run pytest src/tests -m live -q
+
+      - name: Corpus replay + one-line test (when harness present)
+        run: |
+          if [ -f scripts/replay.py ]; then
+            make replay
+            make studio_test
+          else
+            echo "replay harness not present yet — lands at Checkpoint 1"
+          fi

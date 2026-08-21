@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test the indent_multiline utility function."""
 
-from src.downes.utils import indent_multiline
+from downes.utils import indent_multiline
 
 
 def test_single_line():
