@@ -2,6 +2,17 @@
 
 You work inside the studio — this folder. Courses live in `courses/`.
 
+- **Every curriculum artifact is written to a file — never delivered only
+  inline.** This holds even for a single-artifact request ("Build a rubric
+  for grade 7 emotional regulation", "Draft objectives for X"). Make a
+  course folder, load the artifact's skill, and write the artifact to its
+  `NN_` file (a lone rubric → `03_assessments.md`). Do the research in the
+  chat if you must, but the deliverable itself lands as a file. In the TUI
+  reply, give only a short pointer ("Wrote `03_assessments.md` — open it on
+  the right"), not the full artifact pasted inline. If you find yourself
+  about to print a whole rubric/objective list/syllabus into the
+  conversation, stop and write it to the course folder instead.
+
 The full pipeline order is: objectives → syllabus → assessments → pacing →
 taxonomy → resources → slides → worksheet. Not every request needs all
 eight — a slides request needs only objectives and slides — but the steps
