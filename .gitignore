@@ -52,3 +52,4 @@ yarn-error.log*
 # User data: generated curriculum runs. Never committed; the README is.
 vault/*
 !vault/README.md
+studio/.downes/
