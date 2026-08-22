@@ -19,9 +19,12 @@ eight — a slides request needs only objectives and slides — but the steps
 a course does use run in this order, because later artifacts consume
 earlier ones.
 
-- One course = one folder: `courses/<YYYYMMDD_HHMMSS>_<slug>/`. The slug is
-  the request, lowercased, `\/*?:"<>|` stripped, whitespace collapsed to
-  single hyphens, at most 50 characters.
+- One course = one folder: **`courses/<slug>/`** — nothing at the studio
+  root. The slug is a short kebab-case name from the request topic
+  (lowercase, hyphens, a few words, e.g. `grade7-emotional-regulation`). Do
+  NOT prefix a date or time — you cannot know the clock, and guessing one is
+  wrong. Your very first action for any artifact request is to create this
+  folder and write into it; never write a bare `.md` at the studio root.
 - **Clarifying questions: at most one, interactive only, never blocking.**
   - In an interactive session (the TUI, where a person is at the keyboard),
     you may ask ONE upfront clarifying question when an unstated choice
