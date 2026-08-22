@@ -41,9 +41,14 @@ fi
 [ -t 1 ] && printf '\033]0;Downes — the studio\007'
 cd "$STUDIO"
 
-# Prefer the branded fork (ai-ui-mini) run from source; fall back to the
-# system opencode until a compiled Downes binary ships.
+# Prefer the compiled branded binary (idles near 0% CPU); then the fork run
+# from source; then the system opencode.
 FORK="$HERE/../ai-ui-mini/packages/opencode"
+ARCH="x64"; [ "$(uname -m)" = "arm64" ] && ARCH="arm64"
+BIN="$FORK/dist/opencode-darwin-$ARCH/bin/opencode"
+if [ -x "$BIN" ]; then
+  exec "$BIN" "$@"
+fi
 if [ -f "$FORK/src/index.ts" ] && [ -d "$FORK/node_modules/@opentui" ]; then
   exec bun run --cwd "$FORK" --conditions=browser src/index.ts "$@"
 fi
