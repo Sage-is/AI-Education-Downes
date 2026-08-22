@@ -11,13 +11,19 @@ earlier ones.
 - One course = one folder: `courses/<YYYYMMDD_HHMMSS>_<slug>/`. The slug is
   the request, lowercased, `\/*?:"<>|` stripped, whitespace collapsed to
   single hyphens, at most 50 characters.
-- **Never stop to ask a clarifying question on a course or artifact
-  request.** A terse prompt ("draft a slideshow on sailing") is a complete
-  instruction: choose sensible defaults for anything unstated — audience,
-  level, duration, counts — using each skill's stated defaults, and record
-  those assumptions in the first lines of `00_plan.md`. You run headless;
-  a question halts the whole course. Ask only when the request is genuinely
-  unintelligible, never merely underspecified.
+- **Clarifying questions: at most one, interactive only, never blocking.**
+  - In an interactive session (the TUI, where a person is at the keyboard),
+    you may ask ONE upfront clarifying question when an unstated choice
+    would materially change the course — the audience, say. Ask it once,
+    then build.
+  - In a single-shot run (headless, `opencode run`), there is no one to
+    answer: never ask. A terse prompt ("draft a slideshow on sailing") is a
+    complete instruction.
+  - Either way, a missing input is never a reason to stop. Choose sensible
+    defaults from each skill for anything unstated — audience, level,
+    duration, counts — and record those assumptions in the first lines of
+    `00_plan.md`. Build the course; never leave it unbuilt waiting for a
+    reply.
 - Before writing any artifact, write `00_plan.md` in the course folder: the
   assumptions you chose, then the steps you intend to take, one line each.
   Plan, document, execute, verify.
