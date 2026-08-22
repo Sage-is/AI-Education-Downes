@@ -80,6 +80,7 @@ narration live in `docs/board-dossiers.md`.
 
 ## Backlog
 
+- [ ] **Match sage.is AI-UI styling** #task — align the studio chrome (palette, type, components) with the real Sage.is AI-UI design system; startr.style + startr.swap in the viewer
 - [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
   v1 ships brew tap + unsigned DMG
 - fog: Sage gateway (api.sage.is), allowlist proxy for host-pinning, corpus

@@ -14,22 +14,15 @@ if [ ! -f "$STUDIO/opencode.json" ]; then
 fi
 mkdir -p "$DHOME/config/themes" "$DHOME/xdg/data" "$DHOME/xdg/state" "$DHOME/xdg/cache"
 
-# --- isolation -----------------------------------------------------------
-# XDG_CONFIG_HOME points the "global" config location at an empty dir the
-# studio owns, so the user's ~/.config/opencode (plugins included) never
-# loads. The studio config loads via OPENCODE_CONFIG — an explicit config
-# whose {file:...} refs resolve against its own location, the studio root.
-# Project configs are disabled so a downloaded course cannot smuggle one in.
-export XDG_CONFIG_HOME="$DHOME/xdg/config"
+# --- config layer --------------------------------------------------------
+# Layer the curriculum config on the user's normal opencode environment.
+# We do NOT isolate XDG or use --pure: the studio shares the user's real
+# providers, models, and connections and can save new ones. OPENCODE_CONFIG
+# merges our skills/agent/METHOD; project config stays off so a downloaded
+# course cannot smuggle its own config.
 export OPENCODE_CONFIG="$STUDIO/opencode.json"
-export OPENCODE_PURE=1
-export XDG_DATA_HOME="$DHOME/xdg/data"           # own auth.json + opencode.db
-export XDG_STATE_HOME="$DHOME/xdg/state"
-export XDG_CACHE_HOME="$DHOME/xdg/cache"
 export OPENCODE_DISABLE_PROJECT_CONFIG=1
 export OPENCODE_DISABLE_AUTOUPDATE=1
-export OPENCODE_DISABLE_EXTERNAL_SKILLS=1
-export OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1
 
 # --- credentials: Sage when present, Zen public floor otherwise ----------
 KEY="$(security find-generic-password -s is.sage.downes -w 2>/dev/null || true)"

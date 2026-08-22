@@ -4,20 +4,13 @@
   "share": "disabled",
   "autoupdate": false,
   "default_agent": "downes",
-  "enabled_providers": [
-    "opencode"
-  ],
   "model": "opencode/nemotron-3.5-lightning-free",
   "small_model": "opencode/big-pickle",
   "provider": {
     "opencode": {
       "options": {
         "apiKey": "public"
-      },
-      "whitelist": [
-        "big-pickle",
-        "nemotron-3.5-lightning-free"
-      ]
+      }
     }
   },
   "instructions": [
