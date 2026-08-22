@@ -9,10 +9,8 @@
 !/studio/.downes/**
 !/.github/
 !/.github/**
-# The ai-ui-mini fork keeps its own git history (branch downes/v1) and will
 # push to its own remote; not vendored into this AGPL repo. See
 # docs/fork-brand-surface.md.
-/ai-ui-mini/
 # Claude Code project settings are shared; settings.local.json stays local.
 !/.claude/
 !/.claude/settings.json
