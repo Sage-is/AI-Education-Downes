@@ -40,4 +40,11 @@ fi
 
 [ -t 1 ] && printf '\033]0;Downes — the studio\007'
 cd "$STUDIO"
+
+# Prefer the branded fork (ai-ui-mini) run from source; fall back to the
+# system opencode until a compiled Downes binary ships.
+FORK="$HERE/../ai-ui-mini/packages/opencode"
+if [ -f "$FORK/src/index.ts" ] && [ -d "$FORK/node_modules/@opentui" ]; then
+  exec bun run --cwd "$FORK" --conditions=browser src/index.ts "$@"
+fi
 exec opencode "$@"

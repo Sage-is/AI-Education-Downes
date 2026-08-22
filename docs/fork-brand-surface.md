@@ -21,19 +21,37 @@ export const BRAND = {
 }
 ```
 
-## The patch points (verified against v1.18.18 via the GitHub tree)
+## The patch points (VERIFIED by cloning + running v1.18.18)
+
+Applied and committed on branch `downes/v1` (fork commit 3022d91):
+
+| File | Change | Status |
+|------|--------|--------|
+| `packages/tui/src/logo.ts` | `opencode` wordmark → `downes` block art, two-tone dow/nes | DONE |
+| `packages/tui/src/routes/home.tsx` | placeholder examples (`Fix a TODO in the codebase`) → course-design prompts | DONE |
+| `packages/tui/src/feature-plugins/home/tips-view.tsx` | `NO_MODELS_TIP` (`/connect … start coding`) → "ask Downes to design a course" | DONE |
+
+Still to do for the full brand pass (lower visibility):
 
 | File | Change |
 |------|--------|
-| `packages/tui/src/logo.ts` | import `BRAND.tuiWordmark` |
-| `packages/tui/src/component/startup-loading.tsx` | splash → `BRAND.splashLine` |
-| `packages/tui/src/feature-plugins/home/footer.tsx` | add `BRAND.footerCredit`; drop the cwd path render |
-| `packages/tui/src/routes/session/footer.tsx` | footer credit |
-| `packages/tui/src/feature-plugins/sidebar/footer.tsx` | footer credit |
-| `packages/opencode/src/cli/logo.ts` | `BRAND.cliWordmark` |
-| `packages/opencode/src/cli/ui.ts` | product name string |
-| `packages/opencode/src/cli/cmd/run/splash.ts` | `BRAND.splashLine` |
-| `packages/opencode/package.json` | `bin` → `downes` |
+| `packages/opencode/package.json` | `bin` `opencode` → `downes` (compiled-install only) |
+| the remaining `/connect` tips in `tips-view.tsx` | curriculum wording or removal |
+| `packages/opencode/src/cli/logo.ts` | re-exports `@opencode-ai/tui/logo` — inherits the new wordmark automatically |
+| footer provider label "OpenCode Zen" | keep — it is the nominative "Powered by OpenCode" credit |
+
+`brand.ts` was NOT needed as a separate constants file for v1 — the changes
+are small and local. Introduce it only if the surface grows.
+
+## Running the fork (verified)
+
+No compile needed for a branded preview: the launcher runs the fork from
+source via `bun run --cwd <fork>/packages/opencode --conditions=browser
+src/index.ts`. Requires `bun install` in the fork (bun's isolated layout
+puts `@opentui` under each package's `node_modules`; the
+`tree-sitter-powershell` postinstall fails on a missing `node-gyp` but is an
+optional grammar — harmless). A compiled `downes` binary
+(`bun run build`) is the shipping step, deferred.
 
 ## Discipline
 
