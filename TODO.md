@@ -6,130 +6,89 @@
 
 ## Destination
 
-Downes ships as Markdown skills on opencode 1.18.18 on the Sage.is AI-UI mini
-platform; this repo stays the curriculum-asset home. Teacher pilot (Gate 4)
-says ship.
+Downes ships as Markdown skills on opencode 1.18.18, running on the Sage.is
+AI-UI mini platform; this repo stays the curriculum-asset home. Teacher
+pilot (Gate 4) says ship.
 
 ## Notes
 
 RAD rules: advisor reviews after every checkpoint, go/no-go at every gate,
 CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
 
-CP0 gate note (2026-08-21): GREEN — one-line test passed all six checks
-(exit 0, course folder with all 8 artifacts, structure greps, skill tool
-fired 2×, zero "openai" anywhere, posture probes hold: bash refused, /tmp
-write denied, studio write allowed). Config deltas vs the briefing, all in
-studio/opencode.json: sage provider stripped (NXDOMAIN) · `{file:}` prompt
-syntax · mcp deferred (no downes-mcp binary) · deck command deferred to CP1 ·
-autoupdate false during delivery · webfetch deny (ask auto-rejects and kills
-non-interactive runs; websearch works and stays) · provider whitelist pins
-the picker to 2 free models (Zen otherwise exposes 20 gpt-* entries) ·
-agent steps 60 · model pinned nemotron-3.5-lightning-free (see Pinned Zen
-model card). Harness env: OPENCODE_DISABLE_EXTERNAL_SKILLS=1 so a dev
-machine's ~/.claude skills stay out of the studio.
+Published 2026-08-22: both repos public on Sage-is — `AI-Education-Downes`
+(AGPL, this repo) and `ai-ui-mini` (MIT fork, branch `downes/v1`), the fork
+tracked here as a **submodule**. Fresh clones need `--recurse-submodules`.
 
-CP0 review findings (Alexander, 2026-08-21), both fixed and re-proven green:
-(1) NN_ artifact numbering was lost — METHOD now fixes numbers per artifact
-type (00_plan … 08_worksheet, 90_research, 99_summary; gaps allowed, never
-renumber). (2) Search results were invisible — 90_research.md is now the
-research log holding verbatim websearch output; and one run FABRICATED the
-entire log (fake queries, dates, URLs, [Verified] tags, zero websearch
-calls) — METHOD now forbids [Verified] without a webfetch in-run, forbids
-invented dates, and requires the log to record only tool-executed searches.
-Third finding while fixing: runs sometimes skip the skill tool and
-improvise formats — skills are now mandatory per artifact in METHOD, and
-the CP1 harness hard-gates skill-not-fired, fabricated URLs, and false
-[Verified] tags. Zen flake note: one run died provider-side mid-pipeline
-(zero-token completion, exit 0) — the harness retry rule stands.
+CP0 gate note + review findings and the full 2026-08-22 studio build/fix
+narration live in `docs/board-dossiers.md`.
 
-## In Progress
+## Delivered (engineering done; human gates still pending)
 
-- [ ] **Gate 0 — repo transition ready** #task
-  - [x] Makefile scaffold commit (68a36bd)
-  - [x] register pass commit (4124fe0)
-  - [x] corpus commit (b5e7a57)
-  - [x] CI commit — offline blocking + nightly live; test_providers.py deleted
-  - [ ] advisor review
-  - [ ] record `docs/decisions/gate-0-repo-ready.md`
+- [x] **Studio (v2 GUI)** — Tauri shell + opencode `serve` sidecar + Solid
+  frontend; branded TUI in xterm over a PTY WS; file manager + artifact
+  viewer; zoom, drag-panes, external links; compiled-binary perf. See
+  `ai-ui-mini/packages/studio/README.md`. (was fog backlog)
+- [x] 8 skills + METHOD + persona; harness (`corpus.jsonl`, `assertions.py`,
+  `replay.py`); Make targets; CI (offline blocking + nightly live).
+- [x] Launcher isolation (XDG_CONFIG_HOME + OPENCODE_CONFIG + OPENCODE_PURE);
+  legal matrix (no RED); brew formula + unsigned-DMG path.
+- [x] Fork branded on `downes/v1`; `launcher/downes.sb` sandbox + escape test
+  ALL GREEN + in-anger OS-layer fail.
 
-## TODO
+## In Progress / TODO
 
-- [ ] **4-lesson curriculum deliverable** #task — request: "create a 4 lesson curriculum that will be delivered"
-  - [x] Pick topic/audience (assumed: educators' PD on teaching with/about AI)
-  - [x] Author `docs/ai-educators-4lesson-curriculum.md` (objectives, Bloom's, 4 lessons, assessments, pacing, resources)
-  - [ ] Advisor/teacher review of deliverable
+- [ ] **Gate reviews** #task — the human go/no-go at each gate is the only
+  thing between "built" and "signed off"
+  - [ ] advisor reviews G0–G3 (artifacts + CI links per DoD)
+  - [ ] record `docs/decisions/gate-{0,1,2,3}-*.md`
 
-- [ ] **Gate 1 — skills extracted, no regressions** #task — Blocked by Gate 0
-  - [ ] author `downes.md`, `METHOD.md`, and all 8 SKILL.md files (Passes 1–3)
-  - [ ] harness `corpus.jsonl` + `assertions.py` (all 34 runs, 10 subset)
-  - [ ] `scripts/replay.py` — hermetic tempdir studio, hard gates + advisory overlap
-  - [ ] Make targets `validate_config` / `replay` / `replay_full` / `studio_test` / `ci`
-  - [~] subset replay: root-caused 0/10 → terse corpus prompts triggered the skills' "ask if missing" clarifying-question halt headless (83 tokens, reason stop, no tools); fully-specified prompts always worked. Fixed in METHOD (3c5aa9c): never ask on course requests, default + record assumptions. Behaviorally verified (terse sailing prompt now runs the pipeline). Clean 10-run number BLOCKED on free-tier throughput — a full pipeline exceeds reasonable timeouts on the exhausted Zen tier; re-run needs tier recovery or the Sage/paid route
-  - [ ] advisor review: replay 10/10 subset, ≥31/34 full corpus, written triage
-  - [ ] stage-1 Python removal; tag `pre-opencode`
+- [ ] **Gate 1 — replay parity number** #task — Blocked by tier/route
+  - [~] subset replay root-caused (terse-prompt halt, fixed 3c5aa9c) — see dossier
+  - [ ] clean 10/10 subset + ≥31/34 full run — BLOCKED on free-tier throughput; needs tier recovery or Sage/paid route
+  - [ ] then tag `pre-opencode`; stage-1 Python removal
 
-- [ ] **Gate 2 — launcher + legal** #task — Blocked by Gate 0 (runs parallel to Gate 1)
-  - [x] `docs/legal/STATUS_MATRIX.md` — 8 rows, no RED (trademark GREEN — resolved)
-  - [x] `launcher/downes.sh` — isolation via XDG_CONFIG_HOME + OPENCODE_CONFIG + OPENCODE_PURE (OPENCODE_CONFIG_DIR does NOT redirect the global on 1.18.18 — verified by plugin_origins); XDG data/state/cache under `.downes/xdg/`; project config + autoupdate disabled
-  - [x] Keychain-gated Sage key (`is.sage.downes`), Zen `public` as the floor
-  - [x] first-launch bootstrap in the launcher
-  - [x] isolation verified: plugins [], origins [], user opencode.db untouched
-  - [ ] `Downes.app` Terminal shim (unsigned in v1; signing backlogged)
-  - [ ] live round-trip through the launcher (queued behind the Zen lane)
-  - [ ] advisor review
+- [ ] **Gate 4 — teacher pilot** #task — Blocked by Gate 3 sign-off
+  - [ ] author `docs/pilot/PILOT_NOTES_TEMPLATE.md` + `GATE-4-CHECKLIST.md`
+  - [ ] pilot: brew install, one authentic task, Obsidian, export, debrief
+  - [ ] checklist green; record `docs/decisions/gate-4-ship.md`; v1.0.0
 
-- [ ] **Gate 3 — contained + installable** #task — Blocked by Gate 2
-  - [ ] fork `ai-ui-mini` @ v1.18.18 — `brand.ts` + 8-file brand surface, LICENSE byte-identical
-  - [ ] timed rebase drill onto v1.18.19 ≤ ~20 min
-  - [x] `launcher/downes.sb` deny-default sandbox + escape test ALL GREEN + in-anger OS-layer test (session survives, no escape artifact). Model correction: broad file-READ allow needed for binaries to launch; fence is WRITE deny-default + private-data read-denies
-  - [x] brew formula authored (packaging/homebrew/downes.rb) + unsigned-DMG path documented (packaging/README.md); clean-account install pends the fork release tarball
-  - [ ] advisor review: fork diff scoped, escape tests green
-  - [ ] work the Python plumbing retention card
+- [ ] **Artifact-save reliability** #interview — saving is prompt-driven, not
+  deterministic like the old Python tool
+  - [ ] nemotron followed `courses/<slug>/` after the timestamp was dropped; deepseek was cleaner — decide the shippable model, or add a deterministic write hook
 
-- [ ] **Gate 4 — teacher pilot ship/no-ship** #task — Blocked by Gate 3
-  - [ ] author `docs/pilot/PILOT_NOTES_TEMPLATE.md` + `GATE-4-CHECKLIST.md` mapped to DoD
-  - [ ] pilot: unaided brew install, one-line test, one authentic class task
-  - [ ] Obsidian open + navigate, export/share artifact, 15-min debrief
-  - [ ] checklist green + advisor sign-off; record `docs/decisions/gate-4-ship.md`
-  - [ ] `make minor_release` → v1.0.0
+- [ ] **opentui idle CPU** #research — ~15% even compiled (its own render
+  loop); upstream throttle or accept
 
-### Decision cards
+- [ ] **Studio cleanups** #task
+  - [ ] remove the dead opener plugin + 2 capabilities (links use `open_external`)
+  - [ ] narrow `.gitignore` `studio/.downes/` → `studio/.downes/courses/` (it silently ignores new files under `.downes`)
+  - [ ] compiled binary into packaging/CI (dev builds it ad hoc)
 
-- [ ] **Skill licence** #interview — AGPL/dual; fork lives in a separate MIT repo
-  - [ ] record recommendation: platform repo MIT + upstreamable patches, this AGPL repo stays the curriculum home
-  - [ ] matrix rows GREEN/AMBER/RED with Blocks ∈ {prototype, pilot, launch}
+## Decision cards
 
-- [ ] **Windows sandbox** #research — v1 ships no OS containment
-  - [ ] record decision: "works in one folder" wording, exportable artifacts
-  - [ ] AppContainer only if demand materialises
-
-- [ ] **Pinned Zen model** #prototype — Blocked by Gate 2
-  - [x] CP0 evidence: big-pickle failed the one-line test 3× (ends turn mid-plan); nemotron-3.5-lightning-free completed the full 8-artifact pipeline — pinned as model, big-pickle kept as small_model
-  - [x] deepseek-v4-flash (opencode-go, Alexander's key — not a shippable teacher default): full pipeline, 3/3 mandatory skills, contract-clean reveal.js deck, honest no-search research log; ran no websearch at all. Best format discipline so far; candidate if a Sage-billed deepseek route exists
-  - [ ] formal judgment via corpus replay at Gate 2
-  - [ ] replay distinguishes provider flake from regression
-
-- [ ] **searx_search hosting** #research
-  - [ ] curated SearXNG instance as the durable allowlist lock for grounded websearch
-  - [ ] port grounded `learning-resources` mode (L258) to native `websearch`
-
-- [ ] **Fork rebase cadence** #task
-  - [ ] monthly timed rebase drill onto upstream, target ≤ ~20 min
-  - [ ] maintain the patch series (`git format-patch v1.18.18..downes/v1`)
-
-- [ ] **Python plumbing retention** #interview — Blocked by Gate 3
-  - [ ] weigh what of the LLM layer stays post-parity; default is removal
-  - [ ] whatever stays needs a named consumer and stays green in CI
+- [ ] **Skill licence** #interview — recommendation recorded (fork MIT in
+  `ai-ui-mini`, this repo AGPL); ratify at Gate 4
+- [ ] **Windows sandbox** #research — v1 ships no OS containment; recorded in
+  `docs/decisions/windows-sandbox.md`
+- [ ] **Pinned Zen model** #prototype — nemotron pinned; deepseek best format
+  discipline; formal judgment via replay when the tier allows
+- [ ] **searx_search hosting** #research — curated SearXNG as the durable
+  allowlist lock, or stay on websearch + domain allowlist
+- [ ] **Fork rebase cadence** #task — monthly timed drill onto upstream ≤~20 min
+- [ ] **Python plumbing retention** #interview — Blocked by Gate 3; default is
+  removal, keep only with a named consumer
 
 ## Backlog
 
-- [ ] **Notarized DMG distribution** — Apple Developer enrollment, Developer ID, notarytool + staple; v1 ships brew tap + unsigned DMG
-- fog: Tauri GUI with startr.style + startr.swap, Sage gateway api.sage.is, allowlist proxy, corpus growth, Obsidian polish
+- [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
+  v1 ships brew tap + unsigned DMG
+- fog: Sage gateway (api.sage.is), allowlist proxy for host-pinning, corpus
+  growth, Obsidian polish, wterm/ghostty engine swap, startr.style in the viewer
 
 ## Out of scope
 
 - Multi-model routing — superseded by opencode native model config.
-- HyperTalk agent.py readability — superseded; narration preserved in `docs/board-dossiers.md`.
+- HyperTalk agent.py readability — superseded; narration in `docs/board-dossiers.md`.
 - Intro auto-generation — superseded by native skill discovery.
 
 ## Done

@@ -78,3 +78,40 @@ Plan how to run smaller and larger models side-by-side for different workflow st
 **References:**
 - See detailed examples and code snippets in conversation history (2025-11-26)
 - Goal: Make code understandable to non-programmers while maintaining functionality
+
+## 2026-08-22 — Studio (v2 GUI) built + published
+
+The Tauri studio (was "fog" backlog) was pulled forward and built end to
+end. Both repos published to Sage-is (public): `AI-Education-Downes` (AGPL)
+and `ai-ui-mini` (MIT fork, branch `downes/v1`), the fork tracked as a
+submodule pinned to its HEAD.
+
+Studio = Tauri v2 shell + opencode `serve` loopback sidecar + Solid/Vite
+frontend. Three panes: Rust-fenced file manager (studio-rooted, plumbing
+hidden, 2s live poll), the real branded TUI as a server PTY rendered in
+xterm.js over a ticket-gated WebSocket, and a markdown/reveal artifact
+viewer. See `ai-ui-mini/packages/studio/README.md`.
+
+Bugs found and fixed, in order: (1) blank terminal — root cause was
+frame handling, the server sends TUI OUTPUT as WebSocket string frames and
+binary frames are 0x00 control frames; we cast everything to Uint8Array and
+dropped the output. (2) engine load — xterm.css was a runtime dynamic
+import() that rejected, killing createPty. (3) terminal review proved
+opentui needs no special terminal (probes are fire-and-forget with
+fallbacks), so xterm.js is the engine, behind a swappable adapter
+(VITE_TERM_ENGINE). (4) V2 API wraps payloads as {location, data} — must
+unwrap. (5) artifacts saved as flat root files — the path convention
+demanded a timestamp the model can't generate; simplified to courses/<slug>/.
+(6) file browser didn't refresh live — added a 2s poll. (7) links didn't
+open — opener plugin needs a URL scope; replaced with a Rust open_external
+command. (8) zoom didn't bind — zoomHotkeysEnabled inert on this macOS
+webview; added Cmd +/-/0 → native setZoom. (9) CPU cooking — running the
+TUI from source via bun idled ~34%+33%; compiling the fork binary and
+running that dropped idle to ~15%+0.6%.
+
+Open items surfaced: opentui idles ~15% even compiled (its own render loop,
+upstream); artifact saving is prompt-driven not deterministic like the old
+Python tool (nemotron followed the simplified convention; deepseek cleaner);
+the opener plugin + 2 capabilities are now dead weight; the .gitignore
+`studio/.downes/` rule silently ignores new files under it (narrow to
+`studio/.downes/courses/`).
