@@ -25,7 +25,7 @@ Keep the tone practical and avoid extra commentary outside the requested structu
 
 ## Output contract
 
-Write `02_syllabus.md` in the current course folder. 
+Write `02_syllabus.md` in the current course folder.
 The file must contain only, in this order:
 
 ```markdown

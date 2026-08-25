@@ -34,6 +34,10 @@ Cards here state the work; they do not restate the reasoning.
   `replay.py`); Make targets; CI (offline blocking + nightly live).
 - [x] Launcher isolation (XDG_CONFIG_HOME + OPENCODE_CONFIG + OPENCODE_PURE);
   legal matrix (no RED); brew formula + unsigned-DMG path.
+- [x] **Studio branding + theming** — real app icon (Sage.is hex-S, Downes
+  gradient) replacing the stock Tauri logo; startr.style vendored (CSP blocks
+  its CDN); tokens aligned to Sage.is AI-UI; light/dark toggle on `data-theme`
+  following system by default; terminal repaints with the theme.
 - [x] Fork branded on `downes/v1`; `launcher/downes.sb` sandbox + escape test
   ALL GREEN + in-anger OS-layer fail.
 
@@ -109,7 +113,6 @@ Cards here state the work; they do not restate the reasoning.
 - [ ] **Sycophancy test in the corpus** #prototype — add a deliberately bad
   pedagogy prompt (timed multiple-choice for creative writing); PASS only when
   the agent refuses. Run across the picker, publish the results
-- [ ] **Match sage.is AI-UI styling** #task — align the studio chrome (palette, type, components) with the real Sage.is AI-UI design system; startr.style + startr.swap in the viewer
 - [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
   v1 ships brew tap + unsigned DMG
 - fog: Sage gateway (api.sage.is), allowlist proxy for host-pinning, corpus

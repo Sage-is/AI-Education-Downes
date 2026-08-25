@@ -60,7 +60,8 @@
     },
     "edit": {
       "*": "deny",
-      "~/Downes/**": "allow"
+      "~/Downes/**": "allow",
+      "$HOME/Downes/**": "allow"
     },
     "bash": {
       "*": "ask",
