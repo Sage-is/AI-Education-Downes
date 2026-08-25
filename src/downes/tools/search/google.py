@@ -76,7 +76,8 @@ def search_google_news(
     q = full_query.replace(" ", "%20")
     search_url = f"https://news.google.com/rss/search?q={q}&hl=en-US&gl=US&ceid=US:en"
 
-    response = requests.get(search_url)
+    # Timeout is required: without it a hung request blocks the agent forever.
+    response = requests.get(search_url, timeout=15)
     if response.status_code != 200:
         return []
     xml_content = response.text

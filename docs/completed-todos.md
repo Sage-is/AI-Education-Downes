@@ -1,7 +1,7 @@
 # Completed TODOs
 
 Stubs for shipped work moved off the live board. Details live in git history
-and docs/board-dossiers.md.
+and docs/dossiers/ (internal).
 
 ## 2026-08-21 register pass
 

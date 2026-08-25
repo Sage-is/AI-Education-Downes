@@ -1,0 +1,41 @@
+# Gitleaks config — secrets detection for the staged diff (pre-commit) and the
+# whole working tree (pre-push, via `make scan_tree`).
+#
+# Adapted from Sage-is/AI-UI. Extends the upstream default ruleset rather than
+# replacing it, so new upstream rules arrive on a gitleaks upgrade.
+#
+# NOTE: tracked only because `.gitignore` allowlists it past the `.*` deny.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-specific false positives"
+
+paths = [
+  # Generated curriculum runs and the replay corpus: teacher prose, not code.
+  '''^vault/''',
+  '''^corpus/''',
+  # The fork is a submodule with its own history and its own scanning.
+  '''^ai-ui-mini/''',
+  # Lockfiles carry integrity hashes that look like high-entropy secrets.
+  '''(^|/)(bun\.lock|package-lock\.json|uv\.lock)$''',
+  # This file's own example patterns.
+  '''^\.gitleaks\.toml$''',
+  # Local-only credential files. These are ignored by `.gitignore:3` (`.*`)
+  # and verified absent from history (0 commits touch .env; `make
+  # scan_history` over all 140 commits is clean as of 2026-08-23). Without
+  # this entry the pre-push tree scan is red on every push for a file that
+  # cannot reach the repo — and a hook people bypass protects nothing.
+  # The gap this opens (someone runs `git add -f .env`) is closed by the
+  # block-dotenv hook in .pre-commit-config.yaml, not by this scanner.
+  '''^\.env$''',
+  '''^\.env\..*$''',
+]
+
+regexes = [
+  # The Zen free tier's API key is the literal string "public" — documented,
+  # not a credential. It appears in studio/opencode.json and the launcher.
+  '''"apiKey"\s*:\s*"public"''',
+  '''OPENCODE_CONFIG_CONTENT''',
+]

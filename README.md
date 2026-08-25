@@ -4,7 +4,7 @@
 
 ![Downes Logo](./web/public/downes.png)
 
-> Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995. 
+> Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995.
 
 Stephen Downes' connectivism learning theory is instrumental in the digital age. In this spirit, we built Downes as an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
 
@@ -16,7 +16,7 @@ Built specifically for curriculum development, Downes transforms educational req
 
 ## Overview
 
-Downes takes curriculum requests and turns them into clear, step-by-step educational development plans. Helping educators turn ideas into actionable ressources. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
+Downes takes curriculum requests and turns them into clear, step-by-step educational development plans. Helping educators turn ideas into actionable resources. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
 
 **Key Capabilities:**
 - **Intelligent Curriculum Planning**: Automatically decomposes educational goals into structured learning pathways
@@ -70,10 +70,10 @@ cp env.example .env
 2. open iSH
 3. In the iSH terminal, install git and python `apk add python3 git`
 4. Install `apk add py3-pip`
-5. 
+5.
 
 
-**Note:** Switching away from the iSH terminal for more than a few seconds, may reset the process. 
+**Note:** Switching away from the iSH terminal for more than a few seconds, may reset the process.
 
 ### LLM Configuration
 
@@ -82,7 +82,7 @@ Downes works with **any OpenAI-compatible API**, giving you complete flexibility
 
 #### Option 1: OpenRouter (Access Multiple Models)
 
-OpenRouter lets you quickly connect to the [latest and greatest models](https://openrouter.ai/rankings?view=trending) from almost any provider. On top of this many AI providers offer [free](https://openrouter.ai/models?max_price=0) use of thier AI while they are doing training :D. I wouldn't recomend using the free models for production but they are a great way to get started (so long as security isn't an issue).
+OpenRouter lets you quickly connect to the [latest and greatest models](https://openrouter.ai/rankings?view=trending) from almost any provider. On top of this many AI providers offer [free](https://openrouter.ai/models?max_price=0) use of their AI while they are doing training :D. I wouldn't recommend using the free models for production but they are a great way to get started (so long as security isn't an issue).
 
 ```bash
 # In your .env file:

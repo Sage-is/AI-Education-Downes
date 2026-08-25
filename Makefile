@@ -136,8 +136,31 @@ ci: validate_config studio_test replay
 	@uv run pytest src/tests -m "not live" -q
 	@python3 scripts/validate_corpus.py
 
+# 10b. Security scanning + hook wiring
+# scan_tree is what the pre-push hook calls: gitleaks over the WHOLE working
+# tree (--no-git), not just the staged diff, so anything a `--no-verify`
+# commit let through is caught before it leaves the machine.
+scan_tree:
+	@gitleaks dir . --config .gitleaks.toml --redact --no-banner \
+		&& echo "scan_tree: clean"
+
+# scan_history audits the full git history, not just the current tree.
+scan_history:
+	@gitleaks git . --config .gitleaks.toml --redact --no-banner \
+		&& echo "scan_history: clean"
+
+scan: scan_tree scan_history
+
+# Wire the hooks. Re-run after pulling hook changes to pick up new stages.
+install_hooks:
+	@pre-commit install --install-hooks
+	@pre-commit install --hook-type pre-push
+	@echo "hooks installed: pre-commit + pre-push"
+
+
 # 11. .PHONY declarations
 .PHONY: help show_vars verify require_gitflow_next \
 	minor_release patch_release major_release hotfix \
 	release_finish hotfix_finish things_clean \
-	release studio validate_config replay replay_full studio_test ci
+	release studio validate_config replay replay_full studio_test ci \
+	scan scan_tree scan_history install_hooks

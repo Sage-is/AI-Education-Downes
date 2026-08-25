@@ -2,7 +2,8 @@
 
 > Navigate chart, top → down.
 > Decisions land under `docs/decisions/`.
-> Narration in `docs/board-dossiers.md`, stubs in `docs/completed-todos.md`.
+> Narration in `docs/dossiers/` (internal, not in git — see
+> `docs/internal-docs.md`), stubs in `docs/completed-todos.md`.
 
 ## Destination
 
@@ -19,8 +20,9 @@ Published 2026-08-22: both repos public on Sage-is — `AI-Education-Downes`
 (AGPL, this repo) and `ai-ui-mini` (MIT fork, branch `downes/v1`), the fork
 tracked here as a **submodule**. Fresh clones need `--recurse-submodules`.
 
-CP0 gate note + review findings and the full 2026-08-22 studio build/fix
-narration live in `docs/board-dossiers.md`.
+Long-form narration behind these cards is internal and lives in
+`docs/dossiers/` — outside git, carried to the team by repo backup/sync.
+Cards here state the work; they do not restate the reasoning.
 
 ## Delivered (engineering done; human gates still pending)
 
@@ -58,6 +60,11 @@ narration live in `docs/board-dossiers.md`.
 
 - [ ] **opentui idle CPU** #research — ~15% even compiled (its own render
   loop); upstream throttle or accept
+  - [ ] profile it: frame-timer or event-driven? file the upstream issue rather than accepting by default
+
+- [ ] **A teacher uses it, on the record** #task — no verbatim teacher
+  feedback exists yet; staff and client teachers are available now
+  - [ ] one real course, one real class, friction logged verbatim
 
 - [ ] **Studio cleanups** #task
   - [ ] remove the dead opener plugin + 2 capabilities (links use `open_external`)
@@ -80,6 +87,28 @@ narration live in `docs/board-dossiers.md`.
 
 ## Backlog
 
+- [ ] **Prompt-injection surface** #interview — course files are untrusted
+  input; nothing stops instructions inside a downloaded curriculum steering
+  the agent. Dossier 2026-08-23
+  - [ ] treat curriculum files as data, never instructions to follow word for word
+  - [ ] re-isolate auth/XDG in a locked teacher mode; relaxed full-auth mode stays the dev opt-in
+  - [ ] revisit right after the application demo
+- [ ] **Restore the teacher interview** #interview — the back-and-forth that
+  made the output the teacher's own is missing from the loop. Dossier
+  2026-08-23
+  - [ ] restore dialogue; longer where judgment lives (sequencing, assessment choice), skipped for formatting
+  - [ ] harness scores a dialogue-free course as FAILED, not fast
+  - [ ] the agent must be able to disagree and hold the position
+- [ ] **Invert the access ladder** #interview — easiest tier inherits any of
+  130 models; the tier with the most pedagogical discipline needs the hardest
+  setup. Easy should mean opinionated, advanced configurable. Dossier
+  2026-08-23
+  - [ ] mini ships a hosted Sage default; the full model picker becomes the advanced opt-in
+  - [ ] same build as the locked teacher mode — hermetic auth, one model, no configuration
+  - [ ] surface which model is in use; silent agreement is an invisible failure
+- [ ] **Sycophancy test in the corpus** #prototype — add a deliberately bad
+  pedagogy prompt (timed multiple-choice for creative writing); PASS only when
+  the agent refuses. Run across the picker, publish the results
 - [ ] **Match sage.is AI-UI styling** #task — align the studio chrome (palette, type, components) with the real Sage.is AI-UI design system; startr.style + startr.swap in the viewer
 - [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
   v1 ships brew tap + unsigned DMG
@@ -89,7 +118,7 @@ narration live in `docs/board-dossiers.md`.
 ## Out of scope
 
 - Multi-model routing — superseded by opencode native model config.
-- HyperTalk agent.py readability — superseded; narration in `docs/board-dossiers.md`.
+- HyperTalk agent.py readability — superseded; narration in `docs/dossiers/`.
 - Intro auto-generation — superseded by native skill discovery.
 
 ## Done

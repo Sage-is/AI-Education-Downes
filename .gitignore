@@ -5,6 +5,12 @@
 !/.gitattributes
 !/.editorconfig
 !/.todoscope-exclude.csv
+# Security hooks MUST be tracked. AI-UI lost all five hook stages to exactly
+# this rule: `.githooks/` was never in git, so `core.hooksPath` pointed at a
+# directory that did not exist on a fresh clone and every gate was silently
+# inert. Removing these two lines disables the hooks for everyone but you.
+!/.pre-commit-config.yaml
+!/.gitleaks.toml
 !/studio/.downes/
 !/studio/.downes/**
 !/.github/
@@ -51,3 +57,12 @@ yarn-error.log*
 vault/*
 !vault/README.md
 studio/.downes/
+
+# Internal-only docs: design-review narration, reviewer commentary, draft
+# copy, anything with named opinions or unshipped positions. Never committed.
+# Every repo is version-backed-up and synced independently of git, so the team
+# still receives this folder in full — git simply is not the channel for it.
+# Convention: docs/internal-docs.md. NOTE: this rule silently ignores NEW
+# files under docs/dossiers/ — that is intentional here, but it means a file
+# put there will never prompt you at commit time.
+docs/dossiers/

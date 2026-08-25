@@ -1,0 +1,125 @@
+# =============================================================================
+# Pre-commit Git Hooks — Fast Developer Feedback
+# =============================================================================
+# Adapted from Sage-is/AI-UI's hook suite. These run on every `git commit`
+# via the pre-commit framework (https://pre-commit.com).
+#
+# IMPORTANT: a developer convenience, NOT a security boundary. Hooks run
+# client-side and can be bypassed with --no-verify.
+#
+# Setup:   make install_hooks
+# Manual:  pre-commit run --all-files
+# Update:  pre-commit autoupdate
+#
+# NOTE: this file is only tracked because `.gitignore` allowlists it past the
+# `.*` deny at line 3. If that entry is removed, every hook below goes
+# silently inert on a fresh clone — the exact failure AI-UI hit in 2026-08.
+# =============================================================================
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Secrets Detection — catch accidentally committed keys/tokens
+  # ---------------------------------------------------------------------------
+  # Gitleaks is a single Go binary. Fully local, zero network calls.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ---------------------------------------------------------------------------
+  # Internal-docs privacy — keep dossiers out of a PUBLIC repo
+  # ---------------------------------------------------------------------------
+  # docs/dossiers/ holds design-review narration, reviewer commentary and
+  # unshipped positions. `.gitignore` handles a plain `git add`. This hook is
+  # the second line: it refuses a commit containing anything from that folder,
+  # catching `git add -f`, which bypasses .gitignore entirely.
+  # Convention: docs/internal-docs.md
+  - repo: local
+    hooks:
+      - id: block-internal-dossiers
+        name: block internal dossiers (privacy poka-yoke)
+        entry: bash -c 'echo "" >&2; echo "[ABORT] Internal dossier(s) staged for commit:" >&2; for f in "$@"; do echo "  - $f" >&2; done; echo "" >&2; echo "docs/dossiers/ is internal and never committed." >&2; echo "It carries reviewer commentary and unshipped positions; this repo is PUBLIC." >&2; echo "The team still receives it — every repo is version-backed-up and synced" >&2; echo "independently of git. Git is not the channel. See docs/internal-docs.md." >&2; exit 1' --
+        language: system
+        files: ^docs/dossiers/
+        pass_filenames: true
+        stages: [pre-commit]
+
+  # ---------------------------------------------------------------------------
+  # Local credential files — never stageable, not even with -f
+  # ---------------------------------------------------------------------------
+  # .env is allowlisted in .gitleaks.toml so the pre-push tree scan is not red
+  # on every push for a correctly-ignored local file. This hook closes the gap
+  # that allowlist opens: `git add -f .env` would sail past both .gitignore
+  # and the scanner. It cannot pass this.
+  - repo: local
+    hooks:
+      - id: block-dotenv
+        name: block .env from being staged
+        entry: bash -c 'echo "" >&2; echo "[ABORT] Local credential file staged for commit:" >&2; for f in "$@"; do echo "  - $f" >&2; done; echo "" >&2; echo ".env holds real API keys and is local-only. This repo is PUBLIC." >&2; echo "Commit .env.example with placeholder values instead." >&2; exit 1' --
+        language: system
+        files: ^\.env($|\.)
+        exclude: \.example$
+        pass_filenames: true
+        stages: [pre-commit]
+
+  # ---------------------------------------------------------------------------
+  # Private-data tree scan — pre-push backstop (whole tree, not just staged)
+  # ---------------------------------------------------------------------------
+  # The gitleaks hook above scans the STAGED diff at commit time. This runs
+  # across the ENTIRE working tree at push time, catching anything a bypassed
+  # commit (--no-verify) let through before it leaves the machine.
+  #
+  # always_run is load-bearing, not decoration. `pass_filenames: false` only
+  # says "do not hand the hook a file list"; it does NOT say "run when the list
+  # is empty". pre-commit defaults always_run to false, so a push whose ref
+  # range contains no new commits — a TAG push above all — would skip this with
+  # "(no files to check)". AI-UI observed exactly that on a v3.1.0 tag repair.
+  - repo: local
+    hooks:
+      - id: scan-tree
+        name: private-data scan (gitleaks --no-git, whole tree)
+        entry: make scan_tree
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+  # ---------------------------------------------------------------------------
+  # Python Security — catch common security bugs
+  # ---------------------------------------------------------------------------
+  # The LLM layer under src/downes/ stays until Gate 3 (see TODO.md).
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        args: ["-ll"]
+        files: ^src/downes/
+
+  # ---------------------------------------------------------------------------
+  # Spell Checking — catch typos in code, comments and curriculum prose
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        exclude: '(\.svg|bun\.lock|\.lock|\.css|.*-bundle\.js|\.min\.js|/vendor/|^vault/|^corpus/|^harness/corpus\.jsonl$)'
+        args: ["--ignore-words-list", "ans,whats,nd,som"]
+
+  # ---------------------------------------------------------------------------
+  # Basic Hygiene — zero-cost safety nets
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Leftover merge conflict markers (<<<<<<, ======, >>>>>>)
+      - id: check-merge-conflict
+
+      # Large binaries by accident (>500KB) — screenshots, PNGs, archives
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+      # Valid JSON — opencode.json is load-bearing; a typo breaks every session
+      - id: check-json
+
+      - id: trailing-whitespace
+        exclude: ^(vault/|corpus/|ai-ui-mini/)
