@@ -65,11 +65,11 @@ def main():
         sys.exit(1)
 
     query = sys.argv[1]
-    
+
     web_ui = WebUI()
     logger = Logger(verbose=False, ui=web_ui)
     agent = Agent(verbose=False, debug=False, logger=logger)
-    
+
     try:
         agent.run(query)
     except Exception as e:

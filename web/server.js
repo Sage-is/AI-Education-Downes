@@ -15,9 +15,9 @@ io.on('connection', (socket) => {
 
     socket.on('run_agent', (query) => {
         console.log(`Running agent with query: ${query}`);
-        
+
         const scriptPath = path.join(__dirname, '../src/downes/web_adapter.py');
-        
+
         // Use 'uv' to run python in the correct environment
         const pythonProcess = spawn('uv', ['run', 'python', scriptPath, query], {
             cwd: path.join(__dirname, '..'),
@@ -29,8 +29,8 @@ io.on('connection', (socket) => {
         pythonProcess.stdout.on('data', (data) => {
             buffer += data.toString();
             const lines = buffer.split('\n');
-            
-            // The last element is either empty (if data ended with \n) 
+
+            // The last element is either empty (if data ended with \n)
             // or an incomplete line. We keep it in the buffer.
             buffer = lines.pop();
 

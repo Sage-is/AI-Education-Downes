@@ -223,10 +223,10 @@ def plan_steps_impl(
         prompt = f"""
         Project: "{query}",
 
-        **Note:** Only return the atomic steps as a markdown checklist. 
-        Each step should be a clear, actionable step that can be 
-        completed using the available tools. 
-        
+        **Note:** Only return the atomic steps as a markdown checklist.
+        Each step should be a clear, actionable step that can be
+        completed using the available tools.
+
          **Note:** Each step should include the topic and audience level if applicable.
         """
         # Use format_for_template to auto-detect indentation
@@ -262,7 +262,7 @@ def plan_steps_impl(
                 - [ ] step 2
                 - [ ] step 3
             ```
-            
+
             Original request: "{query}"
             """
             response = call_llm_safe(
@@ -302,8 +302,8 @@ def plan_next_actions_impl(
     def _impl():
         prompt = f"""
         We are working on: "{step_desc}".
-        
-        Last tool outputs: 
+
+        Last tool outputs:
         ```
         {indent_multiline(last_outputs, 8)}
         ```
@@ -347,10 +347,10 @@ def generate_answer_impl(
         )
         answer_prompt = f"""
         Original user query: "{query}"
-        
+
         Data and results collected from tools:
         {indent_multiline(all_results, 8)}
-        
+
         Based on the data above, provide a comprehensive answer to the user's query.
         Organize the output for curriculum use: summary, objectives, modules, assessments, pacing, resources (if any).
         """

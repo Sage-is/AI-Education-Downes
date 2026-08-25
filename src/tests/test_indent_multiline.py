@@ -83,7 +83,7 @@ def test_zero_indent():
 def test_complex_tool_description():
     """Test with a realistic tool description."""
     tool_desc = """Generate learning objectives aligned to Bloom's taxonomy.
-    
+
     This tool creates measurable, actionable objectives for curriculum design.
     Each objective specifies what learners will be able to do."""
 

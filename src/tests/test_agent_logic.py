@@ -13,17 +13,17 @@ class TestAgentLogic(unittest.TestCase):
     def test_agent_flow(self):
         agent = Agent(verbose=True)
         agent.logger.ui.prompt_for_input = MagicMock(return_value='n')
-        
+
         # Mock LLM methods
         agent.llm.plan_steps = MagicMock(return_value=[
             Step(id=1, description="Step 1", done=False),
             Step(id=2, description="Step 2", done=False)
         ])
-        
+
         # plan_next_actions returns a tool call first, then empty (done)
         # For Step 1: Tool call -> Done
         # For Step 2: Done immediately
-        
+
         # Side effect for plan_next_actions
         def plan_next_actions_side_effect(step_desc, last_outputs=""):
             if step_desc == "Step 1":
@@ -44,16 +44,16 @@ class TestAgentLogic(unittest.TestCase):
              patch('downes.agent.execute_tool') as mock_execute_tool, \
                patch('downes.agent.confirm_action', return_value=True), \
                patch.object(agent.vault, 'save_artifact') as mock_save_artifact:
-            
+
             mock_tool = MagicMock()
             mock_get_tool.return_value = mock_tool
             mock_execute_tool.return_value = "Tool output"
-            
+
             agent.run("Test Query")
-            
+
             # Assertions
             agent.llm.plan_steps.assert_called_once()
-            
+
             # plan_next_actions should be called:
             # 1. Step 1 (initial) -> returns tool call
             # 2. Step 1 (after tool) -> returns empty
@@ -65,7 +65,7 @@ class TestAgentLogic(unittest.TestCase):
                 if call.kwargs.get('artifact_name', '').endswith('llm_response')
             ]
             self.assertGreaterEqual(len(llm_response_calls), 1)
-            
+
             print("Agent flow test passed!")
 
     def test_cleanup_llm_artifact_prefers_fenced_payload(self):

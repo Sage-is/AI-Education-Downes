@@ -10,7 +10,7 @@ class WikipediaExtractInput(BaseModel):
 @tool(args_schema=WikipediaExtractInput)
 def wikipedia_extract_links(url: str) -> str:
     """Extracts links from the 'References' and 'External links' sections of a Wikipedia page."""
-    
+
     # Wikipedia requires a descriptive User-Agent
     headers = {
         "User-Agent": "AI-Education-Downes/0.1.0 (https://github.com/somma/AI-Education-Downes; bot)"
@@ -23,14 +23,14 @@ def wikipedia_extract_links(url: str) -> str:
         return f"Error fetching page: {e}"
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    
+
     output = [f"# Links from {soup.title.string if soup.title else url}"]
 
     def get_links_from_siblings(start_element, header_level='h2'):
         links = []
         if not start_element:
             return links
-            
+
         # Iterate through siblings until the next header of same or higher level
         curr = start_element.find_next_sibling()
         current_level_num = int(header_level[1]) if len(header_level) > 1 and header_level[1].isdigit() else 2
@@ -41,7 +41,7 @@ def wikipedia_extract_links(url: str) -> str:
                  level = int(curr.name[1])
                  if level <= current_level_num:
                      break
-            
+
             # Check for mw-heading wrapper
             if curr.name == 'div' and 'mw-heading' in curr.get('class', []):
                 classes = curr.get('class', [])
@@ -50,7 +50,7 @@ def wikipedia_extract_links(url: str) -> str:
                     if c.startswith('mw-heading') and c[10:].isdigit():
                         level = int(c[10:])
                         break
-                
+
                 if level <= current_level_num:
                     break
 
@@ -59,19 +59,19 @@ def wikipedia_extract_links(url: str) -> str:
                 for a in curr.find_all('a', href=True):
                     href = a['href']
                     text = a.get_text(strip=True)
-                    
+
                     # Skip internal anchors, edit links, etc.
                     if href.startswith('#'): continue
                     if 'action=edit' in href: continue
                     # if href.startswith('/wiki/'): continue # Optional: skip internal wiki links
-                    
+
                     # Resolve relative URLs
                     full_url = urljoin(url, href)
-                    
+
                     # Clean up text
                     if not text:
                         text = full_url
-                    
+
                     links.append(f"- [{text}]({full_url})")
             curr = curr.find_next_sibling()
         return links
@@ -80,21 +80,21 @@ def wikipedia_extract_links(url: str) -> str:
         elem = soup.find(id=section_id)
         if not elem:
             return None, None
-        
+
         header = None
         if elem.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
             header = elem
         else:
             header = elem.find_parent(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-            
+
         if not header:
             return None, None
-            
+
         # Check for mw-heading wrapper
         parent = header.parent
         if parent and parent.name == 'div' and 'mw-heading' in parent.get('class', []):
             return parent, header.name
-            
+
         return header, header.name
 
     # 1. References
@@ -142,7 +142,7 @@ def wikipedia_search(query: str) -> str:
     headers = {
         "User-Agent": "AI-Education-Downes/0.1.0 (https://github.com/somma/AI-Education-Downes; bot)"
     }
-    
+
     try:
         response = requests.get(base_url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
@@ -150,15 +150,15 @@ def wikipedia_search(query: str) -> str:
         # data format: [query, [titles], [descriptions], [urls]]
         titles = data[1]
         urls = data[3]
-        
+
         results = []
         for title, url in zip(titles, urls):
             results.append(f"- [{title}]({url})")
-            
+
         if not results:
             return "No results found."
-            
+
         return "\n".join(results)
-        
+
     except Exception as e:
         return f"Error searching Wikipedia: {e}"

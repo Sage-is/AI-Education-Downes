@@ -36,7 +36,7 @@ class Agent:
         logger: Logger = None,
     ):
         this.logger = logger if logger else Logger(verbose=verbose)
-        this.max_steps = max_steps  
+        this.max_steps = max_steps
         this.max_steps_per_step = max_steps_per_step
         this.vault = Vault()
         this.verbose = verbose
@@ -100,11 +100,11 @@ class Agent:
                 this.logger.ui.print_info("\nPlanned steps:")
                 for i, step in enumerate(steps):
                     print(f"{i+1}. {step.description}")
-                
+
                 user_input = this.logger.ui.prompt_for_input(
                     "\nDo you want to modify this plan? (y/n or describe changes)"
                 )
-                
+
                 if user_input.lower() in ['n', 'no', '']:
                     plan_approved = True
                 elif user_input.lower() in ['y', 'yes']:
@@ -118,9 +118,9 @@ class Agent:
                         Original query: {query}
                         Current plan:
                         {task_list_content}
-                        
+
                         User feedback: {changes}
-                        
+
                         Please revise the plan based on the user's feedback.
                         """
                         steps = this.llm.plan_steps(refinement_prompt)
@@ -144,9 +144,9 @@ class Agent:
                     Original query: {query}
                     Current plan:
                     {task_list_content}
-                    
+
                     User feedback: {changes}
-                    
+
                     Please revise the plan based on the user's feedback.
                     """
                     steps = this.llm.plan_steps(refinement_prompt)
@@ -282,7 +282,7 @@ class Agent:
                     if detect_loop(last_actions, action_sig, this.logger):
                         # Instead of stopping, warn the LLM and encourage replanning/adjusting
                         warning = f"""
-                            SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}. 
+                            SYSTEM WARNING: You are repeating the action {tool_name} with args {optimized_args}.
                             This is a loop. You MUST change your approach or arguments."""
                         step_history.append(warning)
                         total_steps += 1
@@ -297,7 +297,7 @@ class Agent:
                             log_the_result(this, optimized_args, result)
                             save_the_artifact(this, current_step, step_num, tool_name, result, artifact_counter)
                             artifact_counter += 1
-                            
+
                             output = format_output(tool_name, optimized_args, result)
                             record_the_outcome(run_history, step_history, output)
                         except Exception as error:

@@ -34,7 +34,7 @@ def test_interactive_prompt():
     print("=" * 80 + "\n")
 
     # Sample prompts
-    system_prompt = """You are an expert curriculum developer specializing in creating 
+    system_prompt = """You are an expert curriculum developer specializing in creating
 engaging, age-appropriate educational content. Your role is to:
 - Design clear learning objectives aligned with educational standards
 - Create structured lesson plans with appropriate pacing
@@ -42,7 +42,7 @@ engaging, age-appropriate educational content. Your role is to:
 - Recommend relevant educational resources and materials"""
 
     user_prompt = """Create a 6-week course on Python programming for high school students.
-    
+
 The course should:
 - Be suitable for complete beginners
 - Include hands-on coding exercises
@@ -74,13 +74,13 @@ if __name__ == "__main__":
         """
 This test demonstrates the interactive prompt editing feature.
 In debug mode, you can:
-    
+
     [s] Submit as-is     - Send the prompt to the LLM unchanged
     [e] Edit user prompt - Modify the user prompt in your editor
     [E] Edit system prompt - Modify the system prompt in your editor
     [v] View full prompts - See complete prompts without truncation
     [c] Cancel - Skip this LLM call entirely
-    
+
 Your EDITOR environment variable determines which editor opens.
 Default: nano (set EDITOR=vim, EDITOR=code, etc. to change)
     """
