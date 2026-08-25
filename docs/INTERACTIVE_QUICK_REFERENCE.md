@@ -89,7 +89,7 @@ $ uv run downes-agent --debug "Create a Python course"
 [s]: ⏎                    # Submit, looks good
 ✓ Submitting prompt...
 
-# Second call: Action Planning  
+# Second call: Action Planning
 [e]: ⏎                    # Edit user prompt
 # (editor opens, make changes)
 ✓ User prompt updated

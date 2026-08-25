@@ -36,8 +36,8 @@ The `indent_multiline()` function in `src/downes/utils/__init__.py` solves this 
 
 ```python
 def indent_multiline(
-    text: str, 
-    indent: int = 0, 
+    text: str,
+    indent: int = 0,
     indent_first: bool = False
 ) -> str:
     """Dedent and re-indent multi-line text to match f-string substitution position."""
@@ -91,7 +91,7 @@ prompt = f"""Available Tools:
 # Available Tools:
 #     - generate_objectives:
 #         Generate learning objectives aligned to Bloom's taxonomy.
-# 
+#
 #         This tool creates measurable, actionable objectives for curriculum design.
 #         Each objective specifies what learners will be able to do.
 #     - draft_syllabus:
@@ -141,7 +141,7 @@ system_prompt = PLANNING_SYSTEM_PROMPT.format(
 prompt = f"""
 We are working on: "{task_desc}".
 
-Last tool outputs: 
+Last tool outputs:
 
 \`\`\`
 {indent_multiline(last_outputs, 8)}

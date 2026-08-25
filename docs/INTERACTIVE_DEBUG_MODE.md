@@ -240,7 +240,7 @@ if debug:
     prompt, system_prompt = _review_and_edit_prompt(
         prompt, system_prompt, operation_name, logger
     )
-    
+
     if prompt is None or system_prompt is None:
         logger._log(f"[DEBUG] {operation_name} - CANCELLED BY USER")
         return None

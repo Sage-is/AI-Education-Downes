@@ -136,7 +136,7 @@ For each task, define:
 
 **README.md sections:**
 - Quick Start
-- Initial Setup  
+- Initial Setup
 - Documentation (links to all docs/)
 - Environment System
 - Troubleshooting
@@ -153,14 +153,14 @@ For each task, define:
 
 **Structure:**
 1. **Current Week** - 🔥 Critical tasks for this week (always at top)
-2. **High Priority** - 🔶 Next milestone work  
+2. **High Priority** - 🔶 Next milestone work
 3. **Medium Priority** - 🔷 Soon
 4. **Low Priority** - 🔹 Nice to have
 5. **Completed Work** - ✅ Previous weeks in reverse chronological order
 
 **Categories (in order of priority):**
 1. **Documentation & Admin Management** - Category for meta-work
-2. **Critical Infrastructure & Security** 
+2. **Critical Infrastructure & Security**
 3. **High Priority** - User-facing fixes
 4. **Medium Priority** - Feature development
 5. **Low Priority** - Nice-to-have improvements
@@ -168,7 +168,7 @@ For each task, define:
 
 **Status tracking:**
 - [ ] Planned
-- 🔄 In Progress  
+- 🔄 In Progress
 - ✅ Completed
 - ❌ Cancelled/Won't Do
 
@@ -236,7 +236,7 @@ Standard targets for common tasks:
 [Type]: [Summary]
 
 - [Change 1]
-- [Change 2] 
+- [Change 2]
 - Mark TODO item as complete/in progress
 ```
 
@@ -257,7 +257,7 @@ Standard targets for common tasks:
 - All tests in `tests.py` files within app directories
 
 **Test Configuration:**
-- `pytest.ini` - Main pytest configuration 
+- `pytest.ini` - Main pytest configuration
 - `conftest.py` - Shared fixtures and Django setup
 - Tests run with `--nomigrations` and `--reuse-db` for speed
 
@@ -272,7 +272,7 @@ make test_quick          # Run excluding slow tests
 
 **Test Categories (using markers):**
 - `@pytest.mark.unit` - Unit tests (isolated, fast)
-- `@pytest.mark.integration` - Integration tests  
+- `@pytest.mark.integration` - Integration tests
 - `@pytest.mark.slow` - Slow tests (can be excluded)
 - `@pytest.mark.django_db` - Tests requiring database
 
@@ -312,7 +312,7 @@ make test_quick          # Run excluding slow tests
 
 **For new team members:**
 1. Read this workflow document
-2. Run `make setup` 
+2. Run `make setup`
 3. Review current TODO.md
 4. Practice the plan-document-execute-verify cycle on small tasks
 5. Ask questions before starting significant work

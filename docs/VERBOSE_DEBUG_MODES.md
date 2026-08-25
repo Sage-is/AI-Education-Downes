@@ -32,7 +32,7 @@ When running in debug mode, you can now interact with every LLM call:
 
 - **[s]** Submit prompt as-is
 - **[e]** Edit user prompt in your editor
-- **[E]** Edit system prompt in your editor  
+- **[E]** Edit system prompt in your editor
 - **[v]** View full, untruncated prompts
 - **[c]** Cancel this LLM call
 

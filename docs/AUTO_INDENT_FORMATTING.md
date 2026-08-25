@@ -422,7 +422,7 @@ Tool descriptions come from docstrings:
 def my_tool():
     """
     This is a tool description.
-    
+
     Features:
         - Feature 1
         - Feature 2

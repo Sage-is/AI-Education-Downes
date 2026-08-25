@@ -30,7 +30,7 @@ This breaks Markdown formatting in LLM prompts.
 ### Post 3 - The Solution (280 chars)
 
 ```
-Our solution: `format_for_template()` 
+Our solution: `format_for_template()`
 
 It automatically detects where each placeholder appears in your template and applies the correct indentation to ALL lines.
 
