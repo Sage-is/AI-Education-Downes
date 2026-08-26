@@ -70,6 +70,15 @@ Cards here state the work; they do not restate the reasoning.
   feedback exists yet; staff and client teachers are available now
   - [ ] one real course, one real class, friction logged verbatim
 
+- [ ] **Ship on Homebrew (Phase −1)** #task — self-contained payload, no
+  Gatekeeper warning, no Apple account needed. Plan: `~/.claude/plans/`
+  - [x] engine resolution is install-relative (`engine_bin()` walks up from `current_exe()`)
+  - [x] launcher + `Downes.app` shim find the engine under the brew layout
+  - [x] `scripts/package_macos.sh` builds a self-contained tarball (49 MB, verified with bun/node/opencode off PATH)
+  - [x] formula rewritten: per-arch, real sha256, working install block
+  - [ ] publish the GitHub release + push the formula to `Sage-is/homebrew-apps`
+  - [ ] Intel build (needs an x86_64 CI runner; formula `odie`s honestly for now)
+
 - [ ] **Studio cleanups** #task
   - [ ] remove the dead opener plugin + 2 capabilities (links use `open_external`)
   - [ ] narrow `.gitignore` `studio/.downes/` → `studio/.downes/courses/` (it silently ignores new files under `.downes`)

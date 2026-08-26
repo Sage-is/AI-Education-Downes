@@ -1,38 +1,73 @@
-# Homebrew formula for the sage-is tap: brew install sage-is/tap/downes
-# v1 ships the fork binary + launcher + Downes.app shim via the tap, which
-# sidesteps Gatekeeper quarantine (no signing needed). The notarized DMG is
-# the backlogged alternative for teachers without Homebrew.
+# Homebrew formula for the Sage-is tap: brew install sage-is/apps/downes
+#
+# A FORMULA, deliberately, not a Cask. Casks apply Gatekeeper quarantine by
+# default; formulas do not. Since the app is unsigned until the Startr LLC
+# Apple enrolment completes, the formula is what gives teachers a clean
+# install with no security warning at all.
+#
+# The payload is self-contained: the engine is a Bun single-file executable,
+# so a Mac with nothing but Homebrew can run this. There is deliberately no
+# depends_on for a language runtime — if one is ever needed, the payload was
+# assembled wrong. See scripts/package_macos.sh.
 class Downes < Formula
   desc "Course-design studio for teachers, on Sage.is AI-UI mini"
   homepage "https://sage.is/downes"
   version "0.1.0"
   license "MIT"
 
-  # Placeholder until the ai-ui-mini fork publishes a release tarball.
-  url "https://github.com/Sage-is/ai-ui-mini/releases/download/v0.1.0/downes-0.1.0.tar.gz"
-  sha256 :no_check
+  on_arm do
+    url "https://github.com/Sage-is/ai-ui-mini/releases/download/v0.1.0/downes-0.1.0-darwin-arm64.tar.gz"
+    sha256 "8e584b3cd02d7dc301615bcd64677fa516ffcb4021dfabbba08e79ad0b2a5a86"
+  end
+
+  # Intel is not built yet. The Rust toolchain on the release machine has only
+  # the aarch64 host target (no rustup), so an x86_64 app bundle needs an
+  # Intel CI runner — see the release workflow. Failing loudly here is
+  # deliberate: a formula pointing at a tarball that does not exist would
+  # download-fail with a confusing 404 instead of saying why.
+  on_intel do
+    odie "Downes does not have an Intel build yet — Apple Silicon only for now."
+  end
 
   def install
+    # Everything lands in libexec as one unit. downes.sh and the app both
+    # resolve the engine by walking up from their own location, so the
+    # relative layout here is load-bearing:
+    #   libexec/bin/opencode          engine
+    #   libexec/Downes.app            the studio
+    #   libexec/launcher/downes.sh    terminal launcher
+    #   libexec/studio/               template copied to ~/Downes on first run
     libexec.install Dir["*"]
+
     (bin/"downes").write <<~SH
       #!/bin/bash
       exec "#{libexec}/launcher/downes.sh" "$@"
     SH
     chmod 0755, bin/"downes"
-    prefix.install "launcher/Downes.app"
+
+    # A copy in prefix so `open` works and Finder can reach it. Installed
+    # from libexec, since libexec.install above already moved everything.
+    prefix.install_symlink libexec/"Downes.app"
   end
 
   def caveats
     <<~EOS
-      Downes installed. Launch the studio with:
-        downes
-      Or open Downes.app from:
-        #{prefix}/Downes.app
-      Your courses live in ~/Downes. Nothing outside that folder is touched.
+      Downes is installed.
+
+        Open the studio:   open #{prefix}/Downes.app
+        Or in a terminal:  downes
+
+      Drag #{prefix}/Downes.app to your Applications folder or Dock if you
+      want it to hand.
+
+      Your courses live in ~/Downes. Downes works in that one folder.
     EOS
   end
 
   test do
     assert_predicate bin/"downes", :executable?
+    assert_predicate libexec/"bin/opencode", :executable?
+    # The engine must be a real binary, not a shim needing a runtime.
+    assert_match "Mach-O", shell_output("file #{libexec}/bin/opencode")
   end
 end

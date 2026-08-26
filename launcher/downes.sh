@@ -34,15 +34,42 @@ fi
 [ -t 1 ] && printf '\033]0;Downes — the studio\007'
 cd "$STUDIO"
 
-# Prefer the compiled branded binary (idles near 0% CPU); then the fork run
-# from source; then the system opencode.
+# --- engine resolution ------------------------------------------------------
+# An installed copy must be self-contained: the compiled engine is a Bun
+# single-file executable, so nothing else needs to be on the machine. Look
+# beside the install first (Homebrew stages it at libexec/bin), and only then
+# fall back to a developer checkout.
+case "$(uname -s)" in
+  Darwin) OS="darwin" ;;
+  Linux)  OS="linux" ;;
+  *)      OS="unknown" ;;
+esac
+case "$(uname -m)" in
+  arm64|aarch64) ARCH="arm64" ;;
+  *)             ARCH="x64" ;;
+esac
+
 FORK="$HERE/../ai-ui-mini/packages/opencode"
-ARCH="x64"; [ "$(uname -m)" = "arm64" ] && ARCH="arm64"
-BIN="$FORK/dist/opencode-darwin-$ARCH/bin/opencode"
-if [ -x "$BIN" ]; then
+BIN=""
+for cand in \
+  "${DOWNES_ENGINE:-}" \
+  "$HERE/../bin/opencode" \
+  "$HERE/../opencode-$OS-$ARCH/bin/opencode" \
+  "$FORK/dist/opencode-$OS-$ARCH/bin/opencode"
+do
+  [ -n "$cand" ] && [ -x "$cand" ] && { BIN="$cand"; break; }
+done
+
+if [ -n "$BIN" ]; then
   exec "$BIN" "$@"
 fi
-if [ -f "$FORK/src/index.ts" ] && [ -d "$FORK/node_modules/@opentui" ]; then
+
+# Developer convenience only. This path must never be reached on an installed
+# copy — if it is, the payload was assembled wrong.
+if [ -f "$FORK/src/index.ts" ] && [ -d "$FORK/node_modules/@opentui" ] && command -v bun >/dev/null 2>&1; then
   exec bun run --cwd "$FORK" --conditions=browser src/index.ts "$@"
 fi
-exec opencode "$@"
+
+echo "Downes: the curriculum engine is missing from this install." >&2
+echo "Reinstall with: brew reinstall sage-is/apps/downes" >&2
+exit 1

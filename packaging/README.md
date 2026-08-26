@@ -5,14 +5,20 @@ Two install paths for v1. Apple notarization is backlogged (see TODO.md).
 ## Homebrew tap (primary)
 
 ```bash
-brew install sage-is/tap/downes
+brew install sage-is/apps/downes
 downes
 ```
 
-The tap delivers the `ai-ui-mini` fork binary, the launcher, and
-`Downes.app`. Tap installs are not quarantined by Gatekeeper, so the app
-runs with zero code signing. Formula: `homebrew/downes.rb`, published to the
-`Sage-is/homebrew-tap` repo.
+The tap delivers a self-contained payload: the compiled engine, the
+launcher, and `Downes.app`. The engine is a Bun single-file executable, so a
+Mac with nothing but Homebrew can run it — no bun, node, or opencode install.
+
+This is a **formula, not a cask**, and deliberately so: casks apply Gatekeeper
+quarantine by default, formulas do not. That is what makes this install
+warning-free while the app is still unsigned.
+
+**Apple Silicon only for now** — an Intel build needs a CI runner. Formula: `homebrew/downes.rb`, published to the
+`Sage-is/homebrew-apps` repo (tap slug `sage-is/apps`).
 
 ## Unsigned DMG (for the brave)
 

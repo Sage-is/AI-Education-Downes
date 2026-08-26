@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 # Downes.app shim: opens the launcher in Terminal. No picker, no paths shown.
+#
+# Layouts this must survive:
+#   repo      <repo>/launcher/Downes.app/Contents/MacOS  -> <repo>/launcher/downes.sh
+#   homebrew  libexec/Downes.app/Contents/MacOS          -> libexec/launcher/downes.sh
+#
+# The previous version hardcoded ../../../downes.sh and fell back to
+# ../Resources/downes.sh — a directory that does not exist in this bundle —
+# so it resolved to nothing under Homebrew. Walk up and look instead of
+# counting levels; a wrong count fails silently.
+set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-LAUNCHER="$HERE/../../../downes.sh"          # repo layout; installer rewrites
-[ -f "$LAUNCHER" ] || LAUNCHER="$HERE/../Resources/downes.sh"
+
+LAUNCHER=""
+DIR="$HERE"
+for _ in 1 2 3 4 5; do
+  for cand in "$DIR/downes.sh" "$DIR/launcher/downes.sh"; do
+    if [ -f "$cand" ]; then LAUNCHER="$cand"; break 2; fi
+  done
+  DIR="$(dirname "$DIR")"
+  [ "$DIR" = "/" ] && break
+done
+
+if [ -z "$LAUNCHER" ]; then
+  osascript -e 'display alert "Downes is not installed correctly" message "The launcher could not be found next to this app. Reinstall with: brew reinstall sage-is/apps/downes" as critical' >/dev/null 2>&1 || true
+  exit 1
+fi
+
 exec open -a Terminal "$LAUNCHER"
