@@ -5,13 +5,23 @@
 # no node, no opencode, no Xcode tools. The engine is a Bun single-file
 # executable, so shipping that binary is sufficient — never a `bun run` path.
 #
-# Usage:  scripts/package_macos.sh [arm64|x64]        (default: this machine)
-# Output: dist/downes-<version>-darwin-<arch>.tar.gz  + its sha256
+# Two products share this script and one Rust binary, differing only in bundle
+# metadata and payload contents:
+#
+#   downes  the curriculum agent. Ships the studio template (skills, METHOD,
+#           prompts), so the payload carries AGPL content.
+#   mini    the bare Sage.is AI-UI mini platform. No curriculum, MIT only.
+#
+# Usage:  scripts/package_macos.sh [arm64|x64] [downes|mini]
+# Output: dist/<product>-<version>-darwin-<arch>.tar.gz + its sha256
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 FORK="$REPO/ai-ui-mini"
 STUDIO_PKG="$FORK/packages/studio"
+
+PRODUCT="${2:-downes}"
+[ "$PRODUCT" = "downes" ] || [ "$PRODUCT" = "mini" ] || { echo "product must be downes or mini" >&2; exit 1; }
 
 ARCH="${1:-}"
 if [ -z "$ARCH" ]; then
@@ -25,9 +35,17 @@ fi
 VERSION="$(python3 -c "import json;print(json.load(open('$STUDIO_PKG/src-tauri/tauri.conf.json'))['version'])")"
 ENGINE="$FORK/packages/opencode/dist/opencode-darwin-$ARCH/bin/opencode"
 OUT="$REPO/dist"
-STAGE="$OUT/stage-$ARCH"
+STAGE="$OUT/stage-$PRODUCT-$ARCH"
 
-echo "==> Downes $VERSION, darwin-$ARCH"
+if [ "$PRODUCT" = "mini" ]; then
+  APP_NAME="Sage.is mini"; WORKSPACE="SageMini"
+  TAURI_ARGS=(--config src-tauri/tauri.mini.conf.json)
+else
+  APP_NAME="Downes"; WORKSPACE="Downes"
+  TAURI_ARGS=()
+fi
+
+echo "==> $APP_NAME $VERSION, darwin-$ARCH"
 
 # --- engine ----------------------------------------------------------------
 if [ ! -x "$ENGINE" ]; then
@@ -38,12 +56,12 @@ fi
 
 # --- app -------------------------------------------------------------------
 # Tauri names the release bundle by productName, not by arch.
-APP="$STUDIO_PKG/src-tauri/target/release/bundle/macos/Downes.app"
+APP="$STUDIO_PKG/src-tauri/target/release/bundle/macos/$APP_NAME.app"
 if [ ! -d "$APP" ]; then
-  echo "==> building Downes.app (release)"
-  (cd "$STUDIO_PKG" && bunx tauri build --bundles app)
+  echo "==> building $APP_NAME.app (release)"
+  (cd "$STUDIO_PKG" && bunx tauri build --bundles app "${TAURI_ARGS[@]}")
 fi
-[ -d "$APP" ] || { echo "Downes.app missing after build: $APP" >&2; exit 1; }
+[ -d "$APP" ] || { echo "$APP_NAME.app missing after build: $APP" >&2; exit 1; }
 
 # --- stage -----------------------------------------------------------------
 echo "==> staging"
@@ -53,15 +71,30 @@ mkdir -p "$STAGE/bin" "$STAGE/launcher" "$STAGE/scripts"
 cp "$ENGINE" "$STAGE/bin/opencode"
 chmod 0755 "$STAGE/bin/opencode"
 
-cp -R "$APP" "$STAGE/Downes.app"
+cp -R "$APP" "$STAGE/$APP_NAME.app"
+
+# Product marker: the Rust binary is identical in both apps, so it reads this
+# to know which workspace folder to use.
+printf '%s\n' "$WORKSPACE" > "$STAGE/product"
 
 # Launcher, shim, and the studio template the first run installs from.
 cp "$REPO/launcher/downes.sh" "$STAGE/launcher/downes.sh"
-cp -R "$REPO/launcher/Downes.app" "$STAGE/launcher/Downes.app"
-chmod 0755 "$STAGE/launcher/downes.sh" "$STAGE/launcher/Downes.app/Contents/MacOS/downes-app"
+chmod 0755 "$STAGE/launcher/downes.sh"
+# The Terminal shim is Downes-branded and only serves the terminal-first
+# flow; shipping it in mini would drop a stray "Downes.app" into the
+# platform payload.
+if [ "$PRODUCT" = "downes" ]; then
+  cp -R "$REPO/launcher/Downes.app" "$STAGE/launcher/Downes.app"
+  chmod 0755 "$STAGE/launcher/Downes.app/Contents/MacOS/downes-app"
+fi
 cp "$REPO/scripts/install_studio.sh" "$STAGE/scripts/install_studio.sh"
 chmod 0755 "$STAGE/scripts/install_studio.sh"
-cp -R "$REPO/studio" "$STAGE/studio"
+# Curriculum template is Downes-only. Shipping it in mini would put AGPL
+# content in an MIT artifact and give the platform an agent it does not claim
+# to have.
+if [ "$PRODUCT" = "downes" ]; then
+  cp -R "$REPO/studio" "$STAGE/studio"
+fi
 
 # --- self-containment check ------------------------------------------------
 # Prove it, do not assume it: the engine must not be a shell shim pointing at
@@ -76,7 +109,7 @@ if grep -rIl "Documents/Projects/GitHub" "$STAGE" 2>/dev/null | grep -q .; then
 fi
 
 # --- tar -------------------------------------------------------------------
-TARBALL="$OUT/downes-$VERSION-darwin-$ARCH.tar.gz"
+TARBALL="$OUT/$PRODUCT-$VERSION-darwin-$ARCH.tar.gz"
 echo "==> writing $TARBALL"
 tar -czf "$TARBALL" -C "$STAGE" .
 rm -rf "$STAGE"

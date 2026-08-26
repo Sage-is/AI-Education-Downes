@@ -4,14 +4,25 @@
 # bootstrap, credentials, and (Checkpoint 3) the sandbox prefix.
 set -euo pipefail
 
-STUDIO="${DOWNES_STUDIO:-$HOME/Downes}"
-DHOME="$STUDIO/.downes"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
+# Which product this payload is. Downes ships the curriculum template; the
+# bare Sage.is mini platform does not, and uses its own workspace folder.
+# Absent marker means Downes, so existing installs are unaffected.
+WORKSPACE="Downes"
+[ -f "$HERE/../product" ] && WORKSPACE="$(tr -d '[:space:]' < "$HERE/../product")"
+
+STUDIO="${DOWNES_STUDIO:-$HOME/$WORKSPACE}"
+DHOME="$STUDIO/.downes"
+
 # --- first-launch bootstrap (idempotent, additive) -----------------------
-if [ ! -f "$STUDIO/opencode.json" ]; then
+# Only when a curriculum template is actually present. mini ships none, and
+# install_studio.sh would exit non-zero copying a template that is not there,
+# taking the whole launcher down with it under `set -e`.
+if [ ! -f "$STUDIO/opencode.json" ] && [ -f "$HERE/../studio/opencode.json" ]; then
   bash "$HERE/../scripts/install_studio.sh" "$STUDIO"
 fi
+mkdir -p "$STUDIO"
 mkdir -p "$DHOME/config/themes" "$DHOME/xdg/data" "$DHOME/xdg/state" "$DHOME/xdg/cache"
 
 # --- config layer --------------------------------------------------------
@@ -20,7 +31,9 @@ mkdir -p "$DHOME/config/themes" "$DHOME/xdg/data" "$DHOME/xdg/state" "$DHOME/xdg
 # providers, models, and connections and can save new ones. OPENCODE_CONFIG
 # merges our skills/agent/METHOD; project config stays off so a downloaded
 # course cannot smuggle its own config.
-export OPENCODE_CONFIG="$STUDIO/opencode.json"
+# Only point at a config that exists. mini has no curriculum config, and
+# naming a missing file would make the engine complain on every launch.
+[ -f "$STUDIO/opencode.json" ] && export OPENCODE_CONFIG="$STUDIO/opencode.json"
 export OPENCODE_DISABLE_PROJECT_CONFIG=1
 export OPENCODE_DISABLE_AUTOUPDATE=1
 

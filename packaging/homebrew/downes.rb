@@ -22,7 +22,7 @@ class Downes < Formula
 
   on_arm do
     url "https://github.com/Sage-is/AI-Education-Downes/releases/download/v0.1.2/downes-0.1.2-darwin-arm64.tar.gz"
-    sha256 "028e0a0186dc67e6ea173afb25b8f92124dbe7a60ee46fa6b8152f442cf92f96"
+    sha256 "ebcfff813c3c17d3ae4681e7e8fc582e63d00ba6e8852d2c02573dd07c241844"
   end
 
   # Intel is not built yet. The Rust toolchain on the release machine has only
