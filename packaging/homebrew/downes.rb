@@ -9,15 +9,20 @@
 # so a Mac with nothing but Homebrew can run this. There is deliberately no
 # depends_on for a language runtime — if one is ever needed, the payload was
 # assembled wrong. See scripts/package_macos.sh.
+#
+# The release asset lives on AI-Education-Downes (AGPL) rather than the MIT
+# fork: the payload combines the MIT engine and app with AGPL curriculum
+# content (launcher, skills, studio template), so it is distributed from the
+# stronger-copyleft side. See docs/legal/STATUS_MATRIX.md.
 class Downes < Formula
   desc "Course-design studio for teachers, on Sage.is AI-UI mini"
   homepage "https://sage.is/downes"
-  version "0.1.0"
-  license "MIT"
+  version "0.1.1"
+  license "AGPL-3.0-or-later"
 
   on_arm do
-    url "https://github.com/Sage-is/ai-ui-mini/releases/download/v0.1.0/downes-0.1.0-darwin-arm64.tar.gz"
-    sha256 "8e584b3cd02d7dc301615bcd64677fa516ffcb4021dfabbba08e79ad0b2a5a86"
+    url "https://github.com/Sage-is/AI-Education-Downes/releases/download/v0.1.1/downes-0.1.1-darwin-arm64.tar.gz"
+    sha256 "bae4b9cdbc87bbae9027c8abf3fe951f45a1b2731a78097f825b48b40985a92c"
   end
 
   # Intel is not built yet. The Rust toolchain on the release machine has only
