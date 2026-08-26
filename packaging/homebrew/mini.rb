@@ -22,7 +22,7 @@ class Mini < Formula
   license "MIT"
 
   on_arm do
-    url "https://github.com/Sage-is/ai-ui-mini/releases/download/v0.1.2/mini-0.1.2-darwin-arm64.tar.gz"
+    url "https://github.com/Sage-is/ai-ui-mini/releases/download/mini-v0.1.2/mini-0.1.2-darwin-arm64.tar.gz"
     sha256 "1a6e023dad4628c7daeb4936a0459909cf92ec9b49f73b768210860125e86aef"
   end
 
