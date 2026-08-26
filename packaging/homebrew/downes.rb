@@ -50,20 +50,36 @@ class Downes < Formula
     SH
     chmod 0755, bin/"downes"
 
-    # A copy in prefix so `open` works and Finder can reach it. Installed
-    # from libexec, since libexec.install above already moved everything.
+    # In prefix so `open` and Finder can reach it.
     prefix.install_symlink libexec/"Downes.app"
+  end
+
+  # Put a clickable app in ~/Applications, which Finder, Spotlight and
+  # Launchpad all index alongside /Applications — and which needs no sudo.
+  # /Applications itself is root-owned, so a formula cannot write there.
+  #
+  # A symlink is safe here: the app canonicalizes its own executable path
+  # before locating the engine, so it resolves back into libexec rather than
+  # searching beside the symlink. Upgrades follow automatically.
+  def post_install
+    apps = Pathname.new(Dir.home)/"Applications"
+    apps.mkpath
+    link = apps/"Downes.app"
+    link.unlink if link.symlink? || link.exist?
+    link.make_symlink(opt_prefix/"Downes.app")
   end
 
   def caveats
     <<~EOS
-      Downes is installed.
+      Downes is installed and should appear in your Applications.
 
-        Open the studio:   open #{prefix}/Downes.app
+        Click it:          ~/Applications/Downes.app
         Or in a terminal:  downes
 
-      Drag #{prefix}/Downes.app to your Applications folder or Dock if you
-      want it to hand.
+      Drag it to your Dock if you want it to hand. To put it in the main
+      /Applications folder instead (needs your password):
+
+        sudo ln -sfn #{opt_prefix}/Downes.app /Applications/Downes.app
 
       Your courses live in ~/Downes. Downes works in that one folder.
     EOS
