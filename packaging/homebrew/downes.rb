@@ -17,12 +17,12 @@
 class Downes < Formula
   desc "Course-design studio for teachers, on Sage.is AI-UI mini"
   homepage "https://sage.is/downes"
-  version "0.1.1"
+  version "0.1.2"
   license "AGPL-3.0-or-later"
 
   on_arm do
-    url "https://github.com/Sage-is/AI-Education-Downes/releases/download/v0.1.1/downes-0.1.1-darwin-arm64.tar.gz"
-    sha256 "bae4b9cdbc87bbae9027c8abf3fe951f45a1b2731a78097f825b48b40985a92c"
+    url "https://github.com/Sage-is/AI-Education-Downes/releases/download/v0.1.2/downes-0.1.2-darwin-arm64.tar.gz"
+    sha256 "028e0a0186dc67e6ea173afb25b8f92124dbe7a60ee46fa6b8152f442cf92f96"
   end
 
   # Intel is not built yet. The Rust toolchain on the release machine has only
@@ -71,13 +71,15 @@ class Downes < Formula
 
   def caveats
     <<~EOS
-      Downes is installed and should appear in your Applications.
+      Downes is installed and ready. You'll find it here:
 
-        Click it:          ~/Applications/Downes.app
-        Or in a terminal:  downes
+        ~/Applications/Downes.app
 
-      Drag it to your Dock if you want it to hand. To put it in the main
-      /Applications folder instead (needs your password):
+      Or run it from a terminal:
+
+        downes
+
+      To put it in the main /Applications folder instead (you'll need your password):
 
         sudo ln -sfn #{opt_prefix}/Downes.app /Applications/Downes.app
 
