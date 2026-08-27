@@ -14,6 +14,13 @@ WORKSPACE="Downes"
 [ -f "$HERE/../product" ] && WORKSPACE="$(tr -d '[:space:]' < "$HERE/../product")"
 
 STUDIO="${DOWNES_STUDIO:-$HOME/$WORKSPACE}"
+# Physical path, before anything is derived from it.
+# The macOS sandbox canonicalizes a path before matching it against a subpath rule, so a studio
+# reached through a symlink — including anything under /tmp, which is itself a
+# symlink to /private/tmp — would never match its own allow rule, and the one
+# writable tree in the profile would be silently unwritable.
+mkdir -p "$STUDIO" 2>/dev/null || true
+STUDIO="$(cd "$STUDIO" 2>/dev/null && pwd -P || echo "$STUDIO")"
 DHOME="$STUDIO/.downes"
 
 # --- first-launch bootstrap (idempotent, additive) -----------------------
@@ -182,10 +189,27 @@ done
 SANDBOX=()
 PROFILE="$HERE/downes.sb"
 if [ "${DOWNES_NO_SANDBOX:-0}" != "1" ] && [ "$OS" = "darwin" ]; then
+  # The two switches contradict each other: sharing state puts auth.json and
+  # the database back under ~/.local/share/opencode, which the profile does
+  # not make writable. Left uncoupled, the opt-out produces an engine that
+  # cannot open its own log, and the error never mentions the sandbox. Refuse
+  # instead, and name the flag that makes the trade explicit.
+  if [ "${DOWNES_SHARE_STATE:-0}" = "1" ]; then
+    echo "Downes: DOWNES_SHARE_STATE=1 needs DOWNES_NO_SANDBOX=1 as well." >&2
+    echo "  Shared state lives outside the studio, and the sandbox only" >&2
+    echo "  permits writes inside it. Set both, or neither." >&2
+    exit 2
+  fi
   if [ -f "$PROFILE" ] && command -v sandbox-exec >/dev/null 2>&1; then
+    # TMPDIR must be the physical path for the same reason as STUDIO above:
+    # /var/folders/... resolves through a symlink to /private/var/folders/...,
+    # and the sandbox matches the resolved path. Passing it raw makes the TMP
+    # allow rule dead, and every temp write inside the fence — mktemp, a bash
+    # heredoc, any compiler — fails with EPERM.
+    TMPPHYS="$(cd "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P || echo /private/tmp)"
     SANDBOX=(sandbox-exec
              -D "STUDIO=$STUDIO"
-             -D "TMP=${TMPDIR:-/tmp}"
+             -D "TMP=$TMPPHYS"
              -D "HOMEDIR=$HOME"
              -f "$PROFILE")
   else

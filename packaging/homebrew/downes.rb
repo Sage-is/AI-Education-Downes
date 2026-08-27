@@ -72,7 +72,7 @@ class Downes < Formula
 
       Prefer to place it yourself? No password needed:
 
-        ln -sfn "#{opt_prefix}/Downes.app" ~/Applications/Downes.app
+        mkdir -p ~/Applications && ln -sfn "#{opt_prefix}/Downes.app" ~/Applications/Downes.app
 
       Your courses live in ~/Downes. Downes works in that one folder.
     EOS

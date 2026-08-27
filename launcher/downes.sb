@@ -23,20 +23,65 @@
 (allow file-ioctl (subpath "/dev"))
 
 ; --- read: allow the OS, then deny the user's private data back ---
+;
+; HONEST LIMIT: this is a deny-list over a blanket read-allow, so it is
+; whack-a-mole by construction. It covers the locations that actually hold
+; credentials and personal documents today; it cannot claim to cover every
+; secret on the machine, and network egress on :443 is open, so anything
+; still readable is also exfiltratable. Flipping reads to deny-default with
+; an allowlist is the real fix and is tracked on the board — it needs the
+; dyld shared cache, frameworks and dylibs enumerated first.
 (allow file-read* file-read-metadata)
 (deny file-read*
+  ; personal documents
   (subpath (string-append (param "HOMEDIR") "/Documents"))
   (subpath (string-append (param "HOMEDIR") "/Desktop"))
+  (subpath (string-append (param "HOMEDIR") "/Downloads"))
+  (subpath (string-append (param "HOMEDIR") "/Library/Mobile Documents")) ; iCloud Drive
+  ; keys and keychains
   (subpath (string-append (param "HOMEDIR") "/.ssh"))
+  (subpath (string-append (param "HOMEDIR") "/.gnupg"))
   (subpath (string-append (param "HOMEDIR") "/Library/Keychains"))
-  (regex #"/\.(zsh|bash)_history$"))
+  ; cloud and forge credentials
+  (subpath (string-append (param "HOMEDIR") "/.aws"))
+  (subpath (string-append (param "HOMEDIR") "/.config/gcloud"))
+  (subpath (string-append (param "HOMEDIR") "/.azure"))
+  (subpath (string-append (param "HOMEDIR") "/.kube"))
+  (subpath (string-append (param "HOMEDIR") "/.docker"))
+  (subpath (string-append (param "HOMEDIR") "/.config/gh"))
+  (subpath (string-append (param "HOMEDIR") "/.netrc"))
+  ; other agents' credential stores, including the one we seed from
+  (subpath (string-append (param "HOMEDIR") "/.local/share/opencode"))
+  (subpath (string-append (param "HOMEDIR") "/.claude"))
+  (literal  (string-append (param "HOMEDIR") "/.claude.json"))
+  ; browser profiles, cookies and app tokens
+  (subpath (string-append (param "HOMEDIR") "/Library/Application Support"))
+  (subpath (string-append (param "HOMEDIR") "/Library/Cookies"))
+  ; shell history and dotfile secrets
+  (regex #"/\.(zsh|bash)_history$")
+  (regex #"/\.env(\.[^/]+)?$")
+  (regex #"/\.(npmrc|pypirc|gitconfig|git-credentials)$"))
 ; ...but the studio itself is always readable, even under HOMEDIR.
 (allow file-read* (subpath (param "STUDIO")))
 
 ; --- write: deny-default; only the studio and tmp ---
+;
+; /private/tmp is here for one measured reason: bash 3.2 — which is /bin/sh on
+; macOS — places here-document temp files in /tmp and ignores TMPDIR entirely.
+; Without it every shell command the agent runs that uses a heredoc dies with
+; "cannot create temp file for here document". The trade is stated rather than
+; hidden: the agent can write to the world-writable scratch dir. It cannot read
+; anything private through it, but it can stage data there, and :443 egress is
+; open — so this widens the "TLS-only egress" claim, it does not break it.
+;
+; Both params must arrive already resolved. The sandbox canonicalizes a path
+; before matching a subpath rule, so /var/folders/... or a symlinked studio
+; never matches and the rule is silently dead. launcher/downes.sh does the
+; resolving with `pwd -P`.
 (allow file-write*
   (subpath (param "STUDIO"))
   (subpath (param "TMP"))
+  (subpath "/private/tmp")
   (literal "/dev/null") (literal "/dev/tty")
   (literal "/dev/urandom") (literal "/dev/random"))
 
@@ -44,3 +89,11 @@
 (allow network-outbound
   (literal "/private/var/run/mDNSResponder")
   (remote tcp "*:443"))
+
+; The studio runs the engine as `opencode serve` on a random loopback port and
+; the webview connects to it, so the sidecar must be able to bind and accept.
+; Loopback only: this adds no reachability from off the machine. The terminal
+; launcher never needed it, which is why the omission survived — a TUI does
+; not bind, and the escape test only ever ran `--version`.
+(allow network-bind (local ip "localhost:*"))
+(allow network-inbound (local ip "localhost:*"))

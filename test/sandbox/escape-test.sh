@@ -1,26 +1,60 @@
 #!/usr/bin/env bash
 # Layer-3 escape test. Every deny must deny, every allow must allow, or the
 # word "sandboxed" stays off every page. Exit nonzero on any failure.
+#
+# Two rules this file learned the hard way:
+#
+#   1. A failing command is not proof of containment. `ls ~/Documents` fails on
+#      a clean CI runner because the directory is absent, not because the fence
+#      stopped it — every filesystem case would report "ok (denied)" against a
+#      profile that fences nothing. So a deny case must see the kernel say
+#      "Operation not permitted", and says INCONCLUSIVE when the target is
+#      missing rather than banking a false green.
+#
+#   2. A test that configures the environment itself proves only that the test
+#      works. The engine cases run launcher/downes.sh — the shipped entry
+#      point — so reverting the isolation or the sandbox prefix turns them red.
 set -u
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 STUDIO="${DOWNES_STUDIO:-$HOME/Downes}"
+
+# Physical paths. The macOS sandbox canonicalizes before matching a subpath
+# rule, so an unresolved /var/folders/... or /tmp/... never matches its own
+# allow and the rule is silently dead. This mirrors launcher/downes.sh.
+STUDIO_PHYS="$(cd "$STUDIO" 2>/dev/null && pwd -P || echo "$STUDIO")"
+TMP_PHYS="$(cd "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P || echo /private/tmp)"
+
 SB=(sandbox-exec
-    -D "STUDIO=$STUDIO" -D "TMP=${TMPDIR%/}" -D "HOMEDIR=$HOME"
+    -D "STUDIO=$STUDIO_PHYS" -D "TMP=$TMP_PHYS" -D "HOMEDIR=$HOME"
     -f "$REPO/launcher/downes.sb")
 F=0
+INCONCLUSIVE=0
 
 # The profile names STUDIO as the one writable tree, so it has to exist before
 # anything is measured. On a fresh CI runner it does not.
-mkdir -p "$STUDIO"
+mkdir -p "$STUDIO_PHYS"
 
+# A deny must come from the sandbox. Anything else — a missing file, a typo in
+# the command — is reported as inconclusive, never as a pass.
 expect_deny() {
-  if "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1; then
-    echo "FAIL (allowed): $2"; F=1
-  else
-    echo "ok (denied):    $2"
+  local out
+  out="$("${SB[@]}" /bin/sh -c "$1" 2>&1)"
+  if [ -z "$out" ] && "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1; then
+    echo "FAIL (allowed): $2"; F=1; return
   fi
+  case "$out" in
+    *"Operation not permitted"*|*"Permission denied"*)
+      echo "ok (denied):    $2" ;;
+    *"No such file"*|*"does not exist"*)
+      echo "INCONCLUSIVE:   $2 — target absent, the fence was never tested"
+      INCONCLUSIVE=$((INCONCLUSIVE+1)) ;;
+    *)
+      echo "INCONCLUSIVE:   $2 — failed for another reason: ${out%%$'\n'*}"
+      INCONCLUSIVE=$((INCONCLUSIVE+1)) ;;
+  esac
 }
+
 expect_allow() {
   if "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1; then
     echo "ok (allowed):   $2"
@@ -29,21 +63,54 @@ expect_allow() {
   fi
 }
 
+# Network denial does not surface as "Operation not permitted" through curl,
+# so it stays exit-code based — and the paired :443 allow above it is what
+# shows the fence is live rather than the network being down.
+expect_deny_net() {
+  if "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1; then
+    echo "FAIL (allowed): $2"; F=1
+  else
+    echo "ok (denied):    $2"
+  fi
+}
+
+# --- filesystem -------------------------------------------------------------
 expect_deny  'ls "$HOME/Documents"'                          "read ~/Documents"
-expect_deny  'cat "$HOME/.ssh/id_"* '                        "read ~/.ssh keys"
+# Listed, not globbed: `cat ~/.ssh/id_*` with no matching key leaves the glob
+# literal, so the case fails on ENOENT and measures nothing.
+expect_deny  'ls "$HOME/.ssh"'                               "read ~/.ssh"
 expect_deny  'cat "$HOME/.zsh_history"'                      "read shell history"
 expect_deny  'touch "$HOME/Desktop/downes-escape.txt"'       "write ~/Desktop"
-expect_deny  "cp -r '$STUDIO' \"\$HOME/Documents/exfil\""    "copy studio out"
-expect_allow "echo hi > '$STUDIO/.sandbox-probe' && rm '$STUDIO/.sandbox-probe'" "write inside studio"
-expect_allow 'curl -sS --max-time 10 https://opencode.ai -o /dev/null' "TLS egress :443"
-expect_deny  'curl -sS --max-time 5 http://example.com -o /dev/null'   "plain HTTP :80"
+expect_deny  "cp -r '$STUDIO_PHYS' \"\$HOME/Documents/exfil\"" "copy studio out"
 
-# --- engine-level cases ----------------------------------------------------
-# Everything above exercises /bin/sh. Those cases stayed green while the real
-# product could not launch under the profile at all: the engine kept its
-# auth.json and database in ~/.local/share/opencode, outside the fence. A
-# sandbox test that never runs the sandboxed program proves very little.
+# Credential stores. The profile allows reads broadly and denies these back, so
+# each one is a rule that must actually be present — this is the list a course
+# would go looking for, and :443 egress is open.
+expect_deny  'cat "$HOME/.local/share/opencode/auth.json"'   "read the shared opencode auth store"
+expect_deny  'cat "$HOME/.config/gh/hosts.yml"'              "read GitHub CLI tokens"
+expect_deny  'cat "$HOME/.claude.json"'                      "read ~/.claude.json"
+expect_deny  'cat "$HOME/.gitconfig"'                        "read ~/.gitconfig"
+expect_deny  'ls "$HOME/Library/Application Support"'        "read app support (browser profiles)"
 
+expect_allow "echo hi > '$STUDIO_PHYS/.sandbox-probe' && rm '$STUDIO_PHYS/.sandbox-probe'" "write inside studio"
+
+# The TMP allow is easy to make dead by passing an unresolved path, and nothing
+# else in the suite would notice: mktemp, bash heredocs and every compiler need
+# it, but `opencode --version` does not touch a temp file.
+expect_allow 'f=$(mktemp) && echo hi > "$f" && rm "$f"'      "write inside TMPDIR"
+expect_allow 'cat <<EOF
+heredoc
+EOF'                                                          "bash heredoc (needs a temp file)"
+
+# --- network ----------------------------------------------------------------
+expect_allow    'curl -sS --max-time 10 https://opencode.ai -o /dev/null' "TLS egress :443"
+expect_deny_net 'curl -sS --max-time 5 http://example.com -o /dev/null'   "plain HTTP :80"
+
+# --- the shipped launcher ---------------------------------------------------
+# These run launcher/downes.sh itself. Revert the XDG exports or the
+# sandbox-exec prefix and they go red — which the previous version of this
+# file, which set XDG_* by hand, could not do.
+LAUNCHER="$REPO/launcher/downes.sh"
 ENGINE=""
 for cand in "${DOWNES_ENGINE:-}" \
             "$REPO/bin/opencode" \
@@ -54,48 +121,94 @@ do
   [ -n "$cand" ] && [ -x "$cand" ] && { ENGINE="$cand"; break; }
 done
 
-if [ -z "$ENGINE" ]; then
-  echo "SKIP (no engine):  build one or brew install to cover the engine cases"
+if [ ! -x "$LAUNCHER" ] || [ -z "$ENGINE" ]; then
+  echo "INCONCLUSIVE:   launcher cases skipped (no engine built or installed)"
+  INCONCLUSIVE=$((INCONCLUSIVE+1))
 else
-  XDG="$STUDIO/.downes/xdg"
-  mkdir -p "$XDG/config" "$XDG/data" "$XDG/state" "$XDG/cache"
+  SCRATCH="$(mktemp -d)"
+  trap 'rm -rf "$SCRATCH"' EXIT
+  LSTUDIO="$SCRATCH/studio"
+  BEFORE="$(ls -1 "$HOME/.local/share/opencode" 2>/dev/null | sort | shasum | cut -d' ' -f1)"
 
-  # Run from the studio, exactly as launcher/downes.sh does with `cd "$STUDIO"`.
-  # This is load-bearing, not tidiness: the profile denies reads under
-  # ~/Documents, and the engine reads its own working directory at startup. Run
-  # these cases from a checkout that happens to live in ~/Documents and they
-  # fail on the cwd, not on anything the test means to measure.
-  engine() {
-    (cd "$STUDIO" && env XDG_CONFIG_HOME="$XDG/config" XDG_DATA_HOME="$XDG/data" \
-       XDG_STATE_HOME="$XDG/state" XDG_CACHE_HOME="$XDG/cache" \
-       "$@" >/dev/null 2>&1)
-  }
-
-  # With state isolated into the studio, the engine starts under the fence.
-  if engine "${SB[@]}" "$ENGINE" --version; then
-    echo "ok (allowed):   engine starts under the profile"
+  if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE="$ENGINE" "$LAUNCHER" --version >/dev/null 2>&1; then
+    echo "ok (allowed):   launcher starts the engine"
   else
-    echo "FAIL (denied):  engine starts under the profile"; F=1
+    echo "FAIL (denied):  launcher starts the engine"; F=1
   fi
 
-  # The engine created its store inside the studio, not in the home dir.
-  if [ -d "$XDG/data/opencode" ]; then
-    echo "ok (allowed):   engine state landed inside the studio"
+  # The launcher exported XDG_* into the studio, so the engine built its store
+  # there rather than in the home directory.
+  if [ -d "$LSTUDIO/.downes/xdg/data/opencode" ]; then
+    echo "ok (allowed):   launcher put engine state inside the studio"
   else
-    echo "FAIL (denied):  engine state landed inside the studio"; F=1
+    echo "FAIL (denied):  launcher put engine state inside the studio"; F=1
   fi
 
-  # The coupling, stated as an invariant: the shared home store is not
-  # writable through the fence. This is why state isolation had to land first
-  # — with XDG left alone the engine keeps auth.json and its database here,
-  # and switching the sandbox on takes its credentials away on first launch.
-  #
-  # Probed as a direct write, not by running the engine: ~/.local/share/opencode
-  # usually already exists, so the engine's recursive mkdir succeeds without
-  # needing write permission and proves nothing.
-  expect_deny "touch \"\$HOME/.local/share/opencode/downes-fence-probe\"" \
-              "write the shared home store"
+  AFTER="$(ls -1 "$HOME/.local/share/opencode" 2>/dev/null | sort | shasum | cut -d' ' -f1)"
+  if [ "$BEFORE" = "$AFTER" ]; then
+    echo "ok (denied):    launcher left the shared home store untouched"
+  else
+    echo "FAIL (allowed): launcher wrote to the shared home store"; F=1
+  fi
+
+  # The launcher must actually apply the fence, not merely be capable of it.
+  if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE=/bin/sh "$LAUNCHER" \
+       -c 'touch "$HOME/Desktop/downes-escape-probe"' >/dev/null 2>&1; then
+    echo "FAIL (allowed): launcher applies the sandbox prefix"; F=1
+    rm -f "$HOME/Desktop/downes-escape-probe"
+  else
+    echo "ok (denied):    launcher applies the sandbox prefix"
+  fi
+
+  # And the documented bypass must still work, or debugging is impossible.
+  if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE=/usr/bin/true DOWNES_NO_SANDBOX=1 \
+       "$LAUNCHER" >/dev/null 2>&1; then
+    echo "ok (allowed):   DOWNES_NO_SANDBOX=1 bypasses the fence"
+  else
+    echo "FAIL (denied):  DOWNES_NO_SANDBOX=1 bypasses the fence"; F=1
+  fi
+
+  # The studio runs `opencode serve`, which binds a loopback port. The profile
+  # had no network-bind rule for a long time and nothing noticed, because every
+  # engine case here ran `--version` — which never binds. Serving under the
+  # fence is the assertion that covers the GUI's actual code path.
+  SPORT=51987
+  SLOG="$SCRATCH/serve.log"
+  ( cd "$STUDIO_PHYS" && \
+    env XDG_CONFIG_HOME="$LSTUDIO/.downes/xdg/config" \
+        XDG_DATA_HOME="$LSTUDIO/.downes/xdg/data" \
+        XDG_STATE_HOME="$LSTUDIO/.downes/xdg/state" \
+        XDG_CACHE_HOME="$LSTUDIO/.downes/xdg/cache" \
+        "${SB[@]}" "$ENGINE" serve --hostname 127.0.0.1 --port "$SPORT" \
+        >"$SLOG" 2>&1 ) &
+  SPID=$!
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    grep -q "listening" "$SLOG" 2>/dev/null && break
+    sleep 1
+  done
+  if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+          "http://127.0.0.1:$SPORT/api/health" 2>/dev/null)" != "000" ]; then
+    echo "ok (allowed):   engine binds a loopback port under the fence"
+  else
+    echo "FAIL (denied):  engine binds a loopback port under the fence"
+    F=1
+    [ -s "$SLOG" ] && sed 's/^/                  /' "$SLOG" | head -3
+  fi
+  kill "$SPID" 2>/dev/null
+  wait "$SPID" 2>/dev/null
+
+  # Sharing state while fenced cannot work, so the launcher must refuse it
+  # rather than hand the user an engine that cannot open its own log.
+  if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE=/usr/bin/true DOWNES_SHARE_STATE=1 \
+       "$LAUNCHER" >/dev/null 2>&1; then
+    echo "FAIL (allowed): DOWNES_SHARE_STATE=1 refused while fenced"; F=1
+  else
+    echo "ok (denied):    DOWNES_SHARE_STATE=1 refused while fenced"
+  fi
 fi
 
+if [ "$INCONCLUSIVE" != 0 ]; then
+  echo "escape test: $INCONCLUSIVE case(s) INCONCLUSIVE — coverage is smaller than it looks"
+fi
 [ "$F" = 0 ] && echo "escape test: ALL GREEN" || echo "escape test: FAILURES"
 exit $F

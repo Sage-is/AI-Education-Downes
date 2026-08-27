@@ -57,11 +57,33 @@ fi
 # --- app -------------------------------------------------------------------
 # Tauri names the release bundle by productName, not by arch.
 APP="$STUDIO_PKG/src-tauri/target/release/bundle/macos/$APP_NAME.app"
+APP_EXE="$APP/Contents/MacOS/downes-studio"
+case "$ARCH" in arm64) WANT_ARCH="arm64" ;; x64) WANT_ARCH="x86_64" ;; esac
+
+# Reuse is only safe when the bundle is for THIS arch and is not older than the
+# sources. The path encodes productName alone — no architecture, no source
+# identity — so a bare `[ -d "$APP" ]` silently ships a bundle built from other
+# code or for another CPU. That is not hypothetical: a payload was assembled
+# here from a bundle predating the Rust change it was supposed to carry.
+REBUILD=""
 if [ ! -d "$APP" ]; then
-  echo "==> building $APP_NAME.app (release)"
+  REBUILD="no bundle yet"
+elif ! lipo -archs "$APP_EXE" 2>/dev/null | tr ' ' '\n' | grep -qx "$WANT_ARCH"; then
+  REBUILD="bundle is $(lipo -archs "$APP_EXE" 2>/dev/null || echo unreadable), want $WANT_ARCH"
+elif [ -n "$(find "$STUDIO_PKG/src-tauri/src" "$STUDIO_PKG/frontend/src" \
+             -type f -newer "$APP_EXE" -print -quit 2>/dev/null)" ]; then
+  REBUILD="sources are newer than the bundle"
+fi
+
+if [ -n "$REBUILD" ]; then
+  echo "==> building $APP_NAME.app (release) — $REBUILD"
   (cd "$STUDIO_PKG" && bunx tauri build --bundles app "${TAURI_ARGS[@]}")
 fi
 [ -d "$APP" ] || { echo "$APP_NAME.app missing after build: $APP" >&2; exit 1; }
+
+# Prove the shipped bundle is the right architecture, not just that a build ran.
+lipo -archs "$APP_EXE" 2>/dev/null | tr ' ' '\n' | grep -qx "$WANT_ARCH" \
+  || { echo "$APP_NAME.app is not $WANT_ARCH: $(lipo -archs "$APP_EXE" 2>/dev/null)" >&2; exit 1; }
 
 # --- stage -----------------------------------------------------------------
 echo "==> staging"
@@ -98,7 +120,24 @@ chmod 0755 "$STAGE/scripts/install_studio.sh"
 # content in an MIT artifact and give the platform an agent it does not claim
 # to have.
 if [ "$PRODUCT" = "downes" ]; then
-  cp -R "$REPO/studio" "$STAGE/studio"
+  # Courses are user output, and studio/.downes/courses/ is gitignored. A
+  # plain copy takes whatever the build machine happens to have: v0.1.2 shipped
+  # an 8-file test course generated on 2026-08-21, which install_studio.sh then
+  # rsynced into every teacher's studio. The template carries tracked content
+  # only.
+  rsync -a --exclude '.downes/courses/' "$REPO/studio/" "$STAGE/studio/"
+
+  # Reproducibility guard: two people building the same tag must get the same
+  # payload. Anything else untracked under studio/ is local state, not template.
+  if git -C "$REPO" rev-parse >/dev/null 2>&1; then
+    STRAY="$(git -C "$REPO" ls-files --others --ignored --exclude-standard -- studio \
+             | grep -v '^studio/\.downes/courses/' || true)"
+    if [ -n "$STRAY" ]; then
+      echo "payload would ship untracked template content:" >&2
+      printf '  %s\n' $STRAY >&2
+      exit 1
+    fi
+  fi
 fi
 
 # --- self-containment check ------------------------------------------------

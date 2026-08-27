@@ -67,7 +67,7 @@ class Mini < Formula
 
       Prefer to place it yourself? No password needed:
 
-        ln -sfn "#{opt_prefix}/Sage.is mini.app" ~/Applications/
+        mkdir -p ~/Applications && ln -sfn "#{opt_prefix}/Sage.is mini.app" ~/Applications/
 
       Your work lives in ~/SageMini.
 
