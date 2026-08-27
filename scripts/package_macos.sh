@@ -71,8 +71,19 @@ if [ ! -d "$APP" ]; then
 elif ! lipo -archs "$APP_EXE" 2>/dev/null | tr ' ' '\n' | grep -qx "$WANT_ARCH"; then
   REBUILD="bundle is $(lipo -archs "$APP_EXE" 2>/dev/null || echo unreadable), want $WANT_ARCH"
 elif [ -n "$(find "$STUDIO_PKG/src-tauri/src" "$STUDIO_PKG/frontend/src" \
+             "$STUDIO_PKG/src-tauri/Cargo.toml" \
+             "$STUDIO_PKG/src-tauri"/tauri*.conf.json \
              -type f -newer "$APP_EXE" -print -quit 2>/dev/null)" ]; then
-  REBUILD="sources are newer than the bundle"
+  REBUILD="sources or config are newer than the bundle"
+elif [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+          "$APP/Contents/Info.plist" 2>/dev/null)" != "$VERSION" ]; then
+  # The version lives in tauri.conf.json and is stamped into Info.plist at
+  # bundle time. Bumping it touches no source file, so a source-mtime check
+  # alone happily ships a v0.1.3 tarball containing a bundle that calls itself
+  # v0.1.2 — which is exactly what happened on the first attempt at this
+  # release.
+  REBUILD="bundle is v$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+            "$APP/Contents/Info.plist" 2>/dev/null), releasing v$VERSION"
 fi
 
 if [ -n "$REBUILD" ]; then
