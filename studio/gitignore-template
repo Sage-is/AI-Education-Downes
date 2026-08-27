@@ -1,0 +1,4 @@
+# Downes keeps the engine's state here — credentials, session database, logs.
+# It must never be committable: this folder is the one you share courses from.
+.downes/xdg/
+.downes/sidecar.log

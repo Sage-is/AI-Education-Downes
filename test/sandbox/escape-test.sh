@@ -138,7 +138,11 @@ else
 
   # The launcher exported XDG_* into the studio, so the engine built its store
   # there rather than in the home directory.
-  if [ -d "$LSTUDIO/.downes/xdg/data/opencode" ]; then
+  # data/downes, not data/opencode: the fork names its XDG folder after itself
+  # (core/src/global.ts) so it can never share a directory with a stock
+  # opencode install. A regression there would show up here as this case going
+  # red rather than as someone else's corrupted database.
+  if [ -d "$LSTUDIO/.downes/xdg/data/downes" ]; then
     echo "ok (allowed):   launcher put engine state inside the studio"
   else
     echo "FAIL (denied):  launcher put engine state inside the studio"; F=1
@@ -150,6 +154,20 @@ else
   else
     echo "FAIL (allowed): launcher wrote to the shared home store"; F=1
   fi
+
+  # The env fix holds only where the env is set. This case removes it entirely
+  # and asserts the BINARY still stays out of a stock opencode's directory —
+  # the property that makes the collision structurally impossible rather than
+  # merely absent. A colleague lost a morning to this exact failure.
+  NAKED="$(mktemp -d)"
+  ( cd "$NAKED" && env -u XDG_CONFIG_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME \
+      -u XDG_CACHE_HOME HOME="$NAKED" "$ENGINE" --version >/dev/null 2>&1 )
+  if [ -d "$NAKED/.local/share/opencode" ]; then
+    echo "FAIL (allowed): unisolated engine wrote into ~/.local/share/opencode"; F=1
+  else
+    echo "ok (denied):    unisolated engine stays out of the opencode store"
+  fi
+  rm -rf "$NAKED"
 
   # The launcher must actually apply the fence, not merely be capable of it.
   if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE=/bin/sh "$LAUNCHER" \

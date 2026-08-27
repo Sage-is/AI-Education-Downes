@@ -48,11 +48,28 @@ fi
 echo "==> $APP_NAME $VERSION, darwin-$ARCH"
 
 # --- engine ----------------------------------------------------------------
+# Pin the channel. Left unset, the fork's build script falls back to the
+# current GIT BRANCH NAME (packages/script/src/index.ts:30), so the shipped
+# version string and the database filename both depend on which branch the
+# release happened to be cut from — v0.1.3 shipped "downes/v1" only because
+# that was the branch at the time, and a build on develop produced "develop".
+export OPENCODE_CHANNEL="${OPENCODE_CHANNEL:-downes/v1}"
+
 if [ ! -x "$ENGINE" ]; then
-  echo "==> building engine (not found at $ENGINE)"
+  echo "==> building engine (not found at $ENGINE), channel $OPENCODE_CHANNEL"
   (cd "$FORK/packages/opencode" && bun run script/build.ts)
 fi
 [ -x "$ENGINE" ] || { echo "engine missing after build: $ENGINE" >&2; exit 1; }
+
+# The engine must agree with the channel we asked for, or the database name and
+# the version string are someone else's accident.
+ENGINE_V="$("$ENGINE" --version 2>/dev/null || true)"
+case "$ENGINE_V" in
+  *"$OPENCODE_CHANNEL"*) : ;;
+  *) echo "engine reports '$ENGINE_V', expected channel '$OPENCODE_CHANNEL'." >&2
+     echo "  Delete $FORK/packages/opencode/dist and re-run to rebuild it." >&2
+     exit 1 ;;
+esac
 
 # --- app -------------------------------------------------------------------
 # Tauri names the release bundle by productName, not by arch.

@@ -57,16 +57,121 @@ if [ "${DOWNES_SHARE_STATE:-0}" != "1" ]; then
   export XDG_STATE_HOME="$DHOME/xdg/state"
   export XDG_CACHE_HOME="$DHOME/xdg/cache"
 
+  # The engine's folder inside each XDG root is named after its compiled-in
+  # channel (core/src/global.ts): "opencode" before v0.1.4, "downes" from here
+  # on. An existing studio's sessions live under the old name, so bring them
+  # with us or the teacher opens the studio to an empty session list.
+  for _x in "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME"; do
+    if [ -d "$_x/opencode" ] && [ ! -e "$_x/downes" ]; then
+      mv "$_x/opencode" "$_x/downes" 2>/dev/null || true
+    fi
+  done
+  unset _x
+
+  # Our state must never be committable. The studio is the folder we tell
+  # teachers to keep their courses in and share with colleagues, and the seed
+  # below puts real provider keys inside it — a `git init && git add -A` in
+  # ~/Downes would otherwise stage them.
+  if ! grep -qs '^\.downes/xdg/' "$STUDIO/.gitignore" 2>/dev/null; then
+    printf '%s\n' '.downes/xdg/' >> "$STUDIO/.gitignore"
+  fi
+
   # Seed the credential store once from the user's real opencode, so
   # isolation costs nobody a second login. They diverge after this: a
   # provider added here will not show up in a stock opencode session.
-  _seed="$XDG_DATA_HOME/opencode/auth.json"
+  _seed="$XDG_DATA_HOME/downes/auth.json"
   _real="$HOME/.local/share/opencode/auth.json"
   if [ ! -f "$_seed" ] && [ -f "$_real" ]; then
     mkdir -p "$(dirname "$_seed")"
     cp "$_real" "$_seed" && chmod 600 "$_seed"
   fi
   unset _seed _real
+
+  # --- one-time reclaim from the shared opencode store --------------------
+  # Builds before v0.1.3 had no XDG isolation, so our engine wrote its
+  # database straight into ~/.local/share/opencode next to a stock opencode's
+  # own. Two databases, two schemas, one directory, and an error message that
+  # named neither — that cost a colleague a morning's diagnosis, and
+  # `brew uninstall` does not clean it up.
+  #
+  # Our file is identifiable: the engine names the database after its
+  # compiled-in channel (core/src/database/database.ts), which for this fork
+  # is downes/v1 → opencode-downes-v1.db. Stock opencode ships channel
+  # latest/beta/prod and uses the unsuffixed opencode.db, which we never touch.
+  # How many sessions a database holds. Opened immutable so a live writer is
+  # never disturbed and no WAL is created. Empty string when unreadable.
+  _session_count() {
+    command -v sqlite3 >/dev/null 2>&1 || return 0
+    sqlite3 "file:$1?immutable=1" "select count(*) from session;" 2>/dev/null || true
+  }
+
+  reclaim_shared_store() {
+    local shared="$HOME/.local/share/opencode" mine="$XDG_DATA_HOME/downes"
+    local f base moved=0 theirs mine_n
+
+    [ -d "$shared" ] || return 0
+
+    for f in "$shared"/opencode-downes-*.db; do
+      [ -f "$f" ] || continue
+      base="$(basename "$f")"
+      mkdir -p "$mine"
+
+      if [ ! -f "$mine/$base" ]; then
+        # Nothing here yet: take it, WAL and all. Safe even if a process holds
+        # it, because the destination is empty — but skip a live one anyway so
+        # we never move a file mid-write.
+        if command -v lsof >/dev/null 2>&1 && lsof -- "$f" >/dev/null 2>&1; then
+          echo "Downes: $base is in use; will reclaim it on a later launch." >&2
+          continue
+        fi
+        mv "$f" "$mine/$base" 2>/dev/null || continue
+        mv "$f-shm" "$mine/$base-shm" 2>/dev/null || true
+        mv "$f-wal" "$mine/$base-wal" 2>/dev/null || true
+        moved=1
+        continue
+      fi
+
+      # Both exist. Decide on CONTENT, never on which file happens to be
+      # present: isolation shipped a release before this reclaim did, so the
+      # studio's copy is usually the newer-but-emptier one, and picking it
+      # silently retires a term's worth of a teacher's sessions.
+      theirs="$(_session_count "$f")"
+      mine_n="$(_session_count "$mine/$base")"
+
+      if [ -n "$theirs" ] && [ -n "$mine_n" ] && [ "$theirs" -gt "$mine_n" ] 2>/dev/null; then
+        if command -v lsof >/dev/null 2>&1 && lsof -- "$f" >/dev/null 2>&1; then
+          echo "Downes: $base is in use; will reclaim it on a later launch." >&2
+          continue
+        fi
+        # The stray is richer. Park the sparse studio copy, never delete it.
+        mv "$mine/$base" "$mine/$base.sparse" 2>/dev/null || continue
+        rm -f "$mine/$base-shm" "$mine/$base-wal" 2>/dev/null
+        mv "$f" "$mine/$base" 2>/dev/null || continue
+        mv "$f-shm" "$mine/$base-shm" 2>/dev/null || true
+        mv "$f-wal" "$mine/$base-wal" 2>/dev/null || true
+        echo "Downes: recovered $theirs sessions an older build left in your" >&2
+        echo "  opencode folder. The studio's $mine_n-session copy is kept as" >&2
+        echo "  $base.sparse in case you want it." >&2
+        moved=1
+      else
+        # Studio copy is as rich or richer, or neither could be read. Move the
+        # stray out of the shared folder but keep it — deleting a teacher's
+        # only copy on a guess is not ours to do.
+        mv "$f" "$mine/$base.from-shared-store" 2>/dev/null || continue
+        rm -f "$f-shm" "$f-wal" 2>/dev/null
+        echo "Downes: an older build left $base in your opencode folder." >&2
+        echo "  Moved it into the studio as $base.from-shared-store; your" >&2
+        echo "  current sessions are untouched." >&2
+        moved=1
+      fi
+    done
+
+    # Each branch above reports what it actually did; a generic trailer here
+    # only contradicted them.
+    [ "$moved" = 1 ] && [ -n "${DOWNES_DEBUG:-}" ] && echo "Downes: reclaim complete." >&2
+    return 0
+  }
+  reclaim_shared_store
 fi
 
 # Keep the machine owner's personal Claude Code setup out of a teacher's
@@ -91,10 +196,22 @@ export OPENCODE_DISABLE_PROJECT_CONFIG=1
 export OPENCODE_DISABLE_AUTOUPDATE=1
 
 # --- credentials: Sage when present, Zen public floor otherwise ----------
+# The model pin and the public-tier key are delivered HERE rather than in
+# $STUDIO/opencode.json, because that file sits at the root of a directory the
+# teacher opens in other tools. opencode walks up from its working directory
+# collecting opencode.json unless OPENCODE_DISABLE_PROJECT_CONFIG is set — we
+# set it, a stock opencode does not — so anything left in that file is adopted
+# by someone else's session. Model, small_model and the provider key are the
+# three that repoint a stock user's account and billing rather than merely
+# restricting them, so they travel by env, which only our engine reads.
+# OPENCODE_CONFIG_CONTENT is merged last (opencode/src/config/config.ts:468),
+# so it wins over anything in the file.
 KEY="$(security find-generic-password -s is.sage.downes -w 2>/dev/null || true)"
 if [ -n "$KEY" ]; then
   export DOWNES_SAGE_KEY="$KEY"
   export OPENCODE_CONFIG_CONTENT='{"model":"sage/downes-standard"}'
+else
+  export OPENCODE_CONFIG_CONTENT='{"model":"opencode/nemotron-3.5-lightning-free","small_model":"opencode/big-pickle","provider":{"opencode":{"options":{"apiKey":"public"}}}}'
 fi
 
 # --- desktop entry ----------------------------------------------------------

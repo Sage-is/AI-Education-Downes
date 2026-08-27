@@ -4,15 +4,6 @@
   "share": "disabled",
   "autoupdate": false,
   "default_agent": "downes",
-  "model": "opencode/nemotron-3.5-lightning-free",
-  "small_model": "opencode/big-pickle",
-  "provider": {
-    "opencode": {
-      "options": {
-        "apiKey": "public"
-      }
-    }
-  },
   "instructions": [
     ".downes/METHOD.md"
   ],
