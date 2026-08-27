@@ -78,10 +78,17 @@
 ; before matching a subpath rule, so /var/folders/... or a symlinked studio
 ; never matches and the rule is silently dead. launcher/downes.sh does the
 ; resolving with `pwd -P`.
+; The terminal pane needs a real pty: /dev/ptmx plus the /dev/ttysNNN the
+; kernel hands back, both for write. `(allow pseudo-tty)` does not cover it,
+; and without them openpty() returns "out of pty devices" — a 500 on /api/pty.
+; The device number is assigned at open time, so it cannot be pinned.
+; Cost: a fenced process can write to this user's other terminals.
 (allow file-write*
   (subpath (param "STUDIO"))
   (subpath (param "TMP"))
   (subpath "/private/tmp")
+  (literal "/dev/ptmx")
+  (regex #"^/dev/ttys[0-9]+$")
   (literal "/dev/null") (literal "/dev/tty")
   (literal "/dev/urandom") (literal "/dev/random"))
 

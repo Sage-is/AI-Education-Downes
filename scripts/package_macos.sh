@@ -114,49 +114,44 @@ lipo -archs "$APP_EXE" 2>/dev/null | tr ' ' '\n' | grep -qx "$WANT_ARCH" \
   || { echo "$APP_NAME.app is not $WANT_ARCH: $(lipo -archs "$APP_EXE" 2>/dev/null)" >&2; exit 1; }
 
 # --- stage -----------------------------------------------------------------
+# Everything the shell needs goes INSIDE the bundle, under Contents/Resources.
+# A Mac app has to be self-contained: the cask's `app` stanza moves the .app to
+# ~/Applications on its own, and anything left as a sibling is left behind.
+# lib.rs:payload_roots() looks in Contents/Resources for exactly this reason.
 echo "==> staging"
 rm -rf "$STAGE"
-mkdir -p "$STAGE/bin" "$STAGE/launcher" "$STAGE/scripts"
-
-cp "$ENGINE" "$STAGE/bin/opencode"
-chmod 0755 "$STAGE/bin/opencode"
+mkdir -p "$STAGE"
 
 cp -R "$APP" "$STAGE/$APP_NAME.app"
+RES="$STAGE/$APP_NAME.app/Contents/Resources"
+mkdir -p "$RES/bin" "$RES/launcher" "$RES/scripts"
 
-# Product marker: the Rust binary is identical in both apps, so it reads this
-# to know which workspace folder to use.
-printf '%s\n' "$WORKSPACE" > "$STAGE/product"
+cp "$ENGINE" "$RES/bin/opencode"
+chmod 0755 "$RES/bin/opencode"
 
-# Launcher, shim, and the studio template the first run installs from.
-cp "$REPO/launcher/downes.sh" "$STAGE/launcher/downes.sh"
-chmod 0755 "$STAGE/launcher/downes.sh"
-# The Layer-3 profile must travel with the launcher. Without it the sandbox
-# guard finds no profile and silently runs unfenced — the failure mode is an
-# install that claims containment and has none.
-cp "$REPO/launcher/downes.sb" "$STAGE/launcher/downes.sb"
-chmod 0644 "$STAGE/launcher/downes.sb"
-# The Terminal shim is Downes-branded and only serves the terminal-first
-# flow; shipping it in mini would drop a stray "Downes.app" into the
-# platform payload.
-if [ "$PRODUCT" = "downes" ]; then
-  cp -R "$REPO/launcher/Downes.app" "$STAGE/launcher/Downes.app"
-  chmod 0755 "$STAGE/launcher/Downes.app/Contents/MacOS/downes-app"
-fi
-cp "$REPO/scripts/install_studio.sh" "$STAGE/scripts/install_studio.sh"
-chmod 0755 "$STAGE/scripts/install_studio.sh"
+# Product marker: one Rust binary ships in both apps and reads this to know
+# which workspace folder it owns.
+printf '%s\n' "$WORKSPACE" > "$RES/product"
+
+cp "$REPO/launcher/downes.sh" "$RES/launcher/downes.sh"
+chmod 0755 "$RES/launcher/downes.sh"
+# The Layer-3 profile must travel with the launcher, or the sandbox guard finds
+# no profile and silently runs unfenced.
+cp "$REPO/launcher/downes.sb" "$RES/launcher/downes.sb"
+chmod 0644 "$RES/launcher/downes.sb"
+cp "$REPO/scripts/install_studio.sh" "$RES/scripts/install_studio.sh"
+chmod 0755 "$RES/scripts/install_studio.sh"
+
 # Curriculum template is Downes-only. Shipping it in mini would put AGPL
 # content in an MIT artifact and give the platform an agent it does not claim
 # to have.
 if [ "$PRODUCT" = "downes" ]; then
-  # Courses are user output, and studio/.downes/courses/ is gitignored. A
-  # plain copy takes whatever the build machine happens to have: v0.1.2 shipped
-  # an 8-file test course generated on 2026-08-21, which install_studio.sh then
-  # rsynced into every teacher's studio. The template carries tracked content
-  # only.
-  rsync -a --exclude '.downes/courses/' "$REPO/studio/" "$STAGE/studio/"
+  # Courses are user output, and studio/.downes/courses/ is gitignored. A plain
+  # copy takes whatever the build machine happens to have: v0.1.2 shipped an
+  # 8-file test course into every teacher's studio that way.
+  rsync -a --exclude '.downes/courses/' "$REPO/studio/" "$RES/studio/"
 
-  # Reproducibility guard: two people building the same tag must get the same
-  # payload. Anything else untracked under studio/ is local state, not template.
+  # Reproducibility: two people building the same tag must get the same payload.
   if git -C "$REPO" rev-parse >/dev/null 2>&1; then
     STRAY="$(git -C "$REPO" ls-files --others --ignored --exclude-standard -- studio \
              | grep -v '^studio/\.downes/courses/' || true)"
@@ -168,11 +163,19 @@ if [ "$PRODUCT" = "downes" ]; then
   fi
 fi
 
+# Adding files under Contents/ invalidates the signature tauri produced, and an
+# app with a broken seal is worse than an unsigned one: Gatekeeper refuses it
+# outright rather than offering the usual override. Re-seal ad-hoc.
+echo "==> re-signing $APP_NAME.app"
+codesign --force --deep --sign - "$STAGE/$APP_NAME.app" 2>/dev/null
+codesign --verify --deep "$STAGE/$APP_NAME.app" \
+  || { echo "$APP_NAME.app failed signature verification after staging" >&2; exit 1; }
+
 # --- self-containment check ------------------------------------------------
 # Prove it, do not assume it: the engine must not be a shell shim pointing at
 # a runtime, and nothing in the payload may reference the developer checkout.
 echo "==> checking self-containment"
-file "$STAGE/bin/opencode" | grep -q "Mach-O" \
+file "$STAGE/$APP_NAME.app/Contents/Resources/bin/opencode" | grep -q "Mach-O" \
   || { echo "engine is not a Mach-O executable" >&2; exit 1; }
 if grep -rIl "Documents/Projects/GitHub" "$STAGE" 2>/dev/null | grep -q .; then
   echo "payload references the developer checkout:" >&2

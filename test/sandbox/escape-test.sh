@@ -55,8 +55,13 @@ expect_deny() {
   esac
 }
 
+# Run from the studio, as launcher/downes.sh does with `cd "$STUDIO"`.
+# Load-bearing, not tidiness: the profile denies reads under ~/Documents, and a
+# checkout that happens to live there poisons anything that reads its own
+# working directory — Python's import machinery scans cwd, so `import ctypes`
+# fails with EPERM and the case reports a sandbox problem that is not there.
 expect_allow() {
-  if "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1; then
+  if (cd "$STUDIO_PHYS" && "${SB[@]}" /bin/sh -c "$1" >/dev/null 2>&1); then
     echo "ok (allowed):   $2"
   else
     echo "FAIL (denied):  $2"; F=1
@@ -101,6 +106,12 @@ expect_allow 'f=$(mktemp) && echo hi > "$f" && rm "$f"'      "write inside TMPDI
 expect_allow 'cat <<EOF
 heredoc
 EOF'                                                          "bash heredoc (needs a temp file)"
+
+# The studio's terminal pane allocates a pty. `(allow pseudo-tty)` does not
+# cover opening /dev/ptmx and the device it hands back, and without those
+# openpty() returns "out of pty devices" — surfaced to the teacher as
+# "Could not start the Downes terminal: /api/pty → 500".
+expect_allow 'python3 -c "import pty; pty.openpty()"'         "allocate a pty (studio terminal)"
 
 # --- network ----------------------------------------------------------------
 expect_allow    'curl -sS --max-time 10 https://opencode.ai -o /dev/null' "TLS egress :443"

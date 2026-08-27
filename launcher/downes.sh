@@ -214,64 +214,6 @@ else
   export OPENCODE_CONFIG_CONTENT='{"model":"opencode/nemotron-3.5-lightning-free","small_model":"opencode/big-pickle","provider":{"opencode":{"options":{"apiKey":"public"}}}}'
 fi
 
-# --- desktop entry ----------------------------------------------------------
-# Homebrew cannot do this from the formula. post_install runs with HOME
-# replaced by a temp dir Homebrew then deletes, inside a sandbox that permits
-# writes only under the formula prefix — so the symlink reports success and
-# creates nothing. Here we are the user, with a real HOME and no sandbox.
-#
-# Idempotent, and silent when there is nothing to do. In a developer checkout
-# there is no .app beside the launcher's parent, so this is a no-op.
-link_app() {
-  local src="" cand dest bundle root keg name tail optroot
-  # Canonical, so the symlink target reads cleanly and the idempotency check
-  # below can compare it literally.
-  root="$(cd "$HERE/.." 2>/dev/null && pwd)" || return 0
-
-  # Under Homebrew that canonical path lands in the VERSIONED keg
-  # (…/Cellar/downes/0.1.2/libexec), and brew deletes the old keg on upgrade.
-  # A symlink pointing there dangles the moment someone upgrades and then
-  # double-clicks the app. Rewrite to the version-independent opt path.
-  case "$root" in
-    */Cellar/*)
-      keg="${root#*/Cellar/}"        # downes/0.1.2/libexec
-      name="${keg%%/*}"              # downes
-      tail="${keg#*/}"               # 0.1.2/libexec
-      tail="${tail#*/}"              # libexec
-      optroot="${root%%/Cellar/*}/opt/$name"
-      [ -n "$tail" ] && optroot="$optroot/$tail"
-      [ -d "$optroot" ] && root="$optroot"
-      ;;
-  esac
-
-  for cand in "$root"/*.app; do
-    [ -d "$cand" ] && { src="$cand"; break; }
-  done
-  [ -n "$src" ] || return 0
-
-  mkdir -p "$HOME/Applications" 2>/dev/null || return 0
-  dest="$HOME/Applications/$(basename "$src")"
-
-  # Already pointing at this install.
-  [ "$(readlink "$dest" 2>/dev/null)" = "$src" ] && return 0
-
-  # A real directory here shadows the install: it is a hand-copied bundle with
-  # no engine beside it, so engine resolution walks past it and falls through
-  # to a developer checkout that exists only on the build machine. That is the
-  # "empty studio / sidecar unreachable" failure. Replace it — but only once
-  # it identifies as ours. Never a blind rm under ~/Applications.
-  if [ -d "$dest" ] && [ ! -L "$dest" ]; then
-    bundle="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
-              "$dest/Contents/Info.plist" 2>/dev/null || true)"
-    case "$bundle" in
-      is.sage.*) rm -rf "$dest" ;;
-      *)         return 0 ;;
-    esac
-  fi
-
-  ln -sfn "$src" "$dest" 2>/dev/null || true
-}
-[ "$OS_UNAME" = "Darwin" ] && link_app
 
 [ -t 1 ] && printf '\033]0;Downes — the studio\007'
 cd "$STUDIO"
