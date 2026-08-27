@@ -11,7 +11,23 @@
 # claimed the product was contained.
 set -euo pipefail
 
-HERE="$(cd "$(dirname "$0")" && pwd)"
+# Resolve $0 through symlinks before deriving anything from it.
+#
+# The cask links /opt/homebrew/bin/downes at this script inside the app bundle.
+# dirname of the LINK is /opt/homebrew/bin, and the payload lookup below then
+# finds ../bin/opencode there — which on a machine with opencode installed is
+# THEIR engine. Our command silently ran their binary and reported their
+# version. readlink -f does not exist on macOS bash 3.2, so walk it.
+SELF="$0"
+while [ -L "$SELF" ]; do
+  _link="$(readlink "$SELF")"
+  case "$_link" in
+    /*) SELF="$_link" ;;
+    *)  SELF="$(dirname "$SELF")/$_link" ;;
+  esac
+done
+unset _link
+HERE="$(cd "$(dirname "$SELF")" && pwd)"
 OS_UNAME="$(uname -s)"
 
 # Which product this payload is. Downes ships the curriculum template; the

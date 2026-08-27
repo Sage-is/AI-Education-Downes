@@ -189,6 +189,19 @@ else
     echo "ok (denied):    launcher applies the sandbox prefix"
   fi
 
+  # The cask links brew's bin/downes at the launcher INSIDE the app bundle.
+  # Deriving paths from the link's directory instead of the target's makes the
+  # payload lookup land in /opt/homebrew/bin, where ../bin/opencode is a stock
+  # opencode — our command silently ran their engine and reported their version.
+  SHIM="$SCRATCH/bin"; mkdir -p "$SHIM"
+  ln -sf "$LAUNCHER" "$SHIM/downes"
+  if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE="$ENGINE" DOWNES_NO_SANDBOX=1 \
+       "$SHIM/downes" --version 2>/dev/null | grep -q downes; then
+    echo "ok (allowed):   launcher resolves itself through a symlink"
+  else
+    echo "FAIL (denied):  launcher resolves itself through a symlink"; F=1
+  fi
+
   # And the documented bypass must still work, or debugging is impossible.
   if DOWNES_STUDIO="$LSTUDIO" DOWNES_ENGINE=/usr/bin/true DOWNES_NO_SANDBOX=1 \
        "$LAUNCHER" >/dev/null 2>&1; then

@@ -163,11 +163,20 @@ if [ "$PRODUCT" = "downes" ]; then
   fi
 fi
 
-# Adding files under Contents/ invalidates the signature tauri produced, and an
-# app with a broken seal is worse than an unsigned one: Gatekeeper refuses it
-# outright rather than offering the usual override. Re-seal ad-hoc.
-echo "==> re-signing $APP_NAME.app"
-codesign --force --deep --sign - "$STAGE/$APP_NAME.app" 2>/dev/null
+# Sign inside-out, then seal the bundle.
+#
+# The engine is a Bun single-file executable and ships with a signature macOS
+# already considers modified — Bun appends the payload after signing. `--deep`
+# does NOT fix it: --deep descends into nested bundles and frameworks, not loose
+# Mach-O files under Resources. A quarantined app containing a binary with a
+# broken seal does not merely warn, it hangs on exec, which is how v0.1.4 first
+# shipped with a launcher that never returned.
+echo "==> signing engine and $APP_NAME.app"
+codesign --force --sign - "$RES/bin/opencode"
+codesign --verify "$RES/bin/opencode" \
+  || { echo "engine failed signature verification" >&2; exit 1; }
+
+codesign --force --sign - "$STAGE/$APP_NAME.app"
 codesign --verify --deep "$STAGE/$APP_NAME.app" \
   || { echo "$APP_NAME.app failed signature verification after staging" >&2; exit 1; }
 
