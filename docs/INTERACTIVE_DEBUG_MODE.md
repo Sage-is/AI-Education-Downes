@@ -358,7 +358,7 @@ Test the interactive features:
 
 ```bash
 # Run interactive test
-python test_interactive_prompts.py
+python src/tests/test_interactive_prompts.py
 
 # Test with real agent
 uv run downes-agent -d "Test query"

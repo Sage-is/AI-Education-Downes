@@ -38,8 +38,10 @@ Cards here state the work; they do not restate the reasoning.
   gradient) replacing the stock Tauri logo; startr.style vendored (CSP blocks
   its CDN); tokens aligned to Sage.is AI-UI; light/dark toggle on `data-theme`
   following system by default; terminal repaints with the theme.
-- [x] Fork branded on `downes/v1`; `launcher/downes.sb` sandbox wired into the
-  launcher, engine-level escape test ALL GREEN, `make sandbox_test` in CI.
+- [x] Fork branded on `downes/v1`; `launcher/downes.sb` wired on both surfaces —
+  `launcher/downes.sh` and the studio sidecar (`lib.rs:sandbox_prefix`).
+  22-case escape test ALL GREEN on a machine with an engine; the macOS CI job
+  runs the profile cases only, since a clean runner has no engine to fence.
   Prerequisite shipped with it: per-product `XDG_*` state roots, so the engine
   keeps auth and its database inside the studio rather than the shared
   `~/.local/share/opencode` every product wrote to.
@@ -79,8 +81,11 @@ Cards here state the work; they do not restate the reasoning.
   - [x] launcher + `Downes.app` shim find the engine under the brew layout
   - [x] `scripts/package_macos.sh` builds a self-contained tarball (49 MB, verified with bun/node/opencode off PATH)
   - [x] formula rewritten: per-arch, real sha256, working install block
-  - [ ] publish the GitHub release + push the formula to `Sage-is/homebrew-apps`
+  - [x] publish the GitHub release + push the formula to `Sage-is/homebrew-apps`
+    (v0.1.3 / mini-v0.1.3, 2026-08-27; `brew upgrade` verified from the tap)
   - [ ] Intel build (needs an x86_64 CI runner; formula `odie`s honestly for now)
+  - [ ] verify on a second Mac — released and installed here, not yet confirmed
+    off the build machine
 
 - [ ] **Studio cleanups** #task
   - [ ] remove the dead opener plugin + 2 capabilities (links use `open_external`)

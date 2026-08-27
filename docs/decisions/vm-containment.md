@@ -7,9 +7,11 @@ have to be re-derived.
 ## Recommendation
 
 Ship **no VM or emulator in v1.** Containment is the macOS Seatbelt profile
-(`launcher/downes.sb`), wired in `launcher/downes.sh` and guarded by
-`make sandbox_test`. When Layer 4 is needed, it is **Apple `container`** — not
-QEMU, and not bochs.
+(`launcher/downes.sb`), wired on both surfaces — `launcher/downes.sh` for the
+terminal and `sandbox_prefix()` in
+`ai-ui-mini/packages/studio/src-tauri/src/lib.rs` for the studio sidecar — and
+guarded by `make sandbox_test`. When Layer 4 is needed, it is **Apple
+`container`** — not QEMU, and not bochs.
 
 ## Why
 
@@ -67,10 +69,20 @@ into a micro-VM behind the same interface.
 ## Guardrail
 
 No page says "virtual machine", "VM-isolated" or "hardware isolation" until a
-guest actually ships and passes an escape test. The honest claim is what
-`downes.sb` enforces: the filesystem is fenced to the studio, and egress is
-TLS-only — SBPL cannot pin hostnames, so "TLS-only egress" is the ceiling of
-that claim, not "we control where it connects".
+guest actually ships and passes an escape test.
+
+The honest claim is what `downes.sb` actually enforces, which is asymmetric:
+
+- **Writes** are deny-default — the studio, `TMPDIR`, and `/private/tmp`
+  (bash puts here-document temp files there and ignores `TMPDIR`).
+- **Reads** are the opposite: a blanket `file-read*` allow with an enumerated
+  deny-list back. Anything not on that list stays readable. "The filesystem is
+  fenced to the studio" is true of writes and false of reads, so do not say it
+  unqualified.
+- **Egress** is TLS-only, plus loopback bind and inbound for the studio's own
+  sidecar. SBPL cannot pin hostnames, so "TLS-only egress" is the ceiling of
+  that claim, not "we control where it connects" — and because reads are a
+  deny-list, whatever remains readable is also exfiltratable.
 
 Re-open when multi-harness is scheduled, or if Apple removes `sandbox-exec` —
 [apple/containerization#737](https://github.com/apple/containerization/issues/737),

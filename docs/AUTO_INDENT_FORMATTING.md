@@ -339,13 +339,13 @@ Run the test suite:
 
 ```bash
 # Test the utility functions
-uv run python test_indent_multiline.py
+uv run python src/tests/test_indent_multiline.py
 
 # View demonstration
 uv run python demo_indent_fix.py
 
 # Verify integration with education tools
-uv run python test_education_tools.py
+uv run python src/tests/test_education_tools.py
 ```
 
 ## Migration Guide

@@ -24,11 +24,25 @@ def main():
         or os.getenv("DOWNES_DEBUG", "").lower() == "true"
     )
 
+    # Anything that is not a flag is the request. Every documented invocation
+    # passes one — `downes-agent -d "Design a curriculum"` — and until now the
+    # quoted text was read by nobody and silently dropped into an interactive
+    # prompt, so the command appeared to hang waiting for input it had already
+    # been given.
+    query = " ".join(
+        a
+        for a in sys.argv[1:]
+        if a not in ("--verbose", "-v", "--debug", "-d", "--help", "-h")
+    ).strip()
+
     # Show help if requested
     if "--help" in sys.argv or "-h" in sys.argv:
         print(
             """
-Usage: downes [OPTIONS]
+Usage: downes-agent [OPTIONS] [REQUEST]
+
+  With a REQUEST, run it once and exit. With none, start an interactive
+  session.
 
 Options:
   -v, --verbose    Show LLM timing and token usage information
@@ -38,6 +52,11 @@ Options:
 Environment Variables:
   DOWNES_VERBOSE   Set to 'true' to enable verbose mode
   DOWNES_DEBUG     Set to 'true' to enable debug mode
+
+Examples:
+  downes-agent "Create a Grade 9 course on photosynthesis"
+  downes-agent --debug "Design a curriculum"
+  downes-agent
         """
         )
         sys.exit(0)
@@ -49,6 +68,13 @@ Environment Variables:
 
     print_intro()
     agent = Agent(verbose=verbose, debug=debug)
+
+    # One-shot: run the request from the command line and exit. This is what
+    # every example in the README and docs/ actually asks for, and it makes the
+    # tool scriptable.
+    if query:
+        agent.run(query)
+        return
 
     # Create a prompt session
     session = PromptSession(history=InMemoryHistory())

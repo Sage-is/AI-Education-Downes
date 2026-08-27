@@ -1,8 +1,24 @@
 # Downes 🤖
 
-## Version v0.1.0
-
 ![Downes Logo](./web/public/downes.png)
+
+## Install the app
+
+Downes ships as a self-contained macOS app. A Mac with nothing but Homebrew can
+run it — no Python, no Node, no API key.
+
+```bash
+brew install sage-is/apps/downes
+downes                      # run once; this also puts Downes in ~/Applications
+```
+
+Apple Silicon only for now. A formula rather than a cask, deliberately: casks
+apply Gatekeeper quarantine and formulas do not, so the install is warning-free
+while the app is still unsigned. Your courses live in `~/Downes`, and Downes
+works in that one folder — see [Containment](#containment).
+
+For the bare platform with no curriculum agent bundled, install
+[Sage.is mini](https://github.com/Sage-is/ai-ui-mini): `brew install sage-is/apps/mini`.
 
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995.
 
@@ -27,6 +43,16 @@ Downes takes curriculum requests and turns them into clear, step-by-step educati
 - **Safety Features**: Built-in loop detection and step limits to prevent runaway execution
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/Sage_Is_AI?style=social)](https://twitter.com/Sage_Is_AI)
+
+---
+
+## The Python research tool
+
+The sections from here to [Configuration](#configuration) describe the Python
+package the agent grew out of. It is a development and research path — teachers
+install the app with `brew` as shown above and need none of it.
+[Project Structure](#project-structure) and [Containment](#containment) at the
+end cover the whole repo.
 
 ### Prerequisites
 
@@ -297,23 +323,39 @@ Downes uses a multi-agent architecture with specialized components:
 
 ## Project Structure
 
+The repo holds two things: the Python research tool, and the macOS app that
+ships to teachers.
+
 ```text
-downes/
-├── src/
-│   ├── downes/
-│   │   ├── agent.py              # Main agent orchestration logic
-│   │   ├── model.py              # LLM interface
-│   │   ├── prompts.py            # System prompts for each component
-│   │   ├── schemas.py            # Pydantic models
-│   │   ├── tools/
-│   │   │   ├── education/        # Curriculum tools (objectives, syllabus, assessments, pacing, taxonomy, resources)
-│   │   │   ├── search/           # Search and research tools
-│   │   │   └── ...               # Additional curriculum development tools
-│   │   ├── utils/                # Utility functions
-│   │   └── cli.py                # CLI entry point
+AI-Education-Downes/
+├── src/downes/                   # the Python research tool
+│   ├── agent.py                  # Main agent orchestration logic
+│   ├── model.py                  # LLM interface
+│   ├── prompts.py                # System prompts for each component
+│   ├── schemas.py                # Pydantic models
+│   ├── tools/
+│   │   ├── education/            # objectives, syllabus, assessments, pacing, taxonomy, resources
+│   │   └── search/               # Search and research tools
+│   ├── utils/
+│   └── cli.py                    # CLI entry point
+│
+├── launcher/                     # the shipped app
+│   ├── downes.sh                 # sole entry point: studio, state isolation, sandbox prefix
+│   └── downes.sb                 # Seatbelt profile (see Containment)
+├── studio/                       # curriculum template copied to ~/Downes on first run
+├── scripts/
+│   ├── package_macos.sh          # builds both product payloads from one Rust binary
+│   └── install_studio.sh
+├── packaging/homebrew/           # formulas published to the sage-is/apps tap
+├── test/sandbox/escape-test.sh   # `make sandbox_test`
+├── docs/decisions/               # recorded architecture decisions
+├── ai-ui-mini/                   # submodule: the MIT platform (engine + studio app)
 ├── pyproject.toml
 └── uv.lock
 ```
+
+`ai-ui-mini` is the MIT platform; Downes is the first agent shipped on it. The
+payload combines both, so it is distributed from this AGPL repo.
 
 ## Configuration
 
@@ -327,6 +369,36 @@ agent = Agent(
     max_steps_per_task=5       # Per-task iteration limit
 )
 ```
+
+## Containment
+
+This section describes the shipped macOS app, not the Python tool above.
+
+Downes runs the engine under a macOS Seatbelt profile
+([`launcher/downes.sb`](launcher/downes.sb)), applied on both surfaces: the
+`downes` terminal command and the studio window. What that buys, stated at the
+limit rather than the headline:
+
+- **Writes** are deny-default. Only your studio folder and the temp directory
+  are writable.
+- **Reads** are the other way round: broadly allowed, with known-secret
+  locations denied back — SSH and GPG keys, keychains, cloud and forge
+  credentials, other agents' credential stores, browser profiles, iCloud Drive,
+  shell history and dotfile secrets. It is a deny-list, so anything not
+  enumerated stays readable. Deny-default reads are on the roadmap.
+- **Egress** is TLS-only. SBPL cannot pin hostnames, so "TLS-only egress" is the
+  honest ceiling of that claim, not "we control where it connects".
+- **State** is per-product. Downes keeps its credentials and database inside the
+  studio rather than sharing `~/.local/share/opencode` with other tools. It is
+  seeded once from your existing login, so nothing asks you to sign in twice.
+
+`make sandbox_test` runs the escape test — 22 cases that exercise the shipped
+launcher, and report INCONCLUSIVE rather than passing when a target is absent.
+
+Linux and Windows have no containment backend yet, and the copy there says
+"works in one folder" rather than "sandboxed". See
+[`docs/decisions/`](docs/decisions/) for why, and for the emulator/VM options
+that were considered and declined.
 
 ## How to Contribute
 

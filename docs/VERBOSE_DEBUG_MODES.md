@@ -8,7 +8,7 @@ The Agent now supports **verbose** and **debug** modes to control visibility of 
 
 ```bash
 # Normal mode (default - quiet operation)
-uv run downes
+uv run downes-agent
 
 # Verbose mode (shows LLM timing and token usage)
 uv  run downes-agent --verbose
@@ -44,13 +44,13 @@ Learn more: [INTERACTIVE_DEBUG_MODE.md](./INTERACTIVE_DEBUG_MODE.md)
 
 ```bash
 # Enable verbose mode via environment variable
-DOWNES_VERBOSE=true uv run downes
+DOWNES_VERBOSE=true uv run downes-agent
 
 # Enable debug mode via environment variable
-DOWNES_DEBUG=true uv run downes
+DOWNES_DEBUG=true uv run downes-agent
 
 # Both modes
-DOWNES_VERBOSE=true DOWNES_DEBUG=true uv run downes
+DOWNES_VERBOSE=true DOWNES_DEBUG=true uv run downes-agent
 ```
 
 ## What Each Mode Shows
@@ -157,10 +157,10 @@ Test the modes with:
 
 ```bash
 # Run mode tests
-uv run python test_verbose_modes.py
+uv run python src/tests/test_verbose_modes.py
 
 # Run full test suite with verbose output
-DOWNES_VERBOSE=true uv run python test_education_tools.py
+DOWNES_VERBOSE=true uv run python src/tests/test_education_tools.py
 ```
 
 ## Benefits

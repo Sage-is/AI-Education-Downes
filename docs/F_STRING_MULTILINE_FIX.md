@@ -216,13 +216,13 @@ Run the test suite to verify the fix:
 
 ```bash
 # Test the utility function
-python test_indent_multiline.py
+python src/tests/test_indent_multiline.py
 
 # View demonstration
 python demo_indent_fix.py
 
 # Run existing tests to ensure compatibility
-uv run python test_education_tools.py
+uv run python src/tests/test_education_tools.py
 ```
 
 ## Technical Notes

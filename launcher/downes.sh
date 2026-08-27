@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 # Downes launcher — pins the studio, isolates all opencode state under it,
-# and boots the agent. The single source of truth for environment,
-# bootstrap, credentials, and (Checkpoint 3) the sandbox prefix.
+# applies the Layer-3 fence, and boots the agent. This is the TERMINAL entry
+# point.
+#
+# It is not the only one. The studio app spawns the same engine from
+# ai-ui-mini/packages/studio/src-tauri/src/lib.rs (isolate_state, sandbox_prefix)
+# and must configure it identically. Anything changed here — XDG roots, skill
+# flags, sandbox params, the DOWNES_* switches — has a sibling there. The two
+# drifting apart is how the studio ended up running unfenced while this file
+# claimed the product was contained.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
