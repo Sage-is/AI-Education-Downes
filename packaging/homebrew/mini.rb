@@ -49,29 +49,25 @@ class Mini < Formula
     prefix.install_symlink libexec/"Sage.is mini.app"
   end
 
-  # ~/Applications is indexed by Finder, Spotlight and Launchpad and needs no
-  # sudo; /Applications is root-owned and a formula cannot write there.
-  def post_install
-    apps = Pathname.new(Dir.home)/"Applications"
-    apps.mkpath
-    link = apps/"Sage.is mini.app"
-    link.unlink if link.symlink? || link.exist?
-    link.make_symlink(opt_prefix/"Sage.is mini.app")
-  end
-
+  # There is deliberately no post_install placing the app in ~/Applications.
+  # It cannot work: Homebrew replaces HOME with a temp directory it later
+  # deletes, and runs post_install in a sandbox that permits writes only under
+  # the formula prefix. The symlink reports success and creates nothing — a
+  # step that lies is worse than no step. launcher/downes.sh does it instead,
+  # where there is a real HOME and no sandbox, so running `mini` once from a
+  # terminal places the app. The caveat below covers everyone else.
   def caveats
     <<~EOS
-      Sage.is mini is installed and ready. You'll find it here:
-
-        ~/Applications/Sage.is mini.app
-
-      Or run it from a terminal:
+      Sage.is mini is installed. Run it once from a terminal:
 
         mini
 
-      To put it in the main /Applications folder instead (you'll need your password):
+      That also puts a clickable Sage.is mini in ~/Applications, which Finder,
+      Spotlight and Launchpad index alongside /Applications.
 
-        sudo ln -sfn "#{opt_prefix}/Sage.is mini.app" "/Applications/Sage.is mini.app"
+      Prefer to place it yourself? No password needed:
+
+        ln -sfn "#{opt_prefix}/Sage.is mini.app" ~/Applications/
 
       Your work lives in ~/SageMini.
 

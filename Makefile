@@ -132,7 +132,17 @@ replay_full:
 studio_test:
 	@bash scripts/studio_test.sh
 
-ci: validate_config studio_test replay
+# Layer-3 containment. Every deny must deny and every allow must allow, or the
+# word "sandboxed" stays off every page. macOS only — Linux and Windows have no
+# backend yet, so the target is a no-op there rather than a false green.
+sandbox_test:
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		bash test/sandbox/escape-test.sh; \
+	else \
+		echo "sandbox_test: skipped (no backend on $$(uname -s))"; \
+	fi
+
+ci: validate_config studio_test sandbox_test replay
 	@uv run pytest src/tests -m "not live" -q
 	@python3 scripts/validate_corpus.py
 

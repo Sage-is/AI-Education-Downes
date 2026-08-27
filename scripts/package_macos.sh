@@ -80,6 +80,11 @@ printf '%s\n' "$WORKSPACE" > "$STAGE/product"
 # Launcher, shim, and the studio template the first run installs from.
 cp "$REPO/launcher/downes.sh" "$STAGE/launcher/downes.sh"
 chmod 0755 "$STAGE/launcher/downes.sh"
+# The Layer-3 profile must travel with the launcher. Without it the sandbox
+# guard finds no profile and silently runs unfenced — the failure mode is an
+# install that claims containment and has none.
+cp "$REPO/launcher/downes.sb" "$STAGE/launcher/downes.sb"
+chmod 0644 "$STAGE/launcher/downes.sb"
 # The Terminal shim is Downes-branded and only serves the terminal-first
 # flow; shipping it in mini would drop a stray "Downes.app" into the
 # platform payload.

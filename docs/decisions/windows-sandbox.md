@@ -19,8 +19,10 @@ cross-platform safety story there.
   - **WSL2 + bubblewrap** — real containment, unacceptable install burden
     for a teacher.
 - macOS ships the honest sandbox (`launcher/downes.sb`, escape test green).
-  Linux has the bubblewrap sketch. Windows containment is a v2 investment
-  gated on real Windows demand, not a launch blocker.
+  Linux is unclaimed — Landlock is the light option when it has a user, and
+  bubblewrap is not the recommendation it was once described as here. See
+  `docs/decisions/vm-containment.md` for the full ladder. Windows containment
+  is a v2 investment gated on real Windows demand, not a launch blocker.
 
 ## Guardrail
 

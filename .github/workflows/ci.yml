@@ -29,3 +29,19 @@ jobs:
 
       - name: Offline tests
         run: uv run pytest src/tests -m "not live" -q
+
+  sandbox:
+    name: Layer-3 escape test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The profile is macOS-only, so this cannot ride the ubuntu job. Without
+      # it the escape test is a file nobody runs — which is how an unwired
+      # sandbox stayed green on the board.
+      #
+      # No engine is built here, so the engine-level cases self-skip and this
+      # covers the profile's deny/allow rules. The full run, engine included,
+      # is `make sandbox_test` on a machine with a build or a brew install.
+      - name: Escape test
+        run: bash test/sandbox/escape-test.sh

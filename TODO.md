@@ -38,8 +38,11 @@ Cards here state the work; they do not restate the reasoning.
   gradient) replacing the stock Tauri logo; startr.style vendored (CSP blocks
   its CDN); tokens aligned to Sage.is AI-UI; light/dark toggle on `data-theme`
   following system by default; terminal repaints with the theme.
-- [x] Fork branded on `downes/v1`; `launcher/downes.sb` sandbox + escape test
-  ALL GREEN + in-anger OS-layer fail.
+- [x] Fork branded on `downes/v1`; `launcher/downes.sb` sandbox wired into the
+  launcher, engine-level escape test ALL GREEN, `make sandbox_test` in CI.
+  Prerequisite shipped with it: per-product `XDG_*` state roots, so the engine
+  keeps auth and its database inside the studio rather than the shared
+  `~/.local/share/opencode` every product wrote to.
 
 ## In Progress / TODO
 
@@ -90,6 +93,12 @@ Cards here state the work; they do not restate the reasoning.
   `ai-ui-mini`, this repo AGPL); ratify at Gate 4
 - [ ] **Windows sandbox** #research — v1 ships no OS containment; recorded in
   `docs/decisions/windows-sandbox.md`
+- [ ] **Linux containment** #research — unclaimed. Landlock is the light
+  option (kernel 5.13+, unprivileged, inherited across `exec`); the launcher
+  leaves the seam. Ladder recorded in `docs/decisions/vm-containment.md`
+- [ ] **Per-harness state roots** #task — `XDG_*` isolation fixed the opencode
+  collision; pi and deepseek each arrive with their own store
+  - [ ] convention is `$STUDIO/.downes/harness/<name>/`; nothing enforces it yet
 - [ ] **Pinned Zen model** #prototype — nemotron pinned; deepseek best format
   discipline; formal judgment via replay when the tier allows
 - [ ] **searx_search hosting** #research — curated SearXNG as the durable
