@@ -89,7 +89,7 @@ Cards here state the work; they do not restate the reasoning.
 
 - [ ] **Studio cleanups** #task
   - [ ] remove the dead opener plugin + 2 capabilities (links use `open_external`)
-  - [ ] narrow `.gitignore` `studio/.downes/` → `studio/.downes/courses/` (it silently ignores new files under `.downes`)
+  - [x] narrow `.gitignore` `studio/.downes/` → `studio/.downes/courses/`; `.gitmodules` re-included (the `.*` rule hid it too)
   - [ ] compiled binary into packaging/CI (dev builds it ad hoc)
 
 ## Decision cards

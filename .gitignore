@@ -3,6 +3,7 @@
 .*
 !/.gitignore
 !/.gitattributes
+!/.gitmodules
 !/.editorconfig
 !/.todoscope-exclude.csv
 # Security hooks MUST be tracked. AI-UI lost all five hook stages to exactly
@@ -56,7 +57,13 @@ yarn-error.log*
 # User data: generated curriculum runs. Never committed; the README is.
 vault/*
 !vault/README.md
-studio/.downes/
+# Deny ONLY courses/, not all of studio/.downes/. The rest of that folder --
+# METHOD.md, prompts/, skills/ -- is the shipped payload: package_macos.sh
+# rsyncs studio/ into every release and excludes just .downes/courses/. A
+# blanket `studio/.downes/` rule hid the whole payload from git, so a 9th skill
+# would never be offered at commit time and a fresh clone would build a Downes
+# without it. Keep this narrow.
+studio/.downes/courses/
 
 # Internal-only docs: design-review narration, reviewer commentary, draft
 # copy, anything with named opinions or unshipped positions. Never committed.
