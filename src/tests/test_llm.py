@@ -6,6 +6,8 @@ Run this before using the agent to ensure everything is configured correctly.
 """
 
 import os
+
+import pytest
 from dotenv import load_dotenv
 from downes.model import call_llm, get_llm_config
 
@@ -13,6 +15,7 @@ from downes.model import call_llm, get_llm_config
 load_dotenv()
 
 
+@pytest.mark.live
 def test_llm_config():
     """Display current LLM configuration."""
     print("=" * 60)
@@ -59,6 +62,7 @@ def test_llm_config():
     print()
 
 
+@pytest.mark.live
 def test_llm_connectivity():
     """Test LLM connectivity with a simple query."""
     print("=" * 60)
@@ -100,6 +104,7 @@ def test_llm_connectivity():
         return False
 
 
+@pytest.mark.live
 def test_structured_output():
     """Test structured output (function calling)."""
     print("=" * 60)
