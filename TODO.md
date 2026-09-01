@@ -88,8 +88,16 @@ Cards here state the work; they do not restate the reasoning.
       so nothing inherited can leak
     - [x] fix 3: unregistered the stale and build-tree bundles from Launch
       Services; Spotlight now offers only `/Applications/SAGE.IS mini.app`
-    - [ ] a bundle with no engine should say so plainly instead of silently
-      probing for a source tree — the failure was legible nowhere
+    - [x] a bundle with no engine now says so plainly instead of probing
+    - [x] **the actual cause, found 2026-09-01 in the engine's environment:**
+      `PWD` still held the launching shell's directory. `set_current_dir()` and
+      `Command::current_dir()` change the real cwd but NEVER update `PWD`, and
+      Node and Bun read `PWD` in preference to `getcwd()`. So the engine stat'd
+      the repo no matter what its actual cwd was. Fixed by setting `PWD`
+      alongside every cwd change: app startup, sidecar spawn, and the PTY child
+    - [x] the engine-less-bundle theory was WRONG, or at most a second path to
+      the same symptom — 0.1.9 still failed on a clean tap install. Do not
+      re-derive it: check `ps -Eww` for `PWD` first
   - [x] **respawn guard** — `Terminal.tsx` counts panes that die inside 5s,
     backs off exponentially to 15s, and after 5 gives up naming the command it
     ran; `createPty` returns that command so the banner can print it

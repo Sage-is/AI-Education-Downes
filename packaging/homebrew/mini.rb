@@ -1,6 +1,6 @@
 cask "mini" do
-  version "0.1.9"
-  sha256 "d3df6c57b10d33a44e1ab5fee8a66eaaf2f9dd5e19a4f051a4d78935f5eb638f"
+  version "0.1.10"
+  sha256 "6b379bc3f79bccd163ebe2a5e669faba109cbcde75fa7852fb4adeca160eac6f"
 
   url "https://github.com/Sage-is/ai-ui-mini/releases/download/mini-v#{version}/mini-#{version}-darwin-arm64.tar.gz"
   name "SAGE.IS mini"

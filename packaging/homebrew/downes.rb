@@ -1,6 +1,6 @@
 cask "downes" do
-  version "0.1.9"
-  sha256 "d4c191a98136cd97c6ab33437dbb9edfa47fe9b0f602fb6f2e72af7807682f8b"
+  version "0.1.10"
+  sha256 "6eff7a497602262fa6171b84182b5f77e4e9196ed464680cfe9e2b039a8c532c"
 
   url "https://github.com/Sage-is/AI-Education-Downes/releases/download/v#{version}/downes-#{version}-darwin-arm64.tar.gz"
   name "Downes"
