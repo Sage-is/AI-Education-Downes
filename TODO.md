@@ -63,19 +63,57 @@ Cards here state the work; they do not restate the reasoning.
   - [ ] pilot: brew install, one authentic task, Obsidian, export, debrief
   - [ ] checklist green; record `docs/decisions/gate-4-ship.md`; v1.0.0
 
+- [ ] **v0.1.7 — the 0.1.6 fix pass** #task — 0.1.6 is pre-release on both
+  repos, 0.1.5 is Latest again; four defects found 2026-09-01 on a real install
+  - [ ] **crash loop (severity 1)** — the studio terminal pane spawns, exits 1
+    and respawns every ~1.2s; 22 cycles logged in 26s, one EPERM burst each
+    - [ ] NARROWED 2026-09-01: the terminal launcher path (`mini`) runs clean —
+      no crash, no repo lstat. The fault is specific to the studio's PTY spawn
+      (`/api/pty`, frontend `createPty`), where the child is spawned by the
+      already-sandboxed `serve` process rather than by `sandbox-exec` directly
+    - [ ] sandboxed manual runs reproduce "Unexpected error"; unsandboxed ones
+      do not, so the fence is a necessary ingredient
+    - [ ] ruled out: sidecar cwd (correct `~/SageMini`), session DB (zero repo
+      references), inherited cwd (fails identically from both)
+    - [ ] next: log the PTY child's argv/env/cwd server-side, or make the pane
+      surface the child's stderr instead of swallowing it into "Unexpected error"
+  - [ ] **respawn guard** — backoff plus one banner, so a dying pane reports
+    once instead of spewing; correct regardless of the root cause
+  - [ ] **hardcoded dev path** — `lib.rs:259` falls back to
+    `~/Documents/Projects/GitHub/AI-Education-Downes/...`, computed at 557/1080/
+    1081 and shipped to the frontend as `ServerInfo.fork`
+    - [ ] installed apps take the `s.bin` branch and never read it, so it may be
+      innocent of the crash — it still leaks the dev's layout to every user
+  - [ ] **sidecar orphan** — `opencode serve` outlives the GUI and keeps
+    listening on 127.0.0.1; kill the child on exit
+  - [ ] **edit permissions** — see the card below; agreed into this pass
+  - [ ] gate: verify on a second Mac before shipping. This machine is the one
+    where that hardcoded path actually exists
+
 - [ ] **Edit permissions never match; folders do not line up** #task — proven
-  2026-09-01, blocks a clean teacher run on both products
-  - [ ] `edit.ts:104` matches a path RELATIVE to the worktree; `permission/index.ts:186`
-    expands `~/Downes/**` to ABSOLUTE, so the allow rules can never match
-  - [ ] net effect in Downes: only `"*": "deny"` matches, so the agent is denied
-    by its own `studio/opencode.json`
-  - [ ] mini ships no `opencode.json` at all, so it falls to opencode's default
-    `ask` — this is the permission prompting teachers hit
-  - [ ] name is also wrong for mini: rules say `~/Downes`, workspace is `~/SageMini`
+  2026-09-01, blocks a clean teacher run on both products. In the 0.1.7 pass
+  - [ ] `edit.ts:104` matches a path RELATIVE to the worktree, while
+    `permission/index.ts:186` expands `~/Downes/**` to ABSOLUTE — never matches
+  - [ ] Downes: only `"*": "deny"` matches, so the agent is denied by its own
+    `studio/opencode.json`
+  - [ ] mini ships no `opencode.json` at all and falls to the default `ask` —
+    this is the prompting teachers hit
+  - [ ] name is wrong for mini too: rules say `~/Downes`, workspace is `~/SageMini`
   - [ ] `"**": "allow"` is NOT the fix — it matches `../.ssh/id_rsa`; containment
-    must stay `external_directory` + the Seatbelt profile
-  - [ ] decide the model, then ship one config per product with paths that follow
-    `$STUDIO` instead of a hardcoded name
+    stays `external_directory` plus the Seatbelt profile
+  - [ ] model still undecided; leading option is explicit relative prefixes
+    (`courses/**`, `.downes/**`) which cannot start with `..`
+
+- [ ] **Week 7 notebook PRs** #task — three submissions, none in `week-7/`
+  - [ ] #3 and #4: comment asking for the move; they followed the convention as
+    it stood when they branched 63 commits ago, so this is not their error
+  - [x] #2 moved on develop to `notebooks/week-7/isabelle.ipynb`
+  - [x] discarded the unpushed local rename branch `hkarim-10/develop`
+  - [ ] `~` in `hanna_~_week_7.ipynb` is the one real defect: shells expand it
+
+- [ ] **`--version` reports the engine stamp, not the release** #task — a
+  teacher checking their version sees `0.0.0-downes/v1-202608271608`, not 0.1.6
+  - [ ] the side-effect half is fixed in 0.1.6; only the string is wrong now
 
 - [ ] **Artifact-save reliability** #interview — saving is prompt-driven, not
   deterministic like the old Python tool
