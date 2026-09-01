@@ -163,8 +163,15 @@ Cards here state the work; they do not restate the reasoning.
       (`mcp.exa.ai/mcp`, `search.parallel.ai/mcp`) with proper MCP Accept headers
     - [x] note the provider is chosen by a HASH OF THE SESSION ID, so which one
       a teacher gets is effectively a coin flip
-    - [ ] DECIDE: allow, deny, or keep prompting. Ties into the `searx_search
-      hosting` card — do not settle one without the other
+  - [x] DECIDED 2026-09-01 (Alexander, "for now"): both `webfetch` and
+    `websearch` set to `allow`, in `studio/opencode.json` for Downes and in the
+    config `ensure_studio()` writes for mini
+    - [ ] REVISIT with `searx_search hosting`. This is the agent's only route
+      off the machine, so it is also the exfiltration path the prompt-injection
+      card describes: a downloaded course can name a URL and `webfetch` will
+      take it. Search returns summaries; fetch carries arbitrary query strings
+    - [ ] `bash` still denies `curl *`, which was the other way out — worth
+      keeping consistent when this is revisited
   - [x] **Cmd-Q orphans were a FALSE ALARM.** The two survivors came from
     `/opt/homebrew/Cellar/downes/0.1.3/` — the FORMULA layout, retired at
     0.1.4. That directory no longer exists; Unix keeps a deleted binary alive

@@ -60,7 +60,8 @@
       "curl *": "deny"
     },
     "read": "allow",
-    "webfetch": "deny",
+    "webfetch": "allow",
+    "websearch": "allow",
     "skill": {
       "*": "allow"
     }
