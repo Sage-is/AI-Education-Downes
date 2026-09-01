@@ -63,6 +63,13 @@ Cards here state the work; they do not restate the reasoning.
   - [ ] pilot: brew install, one authentic task, Obsidian, export, debrief
   - [ ] checklist green; record `docs/decisions/gate-4-ship.md`; v1.0.0
 
+- [ ] **mini workspace is ~/SAGE.ISmini** #task — SHIPPED 2026-09-01 in v0.1.8
+  - [x] renamed at the source (`product` marker), so launcher and studio agree
+  - [x] migration carries ~/SageMini across on first run, both entry points;
+    verified from a real tap install with a seeded courses/ file
+  - [x] cask zaps both names so an upgrade-then-uninstall leaves nothing
+  - [ ] hand-off to the team: `brew upgrade --cask mini`
+
 - [ ] **v0.1.7 — the 0.1.6 fix pass** #task — SHIPPED 2026-09-01 as a
   pre-release on both repos, tap at 0.1.7. Three of four defects fixed and
   verified on a real install; the crash loop is contained, not cured
