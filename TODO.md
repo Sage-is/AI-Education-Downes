@@ -138,6 +138,13 @@ Cards here state the work; they do not restate the reasoning.
   the agent refuses. Run across the picker, publish the results
 - [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
   v1 ships brew tap + unsigned DMG
+- [ ] **Layer 4 containment — VM or container** #research — Seatbelt is a
+  syscall fence on a shared kernel, not a boundary. Ladder already recorded in
+  `docs/decisions/vm-containment.md`: Apple `container`, not QEMU or bochs
+  - [ ] revisit after the teacher pilot; deferred on structure, not weight
+- [ ] **Embed mini in build.sage.education** #task — the site should carry the
+  platform, not only describe it
+  - [ ] blocked until mini is confirmed working on teammate machines
 - fog: Sage gateway (api.sage.is), allowlist proxy for host-pinning, corpus
   growth, Obsidian polish, wterm/ghostty engine swap, startr.style in the viewer
 

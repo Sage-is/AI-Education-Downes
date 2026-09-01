@@ -38,7 +38,7 @@ OUT="$REPO/dist"
 STAGE="$OUT/stage-$PRODUCT-$ARCH"
 
 if [ "$PRODUCT" = "mini" ]; then
-  APP_NAME="Sage.is mini"; WORKSPACE="SageMini"
+  APP_NAME="SAGE.IS mini"; WORKSPACE="SageMini"
   TAURI_ARGS=(--config src-tauri/tauri.mini.conf.json)
 else
   APP_NAME="Downes"; WORKSPACE="Downes"
