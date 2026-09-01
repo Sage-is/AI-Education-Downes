@@ -1,6 +1,6 @@
 cask "mini" do
-  version "0.1.7"
-  sha256 "4be2580d28a30456e2545f312cb6952e5cf4d6b63a7a9471ac4fbeb76ec80848"
+  version "0.1.8"
+  sha256 "318b6fec52685d719c526cf1db282a46d472171b810c47aeaa3911cf46f0f113"
 
   url "https://github.com/Sage-is/ai-ui-mini/releases/download/mini-v#{version}/mini-#{version}-darwin-arm64.tar.gz"
   name "SAGE.IS mini"
@@ -45,14 +45,17 @@ cask "mini" do
   # Courses are the teacher's work and are never removed. Only our own state
   # goes, and only on an explicit `brew uninstall --zap`.
   zap trash: [
-    "~/SageMini/.downes",
+    "~/SAGE.ISmini/.downes",
     # launcher/downes.sh writes this on every start so our state can never be
     # committed. It is ours, not the teacher's, so a --zap must take it too;
-    # through 0.1.5 it survived and left ~/SageMini non-empty after uninstall.
+    # through 0.1.5 it survived and left the workspace non-empty after uninstall.
+    "~/SAGE.ISmini/.gitignore",
+    # The workspace was ~/SageMini through 0.1.7; take the old name too.
+    "~/SageMini/.downes",
     "~/SageMini/.gitignore",
   ]
 
   caveats do
-    "Your work lives in ~/SageMini. For the curriculum agent: brew install sage-is/apps/downes"
+    "Your work lives in ~/SAGE.ISmini. For the curriculum agent: brew install sage-is/apps/downes"
   end
 end

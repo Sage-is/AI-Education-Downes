@@ -57,6 +57,16 @@ WORKSPACE="Downes"
 [ -f "$HERE/../product" ] && WORKSPACE="$(tr -d '[:space:]' < "$HERE/../product")"
 
 STUDIO="${DOWNES_STUDIO:-$HOME/$WORKSPACE}"
+
+# mini's workspace was ~/SageMini through 0.1.7. Renaming it without carrying
+# the folder over would strand a teacher's work somewhere the app no longer
+# opens. Move it once, and only when the new name does not exist yet: if both
+# are present the user has been here already, and merging two workspaces on a
+# guess is not ours to do. The studio does the same in lib.rs, because the app
+# and the terminal are separate entry points.
+if [ "$WORKSPACE" = "SAGE.ISmini" ] && [ ! -e "$STUDIO" ] && [ -d "$HOME/SageMini" ]; then
+  mv "$HOME/SageMini" "$STUDIO" 2>/dev/null || true
+fi
 # Physical path, before anything is derived from it.
 # The macOS sandbox canonicalizes a path before matching it against a subpath rule, so a studio
 # reached through a symlink — including anything under /tmp, which is itself a

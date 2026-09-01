@@ -97,7 +97,10 @@ Cards here state the work; they do not restate the reasoning.
     `child.kill()` nor a group signal reached it. First attempt (own process
     group) was verified and FAILED. Now reaps by parent pid via `pkill -P`,
     wired to `RunEvent::Exit` as well as window-destroyed so Cmd-Q is covered.
-    Verified on 0.1.7: nothing survives the quit
+    Verified on 0.1.7 and 0.1.8: nothing survives a normal quit
+    - [ ] LIMIT, measured: a SIGTERM to the GUI still orphans the engine, since
+      Tauri's exit event never fires. Cmd-Q, the menu and closing the window are
+      all covered; `kill` is not. Needs a signal handler to close fully
   - [x] **edit permissions** — see the card below; Downes fixed and tested
   - [ ] gate: verify on a second Mac. Still the open question — this machine is
     the one where that hardcoded path existed, and 0.1.7 removed it, so a
@@ -212,10 +215,19 @@ Cards here state the work; they do not restate the reasoning.
   the agent refuses. Run across the picker, publish the results
 - [ ] **Notarized DMG** — Apple Developer, Developer ID, notarytool + staple;
   v1 ships brew tap + unsigned DMG
-- [ ] **Layer 4 containment — VM or container** #research — Seatbelt is a
-  syscall fence on a shared kernel, not a boundary. Ladder already recorded in
-  `docs/decisions/vm-containment.md`: Apple `container`, not QEMU or bochs
-  - [ ] revisit after the teacher pilot; deferred on structure, not weight
+- [ ] **Layer 4 containment — VM or container** #research — RAISED TWICE by
+  Alexander (2026-09-01), both times while fighting sandbox fallout: "I really
+  really wish these were self contained in a little VM". Treat the repetition
+  as signal, not a passing wish
+  - [ ] revisit once 0.1.8 is working on teammate machines — his explicit
+    sequencing: get it working, then reflect on the VM
+  - [ ] ladder already recorded in `docs/decisions/vm-containment.md`: Apple
+    `container`, not QEMU or bochs. Deferred on structure, not weight
+  - [ ] evidence FOR, gathered this session: the Seatbelt fence is implicated in
+    the pane crash loop, denied the npm cache, and the state-isolation seam is
+    where several defects landed. A VM would replace that seam with a boundary
+  - [ ] evidence AGAINST is still what the decision doc says — it costs the
+    whole product again. Bring real numbers to the revisit, not a mood
 - [ ] **build.sage.education and the app should point at each other** #task —
   today neither does; nothing shipped mentions the site
   - [ ] site carries the platform, not only describes it (embed mini)
