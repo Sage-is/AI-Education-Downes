@@ -73,18 +73,23 @@ Cards here state the work; they do not restate the reasoning.
 - [ ] **v0.1.7 — the 0.1.6 fix pass** #task — SHIPPED 2026-09-01 as a
   pre-release on both repos, tap at 0.1.7. Three of four defects fixed and
   verified on a real install; the crash loop is contained, not cured
-  - [ ] **crash loop (severity 1)** — the studio terminal pane spawns, exits 1
-    and respawns every ~1.2s; 22 cycles logged in 26s, one EPERM burst each
-    - [ ] NARROWED 2026-09-01: the terminal launcher path (`mini`) runs clean —
-      no crash, no repo lstat. The fault is specific to the studio's PTY spawn
-      (`/api/pty`, frontend `createPty`), where the child is spawned by the
-      already-sandboxed `serve` process rather than by `sandbox-exec` directly
-    - [ ] sandboxed manual runs reproduce "Unexpected error"; unsandboxed ones
-      do not, so the fence is a necessary ingredient
-    - [ ] ruled out: sidecar cwd (correct `~/SageMini`), session DB (zero repo
-      references), inherited cwd (fails identically from both)
-    - [ ] next: log the PTY child's argv/env/cwd server-side, or make the pane
-      surface the child's stderr instead of swallowing it into "Unexpected error"
+  - [x] **crash loop — ROOT CAUSE FOUND 2026-09-01**, and it was never the
+    installed app. Spotlight was launching the BUILD-TREE bundle at
+    `target/release/bundle/macos/SAGE.IS mini.app`, whose `Contents/Resources`
+    holds only `icon.icns` — no engine, no launcher, no `product` marker
+    - [x] with no bundled engine, `engine_bin()` returns empty, so both the
+      sidecar and `createPty` take the bun-from-source branch rooted at
+      `fork_opencode()`, which walked up from the INHERITED cwd into
+      `~/Documents/...` — a tree `downes.sb` denies outright. Hence the EPERM
+      lstat on the repo root, the dying pane, and "sidecar unreachable"
+    - [x] fix 1: `fork_opencode()` walks up from `current_exe()`, never the cwd,
+      matching the rule the file already states at line 75
+    - [x] fix 2: the app sets its cwd to the studio before anything else runs,
+      so nothing inherited can leak
+    - [x] fix 3: unregistered the stale and build-tree bundles from Launch
+      Services; Spotlight now offers only `/Applications/SAGE.IS mini.app`
+    - [ ] a bundle with no engine should say so plainly instead of silently
+      probing for a source tree — the failure was legible nowhere
   - [x] **respawn guard** — `Terminal.tsx` counts panes that die inside 5s,
     backs off exponentially to 15s, and after 5 gives up naming the command it
     ran; `createPty` returns that command so the banner can print it

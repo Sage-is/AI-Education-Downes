@@ -186,9 +186,27 @@ codesign --verify --deep "$STAGE/$APP_NAME.app" \
 echo "==> checking self-containment"
 file "$STAGE/$APP_NAME.app/Contents/Resources/bin/opencode" | grep -q "Mach-O" \
   || { echo "engine is not a Mach-O executable" >&2; exit 1; }
+# Two checks, because one setting cannot cover both file kinds.
+#
+# Text files: -I as before.
+#
+# The studio binary: -a, deliberately. The leak that actually shipped was a
+# string compiled INTO downes-studio -- fork_opencode() fell back to the
+# maintainer's own checkout -- and -I skips binaries, so this guard watched
+# every file type EXCEPT the one carrying the bug. v0.1.6 shipped with it and
+# the check stayed green.
+#
+# The engine is exempt. Bun embeds absolute build paths as stack-trace
+# metadata, so the string is present on any machine that compiled it and says
+# nothing about runtime behaviour. Scanning it only produces a build that can
+# never pass.
 if grep -rIl "Documents/Projects/GitHub" "$STAGE" 2>/dev/null | grep -q .; then
   echo "payload references the developer checkout:" >&2
   grep -rIl "Documents/Projects/GitHub" "$STAGE" >&2
+  exit 1
+fi
+if grep -al "Documents/Projects/GitHub" "$STAGE/$APP_NAME.app/Contents/MacOS/downes-studio" 2>/dev/null | grep -q .; then
+  echo "the studio binary hardcodes the developer checkout" >&2
   exit 1
 fi
 
