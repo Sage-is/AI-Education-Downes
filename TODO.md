@@ -63,8 +63,9 @@ Cards here state the work; they do not restate the reasoning.
   - [ ] pilot: brew install, one authentic task, Obsidian, export, debrief
   - [ ] checklist green; record `docs/decisions/gate-4-ship.md`; v1.0.0
 
-- [ ] **v0.1.7 — the 0.1.6 fix pass** #task — 0.1.6 is pre-release on both
-  repos, 0.1.5 is Latest again; four defects found 2026-09-01 on a real install
+- [ ] **v0.1.7 — the 0.1.6 fix pass** #task — SHIPPED 2026-09-01 as a
+  pre-release on both repos, tap at 0.1.7. Three of four defects fixed and
+  verified on a real install; the crash loop is contained, not cured
   - [ ] **crash loop (severity 1)** — the studio terminal pane spawns, exits 1
     and respawns every ~1.2s; 22 cycles logged in 26s, one EPERM burst each
     - [ ] NARROWED 2026-09-01: the terminal launcher path (`mini`) runs clean —
@@ -98,8 +99,10 @@ Cards here state the work; they do not restate the reasoning.
     wired to `RunEvent::Exit` as well as window-destroyed so Cmd-Q is covered.
     Verified on 0.1.7: nothing survives the quit
   - [x] **edit permissions** — see the card below; Downes fixed and tested
-  - [ ] gate: verify on a second Mac before shipping. This machine is the one
-    where that hardcoded path actually exists
+  - [ ] gate: verify on a second Mac. Still the open question — this machine is
+    the one where that hardcoded path existed, and 0.1.7 removed it, so a
+    teammate launch now tests a genuinely different binary
+  - [ ] stays pre-release until the pane stops exiting 1
 
 - [ ] **Edit permissions never match; folders do not line up** #task — proven
   2026-09-01, blocks a clean teacher run on both products. In the 0.1.7 pass
