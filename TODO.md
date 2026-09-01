@@ -79,10 +79,17 @@ Cards here state the work; they do not restate the reasoning.
   - [x] mini: `PWD=~/SAGE.ISmini`, cwd matches, 0 pane exits, 0 Documents refs
   - [x] Downes: `PWD=~/Downes`, cwd matches, 0 pane exits, 0 Documents refs
   - [x] Downes ships `edit: courses/** + .downes/**` and all 8 skills
+  - [x] Spotlight/Launch Services cleaned: 11 stale registrations removed (old
+    stage dirs, a detached DMG volume, a 0.1.2 Cellar install, scratchpad
+    bundles). The build now unregisters its own, and `.metadata_never_index` in
+    `target/` and `dist/` keeps Spotlight out of build output for good
+  - [x] both 0.1.10 releases marked pre-release; tap serves 0.1.10
+  - [x] brief written: `docs/pilot/TEAM-TEST-0.1.10.md`
   - [ ] MANUAL: terminal pane renders and accepts input in both (the PTY is not
     created until the pane is actually shown, so no log can prove this)
   - [ ] MANUAL: one real course end to end in Downes
-  - [ ] MANUAL: second Mac — still the open gate
+  - [ ] SEND IT: teammates run the brief — the second-Mac gate, still open and
+    now the only thing between this and a full release
 
 - [ ] **v0.1.7 — the 0.1.6 fix pass** #task — SHIPPED 2026-09-01 as a
   pre-release on both repos, tap at 0.1.7. Three of four defects fixed and
