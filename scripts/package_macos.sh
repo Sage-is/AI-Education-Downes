@@ -214,6 +214,17 @@ fi
 TARBALL="$OUT/$PRODUCT-$VERSION-darwin-$ARCH.tar.gz"
 echo "==> writing $TARBALL"
 tar -czf "$TARBALL" -C "$STAGE" .
+
+# Unregister before deleting. macOS registers every .app it sees, so both the
+# staged copy and the one `tauri build` leaves in target/release/bundle/macos
+# end up in Launch Services -- and Spotlight then offers a bundle that carries
+# no engine and is not meant to be launched. Clicking that is how a developer
+# machine produces "sidecar unreachable" from a perfectly good install.
+LSREG="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [ -x "$LSREG" ]; then
+  "$LSREG" -u "$STAGE/$APP_NAME.app" 2>/dev/null || true
+  "$LSREG" -u "$STUDIO_PKG/src-tauri/target/release/bundle/macos/$APP_NAME.app" 2>/dev/null || true
+fi
 rm -rf "$STAGE"
 
 SHA="$(shasum -a 256 "$TARBALL" | awk '{print $1}')"
