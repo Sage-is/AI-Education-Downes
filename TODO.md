@@ -70,6 +70,20 @@ Cards here state the work; they do not restate the reasoning.
   - [x] cask zaps both names so an upgrade-then-uninstall leaves nothing
   - [ ] hand-off to the team: `brew upgrade --cask mini`
 
+- [ ] **v0.1.10 hand-off regression** #task — first FULL release since 0.1.5;
+  0.1.6-0.1.9 were pre-releases. Automated checks pass on a clean tap install
+  - [x] `--zap` uninstall leaves only teacher work (`courses/`, README); apps,
+    binaries and all `.downes` state removed, both products
+  - [x] fresh `brew install` of both, launched FROM the repo — the condition
+    that broke every earlier build
+  - [x] mini: `PWD=~/SAGE.ISmini`, cwd matches, 0 pane exits, 0 Documents refs
+  - [x] Downes: `PWD=~/Downes`, cwd matches, 0 pane exits, 0 Documents refs
+  - [x] Downes ships `edit: courses/** + .downes/**` and all 8 skills
+  - [ ] MANUAL: terminal pane renders and accepts input in both (the PTY is not
+    created until the pane is actually shown, so no log can prove this)
+  - [ ] MANUAL: one real course end to end in Downes
+  - [ ] MANUAL: second Mac — still the open gate
+
 - [ ] **v0.1.7 — the 0.1.6 fix pass** #task — SHIPPED 2026-09-01 as a
   pre-release on both repos, tap at 0.1.7. Three of four defects fixed and
   verified on a real install; the crash loop is contained, not cured
