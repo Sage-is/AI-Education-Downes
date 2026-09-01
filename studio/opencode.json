@@ -51,8 +51,8 @@
     },
     "edit": {
       "*": "deny",
-      "~/Downes/**": "allow",
-      "$HOME/Downes/**": "allow"
+      "courses/**": "allow",
+      ".downes/**": "allow"
     },
     "bash": {
       "*": "ask",
