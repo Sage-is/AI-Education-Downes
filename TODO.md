@@ -150,6 +150,31 @@ Cards here state the work; they do not restate the reasoning.
     teammate launch now tests a genuinely different binary
   - [ ] stays pre-release until the pane stops exiting 1
 
+- [ ] **Team test 0.1.11 — results in** #task — checklist returned
+  2026-09-01. The two things this Mac could not prove both PASSED off it:
+  the terminal pane renders and takes typing, and Downes writes into
+  `courses/` without prompting. `PWD` and the permission fixes hold
+  - [x] Spotlight, title bars, Annotation Mono, both apps launch
+  - [ ] **websearch has no rule, so it silently defaults to `ask`** — we set
+    `webfetch: deny` deliberately and never decided on `websearch`, which is a
+    SEPARATE permission (`websearch.ts:120` vs `webfetch.ts:40`)
+    - [x] not the network: `downes.sb` allows outbound TLS to `*:443`
+    - [x] not a missing key: both providers answer `tools/list` 200 keyless
+      (`mcp.exa.ai/mcp`, `search.parallel.ai/mcp`) with proper MCP Accept headers
+    - [x] note the provider is chosen by a HASH OF THE SESSION ID, so which one
+      a teacher gets is effectively a coin flip
+    - [ ] DECIDE: allow, deny, or keep prompting. Ties into the `searx_search
+      hosting` card — do not settle one without the other
+  - [x] **Cmd-Q orphans were a FALSE ALARM.** The two survivors came from
+    `/opt/homebrew/Cellar/downes/0.1.3/` — the FORMULA layout, retired at
+    0.1.4. That directory no longer exists; Unix keeps a deleted binary alive
+    for a running process. They predate the reaper and are not a 0.1.11 defect
+    - [ ] still real, though: the reaper only reaps the CURRENT instance's
+      child, so orphans from older installs live forever. Decide whether
+      startup should reclaim stale siblings, or whether that is too invasive
+  - [ ] file placement "next to courses or in it, depending" — the existing
+    Artifact-save reliability card; the tester independently hit it
+
 - [ ] **Edit permissions never match; folders do not line up** #task — proven
   2026-09-01, blocks a clean teacher run on both products. In the 0.1.7 pass
   - [ ] `edit.ts:104` matches a path RELATIVE to the worktree, while

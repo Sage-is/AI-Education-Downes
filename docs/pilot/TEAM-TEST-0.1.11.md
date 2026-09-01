@@ -22,15 +22,22 @@ Uninstall: `brew uninstall --cask mini downes` (keeps courses). Add `--zap` to a
 
 ## Checklist
 
-- [ ] Spotlight search "mini" offers SAGE.IS mini — not "Sage.is mini" (screenshot if wrong)
-- [ ] App launches, title bar correct
-- [ ] Terminal text renders in Annotation Mono — a distinctive mono face,
+- [x] Spotlight search "mini" offers SAGE.IS mini — not "Sage.is mini" (screenshot if wrong)
+- [x] App launches, title bar correct
+- [x] Terminal text renders in Annotation Mono — a distinctive mono face,
       not Menlo. If it looks like the system default, say so
-- [ ] Terminal pane appears INSIDE the window and accepts typing
-- [ ] Same for Downes
-- [ ] In Downes ask for a real lesson/quiz and watch where files land
-- [ ] Downes must write into `courses/` WITHOUT asking permission — being asked is a finding
-- [ ] Cmd-Q leaves nothing running
+- [x] Terminal pane appears INSIDE the window and accepts typing
+- [x] Same for Downes
+- [x] In Downes ask for a real lesson/quiz and watch where files land
+  - [*] They land either next to courses or in it depending on it they are loose or part of a course
+  - [!] Note opencode WEB search doesn't seem to be working on the tester's system
+- [x] Downes must write into `courses/` WITHOUT asking permission — being asked is a finding
+- [!] Cmd-Q leaves nothing running
+  - [!] Looked ok but this was found with pgrep
+```
+         2294 /opt/homebrew/Cellar/downes/0.1.3/libexec/bin/opencode serve --hostname 127.0.0.1 --port 49345
+2328 /opt/homebrew/Cellar/downes/0.1.3/libexec/bin/opencode serve --hostname 127.0.0.1 --port 49610
+```
 
 ## Known — don't report these
 
