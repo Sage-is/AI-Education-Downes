@@ -105,8 +105,9 @@ Cards here state the work; they do not restate the reasoning.
     (`courses/**`, `.downes/**`) which cannot start with `..`
 
 - [ ] **Week 7 notebook PRs** #task — three submissions, none in `week-7/`
-  - [ ] #3 and #4: comment asking for the move; they followed the convention as
-    it stood when they branched 63 commits ago, so this is not their error
+  - [x] #3 and #4 commented 2026-09-01 with the exact `git mv`; they followed
+    the convention as it stood when they branched, so this is not their error
+  - [ ] waiting on the contributors to push; merge once week-7/ is the path
   - [x] #2 moved on develop to `notebooks/week-7/isabelle.ipynb`
   - [x] discarded the unpushed local rename branch `hkarim-10/develop`
   - [ ] `~` in `hanna_~_week_7.ipynb` is the one real defect: shells expand it
