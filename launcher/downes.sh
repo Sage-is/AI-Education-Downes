@@ -30,6 +30,26 @@ unset _link
 HERE="$(cd "$(dirname "$SELF")" && pwd)"
 OS_UNAME="$(uname -s)"
 
+# Asking what is installed must not install anything. Everything below this
+# line touches disk: it mkdir's the studio, renames XDG roots from the old
+# "opencode" channel, appends to the studio's .gitignore and seeds auth.json.
+# So `mini --version` scaffolded a whole workspace as a side effect of a
+# question, and a teacher checking their version got a ~/SageMini they never
+# asked for. Answer from the packaged engine and leave.
+#
+# This is the one path that skips the Layer-3 fence. Printing a version string
+# is inert, and the alternative is building the sandbox before we know whether
+# there is anything to sandbox. DOWNES_ENGINE still wins, for dev trees.
+case "${1:-}" in
+  --version|-v)
+    for _v in "${DOWNES_ENGINE:-}" "$HERE/../bin/opencode"; do
+      [ -n "$_v" ] && [ -x "$_v" ] && exec "$_v" --version
+    done
+    echo "downes: no engine found next to $HERE" >&2
+    exit 1
+    ;;
+esac
+
 # Which product this payload is. Downes ships the curriculum template; the
 # bare Sage.is mini platform does not, and uses its own workspace folder.
 # Absent marker means Downes, so existing installs are unaffected.

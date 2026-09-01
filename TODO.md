@@ -63,6 +63,20 @@ Cards here state the work; they do not restate the reasoning.
   - [ ] pilot: brew install, one authentic task, Obsidian, export, debrief
   - [ ] checklist green; record `docs/decisions/gate-4-ship.md`; v1.0.0
 
+- [ ] **Edit permissions never match; folders do not line up** #task — proven
+  2026-09-01, blocks a clean teacher run on both products
+  - [ ] `edit.ts:104` matches a path RELATIVE to the worktree; `permission/index.ts:186`
+    expands `~/Downes/**` to ABSOLUTE, so the allow rules can never match
+  - [ ] net effect in Downes: only `"*": "deny"` matches, so the agent is denied
+    by its own `studio/opencode.json`
+  - [ ] mini ships no `opencode.json` at all, so it falls to opencode's default
+    `ask` — this is the permission prompting teachers hit
+  - [ ] name is also wrong for mini: rules say `~/Downes`, workspace is `~/SageMini`
+  - [ ] `"**": "allow"` is NOT the fix — it matches `../.ssh/id_rsa`; containment
+    must stay `external_directory` + the Seatbelt profile
+  - [ ] decide the model, then ship one config per product with paths that follow
+    `$STUDIO` instead of a hardcoded name
+
 - [ ] **Artifact-save reliability** #interview — saving is prompt-driven, not
   deterministic like the old Python tool
   - [ ] nemotron followed `courses/<slug>/` after the timestamp was dropped; deepseek was cleaner — decide the shippable model, or add a deterministic write hook
@@ -142,8 +156,11 @@ Cards here state the work; they do not restate the reasoning.
   syscall fence on a shared kernel, not a boundary. Ladder already recorded in
   `docs/decisions/vm-containment.md`: Apple `container`, not QEMU or bochs
   - [ ] revisit after the teacher pilot; deferred on structure, not weight
-- [ ] **Embed mini in build.sage.education** #task — the site should carry the
-  platform, not only describe it
+- [ ] **build.sage.education and the app should point at each other** #task —
+  today neither does; nothing shipped mentions the site
+  - [ ] site carries the platform, not only describes it (embed mini)
+  - [ ] product links out: `caveats` on both casks, README, studio UI
+  - [ ] `homepage` in the casks is sage.is/mini; decide which is canonical
   - [ ] blocked until mini is confirmed working on teammate machines
 - fog: Sage gateway (api.sage.is), allowlist proxy for host-pinning, corpus
   growth, Obsidian polish, wterm/ghostty engine swap, startr.style in the viewer
