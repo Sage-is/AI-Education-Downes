@@ -70,8 +70,8 @@ Cards here state the work; they do not restate the reasoning.
   - [x] cask zaps both names so an upgrade-then-uninstall leaves nothing
   - [ ] hand-off to the team: `brew upgrade --cask mini`
 
-- [ ] **v0.1.10 hand-off regression** #task — first FULL release since 0.1.5;
-  0.1.6-0.1.9 were pre-releases. Automated checks pass on a clean tap install
+- [ ] **v0.1.11 hand-off regression** #task — pre-release for team testing.
+  Automated checks pass on a clean tap install of both products
   - [x] `--zap` uninstall leaves only teacher work (`courses/`, README); apps,
     binaries and all `.downes` state removed, both products
   - [x] fresh `brew install` of both, launched FROM the repo — the condition
@@ -83,8 +83,10 @@ Cards here state the work; they do not restate the reasoning.
     stage dirs, a detached DMG volume, a 0.1.2 Cellar install, scratchpad
     bundles). The build now unregisters its own, and `.metadata_never_index` in
     `target/` and `dist/` keeps Spotlight out of build output for good
-  - [x] both 0.1.10 releases marked pre-release; tap serves 0.1.10
-  - [x] brief written: `docs/pilot/TEAM-TEST-0.1.10.md`
+  - [x] 0.1.11 pre-released on both repos; tap serves 0.1.11
+  - [x] brief written: `docs/pilot/TEAM-TEST-0.1.11.md`
+  - [x] terminal renders in Annotation Mono, vendored (OFL 1.1); emulator waits
+    for the font before measuring its grid
   - [ ] MANUAL: terminal pane renders and accepts input in both (the PTY is not
     created until the pane is actually shown, so no log can prove this)
   - [ ] MANUAL: one real course end to end in Downes

@@ -1,4 +1,4 @@
-# Team test — v0.1.10 pre-release
+# Team test — v0.1.11 pre-release
 
 This build is verified on ONE Mac only. That machine is where every bug this cycle was found. Your machine is the real test.
 
@@ -24,6 +24,8 @@ Uninstall: `brew uninstall --cask mini downes` (keeps courses). Add `--zap` to a
 
 - [ ] Spotlight search "mini" offers SAGE.IS mini — not "Sage.is mini" (screenshot if wrong)
 - [ ] App launches, title bar correct
+- [ ] Terminal text renders in Annotation Mono — a distinctive mono face,
+      not Menlo. If it looks like the system default, say so
 - [ ] Terminal pane appears INSIDE the window and accepts typing
 - [ ] Same for Downes
 - [ ] In Downes ask for a real lesson/quiz and watch where files land
@@ -33,7 +35,7 @@ Uninstall: `brew uninstall --cask mini downes` (keeps courses). Add `--zap` to a
 ## Known — don't report these
 
 - mini asks before every edit (by design — it has no folder convention to allow-list and no blanket rule is safe; Downes does not ask)
-- `mini --version` prints an engine build stamp not 0.1.10
+- `mini --version` prints an engine build stamp not 0.1.11
 - Kill on the app orphans the engine; Cmd-Q is covered
 - No Intel build yet
 
