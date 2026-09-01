@@ -77,16 +77,27 @@ Cards here state the work; they do not restate the reasoning.
       references), inherited cwd (fails identically from both)
     - [ ] next: log the PTY child's argv/env/cwd server-side, or make the pane
       surface the child's stderr instead of swallowing it into "Unexpected error"
-  - [ ] **respawn guard** — backoff plus one banner, so a dying pane reports
-    once instead of spewing; correct regardless of the root cause
-  - [ ] **hardcoded dev path** — `lib.rs:259` falls back to
-    `~/Documents/Projects/GitHub/AI-Education-Downes/...`, computed at 557/1080/
-    1081 and shipped to the frontend as `ServerInfo.fork`
-    - [ ] installed apps take the `s.bin` branch and never read it, so it may be
-      innocent of the crash — it still leaks the dev's layout to every user
-  - [ ] **sidecar orphan** — `opencode serve` outlives the GUI and keeps
-    listening on 127.0.0.1; kill the child on exit
-  - [ ] **edit permissions** — see the card below; agreed into this pass
+  - [x] **respawn guard** — `Terminal.tsx` counts panes that die inside 5s,
+    backs off exponentially to 15s, and after 5 gives up naming the command it
+    ran; `createPty` returns that command so the banner can print it
+    - [x] first attempt measured on a real install: 23 cycles at a FLAT 2.8s,
+      no backoff. `recover()` reset the counter on a successful spawn, and a
+      spawn succeeds even when the child dies right after, so the cap was
+      unreachable. `ws.onclose` now owns the only reset, and only for a pane
+      that actually lived
+    - [x] re-measured on 0.1.7: stops at exactly 5, spaced +3.0s, +4.8s, +8.8s,
+      +15.9s, then gives up naming the command
+  - [x] **hardcoded dev path** — the `fork_opencode()` fallback now returns an
+    empty `PathBuf`, which fails the downstream `is_file()` checks honestly.
+    It used to name the maintainer's own checkout and shipped that to every user
+  - [x] **sidecar orphan** — root cause found by testing, not by reading. The
+    handle we hold is `sandbox-exec`; the engine is its child and puts ITSELF
+    in a fresh process group (observed PGID == its own PID), so neither
+    `child.kill()` nor a group signal reached it. First attempt (own process
+    group) was verified and FAILED. Now reaps by parent pid via `pkill -P`,
+    wired to `RunEvent::Exit` as well as window-destroyed so Cmd-Q is covered.
+    Verified on 0.1.7: nothing survives the quit
+  - [x] **edit permissions** — see the card below; Downes fixed and tested
   - [ ] gate: verify on a second Mac before shipping. This machine is the one
     where that hardcoded path actually exists
 
@@ -101,8 +112,15 @@ Cards here state the work; they do not restate the reasoning.
   - [ ] name is wrong for mini too: rules say `~/Downes`, workspace is `~/SageMini`
   - [ ] `"**": "allow"` is NOT the fix — it matches `../.ssh/id_rsa`; containment
     stays `external_directory` plus the Seatbelt profile
-  - [ ] model still undecided; leading option is explicit relative prefixes
-    (`courses/**`, `.downes/**`) which cannot start with `..`
+  - [x] Downes fixed: `studio/opencode.json` now allows `courses/**` and
+    `.downes/**` — worktree-relative, so they match what `edit.ts` passes and
+    work for any workspace name. Verified against the real `Wildcard` matcher:
+    3 in-studio paths allow, 4 escapes (`../.ssh/id_rsa`, `../../../etc/passwd`,
+    a keychain, and `opencode.json` itself) deny
+  - [ ] mini still prompts BY DESIGN: it has no folder convention to allow-list,
+    and no safe blanket exists (`**` matches `../.ssh/id_rsa`). It now at least
+    ships `external_directory: deny` instead of no config at all
+  - [ ] decide mini's model — a convention to allow-list, or accept prompting
 
 - [ ] **Week 7 notebook PRs** #task — three submissions, none in `week-7/`
   - [x] #3 and #4 commented 2026-09-01 with the exact `git mv`; they followed
