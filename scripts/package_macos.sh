@@ -142,6 +142,27 @@ chmod 0644 "$RES/launcher/downes.sb"
 cp "$REPO/scripts/install_studio.sh" "$RES/scripts/install_studio.sh"
 chmod 0755 "$RES/scripts/install_studio.sh"
 
+# Third-party licences that must travel with the bytes they cover.
+#
+# Annotation Mono is vendored into the frontend and compiled into the studio
+# binary, so every bundle carries ~2MB of OFL-licensed font. OFL 1.1 clause 2
+# requires the licence and copyright notice to accompany the Font Software --
+# and through 0.1.11 they did not. Vite emits the .woff2 files into
+# frontend/dist and leaves LICENSE-AnnotationMono.txt behind, because nothing
+# imports it, so the obligation was stated in a CSS comment and honoured
+# nowhere. Both products ship the font; both need the licence.
+mkdir -p "$RES/licenses"
+FONT_LICENSE="$STUDIO_PKG/frontend/src/fonts/LICENSE-AnnotationMono.txt"
+if [ -f "$FONT_LICENSE" ]; then
+  cp "$FONT_LICENSE" "$RES/licenses/LICENSE-AnnotationMono.txt"
+  chmod 0644 "$RES/licenses/LICENSE-AnnotationMono.txt"
+else
+  # Fail loudly. A missing licence is a compliance defect, not a cosmetic one,
+  # and shipping without it is exactly the failure this block exists to end.
+  echo "font licence not found at $FONT_LICENSE" >&2
+  exit 1
+fi
+
 # Curriculum template is Downes-only. Shipping it in mini would put AGPL
 # content in an MIT artifact and give the platform an agent it does not claim
 # to have.
