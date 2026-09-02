@@ -1,4 +1,5 @@
 [submodule "ai-ui-mini"]
 	path = ai-ui-mini
 	url = https://github.com/Sage-is/ai-ui-mini.git
-	branch = downes/v1
+	# `git submodule update --remote` reads this line
+	branch = develop
