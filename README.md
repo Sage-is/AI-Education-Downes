@@ -55,10 +55,14 @@ state under `.downes`, and apply the same sandbox.
 Uninstall keeps your courses. Add `--zap` to also remove our state. Neither deletes your work.
 
 ---
+---
 
 ## Older Python Architecture
 
-> NOTE: This is a detailed explanation of our older Python multi-agent architecture that we will be folding into the studio version of Downes. It is here for people who are inclined to explore it or would like to be involved with its development. At the moment it is not part of the Sage.is mini Downes deployment.
+---
+---
+
+> **NOTE:** *This is a detailed explanation of our older Python multi-agent architecture that we will be folding into the studio version of Downes. It is here for people who are inclined to explore it or would like to be involved with its development. At the moment it is not part of the Sage.is mini Downes deployment.*
 
 Downes uses a multi-agent architecture with specialized components:
 
