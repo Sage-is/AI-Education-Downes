@@ -1,4 +1,4 @@
-# Downes
+# What is Downes
 
 Downes is an autonomous education agent. It develops curriculum. Give it a
 request: a course, a syllabus, a lesson plan and it turns it into a
