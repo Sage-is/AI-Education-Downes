@@ -1,58 +1,113 @@
-# Downes 🤖
+# Downes
 
-![Downes Logo](./web/public/downes.png)
+Downes is an autonomous education agent. It develops curriculum. Give it a
+request: a course, a syllabus, a lesson plan and it turns it into a
+structured plan: learning objectives, syllabus, assessments, pacing, resources.
+It plans the work, executes it, and checks its own output. It ships as a
+self-contained macOS app.
 
-## Install the app
+An Apple Silicon Mac with nothing but Homebrew can run it, no Python, no Node, no API key.
 
-Downes ships as a self-contained macOS app. A Mac with nothing but Homebrew can
-run it — no Python, no Node, no API key.
+![Downes studio](docs/img/downes-studio.png)
+
+## Install
 
 ```bash
-brew install sage-is/apps/downes
-downes                      # run once; this also puts Downes in ~/Applications
+brew tap sage-is/apps
+brew install --cask sage-is/apps/downes
 ```
 
-Apple Silicon only for now. A formula rather than a cask, deliberately: casks
-apply Gatekeeper quarantine and formulas do not, so the install is warning-free
-while the app is still unsigned. Your courses live in `~/Downes`, and Downes
-works in that one folder — see [Containment](#containment).
+Apple Silicon only. Courses live in `~/Downes`; SAGE.IS mini uses
+`~/SAGE.ISmini`.
+
+The cask puts Downes in /Applications and links the `downes` command. The
+install clears the quarantine flag: the app is ad-hoc signed, not notarized, so
+Gatekeeper would otherwise refuse it and you would have to right-click → Open.
+
+It is a deliberate trade-off and we will be notarizating it in the future.
 
 For the bare platform with no curriculum agent bundled, install
-[Sage.is mini](https://github.com/Sage-is/ai-ui-mini): `brew install sage-is/apps/mini`.
+[SAGE.IS mini](https://github.com/Sage-is/ai-ui-mini):
+
+```bash
+brew install --cask sage-is/apps/mini
+```
 
 > Downes is named after Stephen Downes, a Canadian philosopher and commentator in the fields of online learning and new media. He has explored and promoted the educational use of computer and online technologies since 1995.
 
-Stephen Downes' connectivism learning theory is instrumental in the digital age. In this spirit, we built Downes as an autonomous education agent designed to develop comprehensive curriculum by thinking critically, planning strategically, and learning continuously.
+We built Downes in the spirit of Stephen Downes' connectivism learning theory:
+it develops comprehensive curriculum by allowing you to spend more time thinking critically, planning strategically, and learning continuously instead of doing routine production work.
 
-Built specifically for curriculum development, Downes transforms educational requests into transparent, step-by-step curriculum plans, emulating how an expert instructional designer works - but superpowered by advanced AI. It merges task planning, self-reflection, and educational best practices into a seamless workflow. Downes is more than an assistant, it is a self-driven curriculum architect that aims to bring clarity and structure to educational program development.
+## Using it
 
-100% FREE to use! No paid API keys needed for core functionality! Downes leverages powerful AI capabilities to make rapid curriculum development accessible to all educators and instructional designers.
+Launch Downes and you get our studio window. A terminal pane sits inside the
+window and accepts your typing.
 
+Ask for a course — "intro to art techniques grade 9" — and watch the files land.
 
+Files land in `~/Downes/courses/`, or next to it when they are not part of a
+course.
 
-## Overview
+Using `downes` from the terminal boots the same engine. The studio and the command are
+two entry points to one app. Both pin the workspace to `~/Downes`, isolate
+state under `.downes`, and apply the same sandbox.
 
-Downes takes curriculum requests and turns them into clear, step-by-step educational development plans. Helping educators turn ideas into actionable resources. It structures learning objectives, designs course content, and creates comprehensive curricula that are pedagogically sound and learner-focused.
-
-**Key Capabilities:**
-- **Intelligent Curriculum Planning**: Automatically decomposes educational goals into structured learning pathways
-- **Autonomous Development**: Selects and applies appropriate instructional design methodologies
-- **Self-Validation**: Checks alignment with learning objectives and iterates until curricula are complete
-- **Educational Best Practices**: Incorporates proven pedagogical frameworks and assessment strategies
-- **Flexible LLM Support**: Works with OpenAI, OpenRouter, Ollama, llama.cpp, or any OpenAI-compatible API
-- **Safety Features**: Built-in loop detection and step limits to prevent runaway execution
-
-[![Twitter Follow](https://img.shields.io/twitter/follow/Sage_Is_AI?style=social)](https://twitter.com/Sage_Is_AI)
+Uninstall keeps your courses. Add `--zap` to also remove our state. Neither deletes your work.
 
 ---
+
+## Older Python Architecture
+
+> NOTE: This is a detailed explanation of our older Python multi-agent architecture that we will be folding into the studio version of Downes. It is here for people who are inclined to explore it or would like to be involved with its development. At the moment it is not part of the Sage.is mini Downes deployment.
+
+Downes uses a multi-agent architecture with specialized components:
+
+- **Planning Agent**: Analyzes curriculum requests and creates structured development task lists
+- **Action Agent**: Selects appropriate instructional design methodologies and executes curriculum development steps
+- **Validation Agent**: Verifies task completion and curriculum alignment with learning objectives
+- **Answer Agent**: Synthesizes findings into comprehensive curriculum plans
+
+## Project Structure
+
+The repo holds two things: the Python research tool, and the macOS app that
+ships to teachers.
+
+```text
+AI-Education-Downes/
+├── src/downes/                   # the Python research tool
+│   ├── agent.py                  # Main agent orchestration logic
+│   ├── model.py                  # LLM interface
+│   ├── prompts.py                # System prompts for each component
+│   ├── schemas.py                # Pydantic models
+│   ├── tools/
+│   │   ├── education/            # objectives, syllabus, assessments, pacing, taxonomy, resources
+│   │   └── search/               # Search and research tools
+│   ├── utils/
+│   └── cli.py                    # CLI entry point
+│
+├── launcher/                     # the shipped app
+│   ├── downes.sh                 # sole entry point: studio, state isolation, sandbox prefix
+│   └── downes.sb                 # Seatbelt profile (see Containment)
+├── studio/                       # curriculum template copied to ~/Downes on first run
+├── scripts/
+│   ├── package_macos.sh          # builds both product payloads from one Rust binary
+│   └── install_studio.sh
+├── packaging/homebrew/           # formulas published to the sage-is/apps tap
+├── test/sandbox/escape-test.sh   # `make sandbox_test`
+├── docs/decisions/               # recorded architecture decisions
+├── ai-ui-mini/                   # submodule: the MIT platform (engine + studio app)
+├── pyproject.toml
+└── uv.lock
+```
+
 
 ## The Python research tool
 
 The sections from here to [Configuration](#configuration) describe the Python
 package the agent grew out of. It is a development and research path — teachers
 install the app with `brew` as shown above and need none of it.
-[Project Structure](#project-structure) and [Containment](#containment) at the
-end cover the whole repo.
+[Project Structure](#project-structure) and [Containment](#containment) cover
+the whole repo.
 
 ### Prerequisites
 
@@ -88,7 +143,7 @@ cp env.example .env
 # That's it! Ready to develop curriculum.
 ```
 
-#### Usage on Mobile (under development)
+#### Usage on Mobile (under development, currently brittle)
 
 ##### iOS and iPad
 
@@ -96,8 +151,6 @@ cp env.example .env
 2. open iSH
 3. In the iSH terminal, install git and python `apk add python3 git`
 4. Install `apk add py3-pip`
-5.
-
 
 **Note:** Switching away from the iSH terminal for more than a few seconds, may reset the process.
 
@@ -248,114 +301,8 @@ uv run downes-agent -v -d "Build curriculum"
 
 ### Programmatic Usage
 
-You can also call the education tools directly in Python to build custom flows:
-
-```python
-from downes.tools.education.objectives import generate_learning_objectives
-from downes.tools.education.syllabus import draft_syllabus
-from downes.tools.education.assessments import design_assessments
-from downes.tools.education.pacing import create_pacing_guide
-from downes.tools.education.taxonomy import map_to_blooms_taxonomy
-from downes.tools.education.resources import curate_learning_resources
-
-topic = "Intro to Art Techniques"
-audience = "Grade 9 students"
-
-# 1) Objectives
-objectives = generate_learning_objectives.run({
-  "topic": topic,
-  "audience": audience,
-  "level": "beginner",
-  "duration_weeks": 10,
-  "outcomes_count": 5,
-})
-
-# 2) Syllabus aligned to objectives
-syllabus = draft_syllabus.run({
-  "course_title": topic,
-  "learning_objectives": objectives,
-  "duration_weeks": 10,
-  "modality": "in-person",
-  "modules_count": 5,
-})
-
-# 3) Assessments + rubrics
-assessments = design_assessments.run({
-  "learning_objectives": objectives,
-  "assessment_types": ["quiz", "project", "presentation"],
-})
-
-# 4) Pacing guide
-pacing = create_pacing_guide.run({
-  "duration_weeks": 10,
-  "modules_count": 5,
-  "hours_per_week": 4,
-})
-
-# 5) Bloom's taxonomy mapping
-taxonomy = map_to_blooms_taxonomy.run({
-  "learning_objectives": objectives
-})
-
-# 6) Curated resources
-resources = curate_learning_resources.run({
-  "topic": topic,
-  "resource_types": ["article", "video"],
-  "max_items": 6,
-})
-
-print(len(objectives), "objectives")
-print(len(syllabus["modules"]), "modules in syllabus")
-print(len(assessments), "assessments")
-print(len(pacing), "weeks in pacing guide")
-print(len(taxonomy), "taxonomy mappings")
-print(len(resources), "resources")
-```
-
-## Architecture
-
-Downes uses a multi-agent architecture with specialized components:
-
-- **Planning Agent**: Analyzes curriculum requests and creates structured development task lists
-- **Action Agent**: Selects appropriate instructional design methodologies and executes curriculum development steps
-- **Validation Agent**: Verifies task completion and curriculum alignment with learning objectives
-- **Answer Agent**: Synthesizes findings into comprehensive curriculum plans
-
-## Project Structure
-
-The repo holds two things: the Python research tool, and the macOS app that
-ships to teachers.
-
-```text
-AI-Education-Downes/
-├── src/downes/                   # the Python research tool
-│   ├── agent.py                  # Main agent orchestration logic
-│   ├── model.py                  # LLM interface
-│   ├── prompts.py                # System prompts for each component
-│   ├── schemas.py                # Pydantic models
-│   ├── tools/
-│   │   ├── education/            # objectives, syllabus, assessments, pacing, taxonomy, resources
-│   │   └── search/               # Search and research tools
-│   ├── utils/
-│   └── cli.py                    # CLI entry point
-│
-├── launcher/                     # the shipped app
-│   ├── downes.sh                 # sole entry point: studio, state isolation, sandbox prefix
-│   └── downes.sb                 # Seatbelt profile (see Containment)
-├── studio/                       # curriculum template copied to ~/Downes on first run
-├── scripts/
-│   ├── package_macos.sh          # builds both product payloads from one Rust binary
-│   └── install_studio.sh
-├── packaging/homebrew/           # formulas published to the sage-is/apps tap
-├── test/sandbox/escape-test.sh   # `make sandbox_test`
-├── docs/decisions/               # recorded architecture decisions
-├── ai-ui-mini/                   # submodule: the MIT platform (engine + studio app)
-├── pyproject.toml
-└── uv.lock
-```
-
-`ai-ui-mini` is the MIT platform; Downes is the first agent shipped on it. The
-payload combines both, so it is distributed from this AGPL repo.
+You can call the education tools directly in Python — the modules live under
+`src/downes/tools/education/`.
 
 ## Configuration
 
@@ -369,36 +316,6 @@ agent = Agent(
     max_steps_per_task=5       # Per-task iteration limit
 )
 ```
-
-## Containment
-
-This section describes the shipped macOS app, not the Python tool above.
-
-Downes runs the engine under a macOS Seatbelt profile
-([`launcher/downes.sb`](launcher/downes.sb)), applied on both surfaces: the
-`downes` terminal command and the studio window. What that buys, stated at the
-limit rather than the headline:
-
-- **Writes** are deny-default. Only your studio folder and the temp directory
-  are writable.
-- **Reads** are the other way round: broadly allowed, with known-secret
-  locations denied back — SSH and GPG keys, keychains, cloud and forge
-  credentials, other agents' credential stores, browser profiles, iCloud Drive,
-  shell history and dotfile secrets. It is a deny-list, so anything not
-  enumerated stays readable. Deny-default reads are on the roadmap.
-- **Egress** is TLS-only. SBPL cannot pin hostnames, so "TLS-only egress" is the
-  honest ceiling of that claim, not "we control where it connects".
-- **State** is per-product. Downes keeps its credentials and database inside the
-  studio rather than sharing `~/.local/share/opencode` with other tools. It is
-  seeded once from your existing login, so nothing asks you to sign in twice.
-
-`make sandbox_test` runs the escape test — 22 cases that exercise the shipped
-launcher, and report INCONCLUSIVE rather than passing when a target is absent.
-
-Linux and Windows have no containment backend yet, and the copy there says
-"works in one folder" rather than "sandboxed". See
-[`docs/decisions/`](docs/decisions/) for why, and for the emulator/VM options
-that were considered and declined.
 
 ## How to Contribute
 
@@ -414,4 +331,3 @@ that were considered and declined.
 ## License
 
 This project is licensed under the AGPL License.
-
