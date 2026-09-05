@@ -308,6 +308,48 @@ uv run downes-agent -v -d "Build curriculum"
 You can call the education tools directly in Python — the modules live under
 `src/downes/tools/education/`.
 
+## Containment
+
+This section describes the shipped macOS app, not the Python tool above.
+
+Containment is two mechanisms, and only the first is enforced by the
+operating system.
+
+Downes runs the engine under a macOS Seatbelt profile
+([`launcher/downes.sb`](launcher/downes.sb)), applied on both surfaces: the
+`downes` terminal command and the studio window. What that buys, stated at the
+limit rather than the headline:
+
+- **Writes** are deny-default. Only your studio folder and the temp directory
+  are writable.
+- **Reads** are the other way round: broadly allowed, with known-secret
+  locations denied back — SSH and GPG keys, keychains, cloud and forge
+  credentials, other agents' credential stores, browser profiles, iCloud Drive,
+  shell history and dotfile secrets. It is a deny-list, so anything not
+  enumerated stays readable. Deny-default reads are on the roadmap.
+- **Egress** is TLS-only. SBPL cannot pin hostnames, so "TLS-only egress" is the
+  honest ceiling of that claim, not "we control where it connects".
+- **State** is per-product. Downes keeps its credentials and database inside the
+  studio rather than sharing `~/.local/share/opencode` with other tools. It is
+  seeded once from your existing login, so nothing asks you to sign in twice.
+
+- **Tool permissions** are a second fence, enforced by the engine rather than
+  the OS. `edit` is deny-default and allows only `courses/**` and `.downes/**`,
+  matched relative to the studio. `external_directory` is denied. `bash` asks,
+  with `rm *` and `curl *` denied outright. `webfetch` and `websearch` are
+  **allowed** as of 2026-09-01 — that pair is the agent's only route off the
+  machine, and course files are untrusted input, so it is also the exfiltration
+  path. `curl *` staying denied makes the config inconsistent by decision, not
+  by accident. Under review; see the `searx_search hosting` card in TODO.md.
+
+`make sandbox_test` runs the escape test — 22 cases that exercise the shipped
+launcher, and report INCONCLUSIVE rather than passing when a target is absent.
+
+Linux and Windows have no containment backend yet, and the copy there says
+"works in one folder" rather than "sandboxed". See
+[`docs/decisions/`](docs/decisions/) for why, and for the emulator/VM options
+that were considered and declined.
+
 ## Configuration
 
 Downes supports configuration via the `Agent` class initialization:
@@ -335,3 +377,4 @@ agent = Agent(
 ## License
 
 This project is licensed under the AGPL License.
+
