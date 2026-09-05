@@ -5,31 +5,34 @@ Two install paths for v1. Apple notarization is backlogged (see TODO.md).
 ## Homebrew tap (primary)
 
 ```bash
-brew install sage-is/apps/downes
-downes
+brew install --cask sage-is/apps/downes    # the curriculum agent
+brew install --cask sage-is/apps/mini      # the bare platform
 ```
 
-The tap delivers a self-contained payload: the compiled engine, the
-launcher, and `Downes.app`. The engine is a Bun single-file executable, so a
-Mac with nothing but Homebrew can run it — no bun, node, or opencode install.
+The tap delivers a self-contained payload: the compiled engine, the launcher,
+and the `.app`. The engine is a Bun single-file executable, so a Mac with
+nothing but Homebrew can run it — no bun, node, or opencode install.
 
-This is a **formula, not a cask**, and deliberately so: casks apply Gatekeeper
-quarantine by default, formulas do not. That is what makes this install
-warning-free while the app is still unsigned.
+**These are casks.** They were formulae through 0.1.3 and became casks at 0.1.4,
+which is when Homebrew ended support for casks failing Gatekeeper checks and
+deprecated `--no-quarantine`
+([Homebrew/brew#20755](https://github.com/Homebrew/brew/issues/20755)).
 
-That choice has since become the only one available. Homebrew ends support for
-casks failing Gatekeeper checks on **2026-09-01** and is deprecating
-`--no-quarantine` ([Homebrew/brew#20755](https://github.com/Homebrew/brew/issues/20755)).
-The issue scopes the change to casks and does not mention formulas — read that
-as inference from silence, not a guarantee, and re-check before leaning on it
-in shipped copy. Either way it makes notarization more urgent, not less.
+A cask install *is* quarantined, and the app is ad-hoc signed rather than
+notarized, so Gatekeeper would refuse it and the teacher would have to
+right-click → Open. Both casks clear the flag themselves in a `postflight`
+block. That is a deliberate trade, not an oversight: it disables Gatekeeper's
+check for this app on every install, which is precisely the behaviour Homebrew
+deprecated `--no-quarantine` to discourage. Notarization is the real fix and
+removes the block entirely.
 
-Running `downes` once from a terminal also places the app in `~/Applications`.
-The formula cannot: Homebrew replaces `HOME` with a temp directory during
-`post_install` and sandboxes it to the formula prefix, so a symlink there
-reports success and creates nothing. `launcher/downes.sh` does it instead.
+The cask places the app and the command: the `app` stanza moves the bundle into
+the Applications folder, and the `binary` stanza links the launcher onto `PATH`.
+Nothing needs running first, and no code links the bundle by hand any more.
 
-**Apple Silicon only for now** — an Intel build needs a CI runner. Formula: `homebrew/downes.rb`, published to the
+**Apple Silicon only for now** — an Intel build needs a CI runner, and
+`depends_on arch: :arm64` refuses the install rather than half-working. Casks:
+`homebrew/downes.rb` and `homebrew/mini.rb`, published to the
 `Sage-is/homebrew-apps` repo (tap slug `sage-is/apps`).
 
 ## Unsigned DMG (for the brave)
@@ -48,13 +51,13 @@ xattr -d -r com.apple.quarantine "/Applications/Downes.app"
 `-r` is required — the attribute sits on files throughout the bundle, not just
 the top directory.
 
-This applies to the DMG path only. Homebrew installs are never quarantined, so
-do not put this command in the formula caveats: handing a Gatekeeper bypass to
-people who are not blocked teaches the wrong reflex. The signed, notarized DMG
-is the backlog item that removes the step entirely.
+Do not put that command in the caveats a user reads. The casks already run it in
+`postflight`, where it applies to the one app being installed; printing it as
+advice teaches a general Gatekeeper bypass to people who are not blocked. The
+signed, notarized DMG is the backlog item that removes the step entirely.
 
 ## Updates
 
-`brew upgrade downes`, plus the launcher checking a static version JSON on
-sage.is. `autoupdate` stays `notify`/`false` — Downes never self-updates
-from upstream opencode.
+`brew upgrade --cask downes` and `brew upgrade --cask mini`, plus the launcher
+checking a static version JSON on sage.is. `autoupdate` stays `notify`/`false` —
+Downes never self-updates from upstream opencode.

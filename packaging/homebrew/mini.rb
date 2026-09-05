@@ -56,6 +56,6 @@ cask "mini" do
   ]
 
   caveats do
-    "Your work lives in ~/SAGE.ISmini. For the curriculum agent: brew install sage-is/apps/downes"
+    "Your work lives in ~/SAGE.ISmini. For the curriculum agent: brew install --cask sage-is/apps/downes"
   end
 end

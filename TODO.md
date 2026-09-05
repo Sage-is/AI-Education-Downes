@@ -33,7 +33,7 @@ Cards here state the work; they do not restate the reasoning.
 - [x] 8 skills + METHOD + persona; harness (`corpus.jsonl`, `assertions.py`,
   `replay.py`); Make targets; CI (offline blocking + nightly live).
 - [x] Launcher isolation (XDG_CONFIG_HOME + OPENCODE_CONFIG + OPENCODE_PURE);
-  legal matrix (no RED); brew formula + unsigned-DMG path.
+  legal matrix (no RED); brew cask + unsigned-DMG path (formulae through 0.1.3).
 - [x] **Studio branding + theming** — real app icon (Sage.is hex-S, Downes
   gradient) replacing the stock Tauri logo; startr.style vendored (CSP blocks
   its CDN); tokens aligned to Sage.is AI-UI; light/dark toggle on `data-theme`
@@ -155,9 +155,10 @@ Cards here state the work; they do not restate the reasoning.
   the terminal pane renders and takes typing, and Downes writes into
   `courses/` without prompting. `PWD` and the permission fixes hold
   - [x] Spotlight, title bars, Annotation Mono, both apps launch
-  - [ ] **websearch has no rule, so it silently defaults to `ask`** — we set
-    `webfetch: deny` deliberately and never decided on `websearch`, which is a
-    SEPARATE permission (`websearch.ts:120` vs `webfetch.ts:40`)
+  - [x] DIAGNOSIS (superseded by the decision below): `websearch` had no rule
+    and fell to the default `ask`, while `webfetch` was denied. They are
+    SEPARATE permissions (`websearch.ts:120` vs `webfetch.ts:40`) — that is the
+    trap, and it is the part worth remembering
     - [x] not the network: `downes.sb` allows outbound TLS to `*:443`
     - [x] not a missing key: both providers answer `tools/list` 200 keyless
       (`mcp.exa.ai/mcp`, `search.parallel.ai/mcp`) with proper MCP Accept headers
@@ -186,11 +187,13 @@ Cards here state the work; they do not restate the reasoning.
   2026-09-01, blocks a clean teacher run on both products. In the 0.1.7 pass
   - [ ] `edit.ts:104` matches a path RELATIVE to the worktree, while
     `permission/index.ts:186` expands `~/Downes/**` to ABSOLUTE — never matches
-  - [ ] Downes: only `"*": "deny"` matches, so the agent is denied by its own
-    `studio/opencode.json`
-  - [ ] mini ships no `opencode.json` at all and falls to the default `ask` —
-    this is the prompting teachers hit
-  - [ ] name is wrong for mini too: rules say `~/Downes`, workspace is `~/SageMini`
+  - [x] was: Downes denied by its own `studio/opencode.json`, because only
+    `"*": "deny"` could match. Fixed and verified below
+  - [x] was: mini shipped no `opencode.json` at all and fell to the default
+    `ask`. It now ships one; see the `ensure_studio()` note below
+  - [x] was: the rules named `~/Downes` while mini's workspace was `~/SageMini`.
+    Both moot now — the patterns are worktree-relative and the workspace is
+    `~/SAGE.ISmini`
   - [ ] `"**": "allow"` is NOT the fix — it matches `../.ssh/id_rsa`; containment
     stays `external_directory` plus the Seatbelt profile
   - [x] Downes fixed: `studio/opencode.json` now allows `courses/**` and
@@ -235,7 +238,8 @@ Cards here state the work; they do not restate the reasoning.
   - [x] formula rewritten: per-arch, real sha256, working install block
   - [x] publish the GitHub release + push the formula to `Sage-is/homebrew-apps`
     (v0.1.3 / mini-v0.1.3, 2026-08-27; `brew upgrade` verified from the tap)
-  - [ ] Intel build (needs an x86_64 CI runner; formula `odie`s honestly for now)
+  - [ ] Intel build (needs an x86_64 CI runner; the casks refuse honestly for
+    now via `depends_on arch: :arm64`)
   - [ ] verify on a second Mac — released and installed here, not yet confirmed
     off the build machine
 
