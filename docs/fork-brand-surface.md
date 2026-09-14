@@ -59,7 +59,7 @@ optional grammar — harmless). A compiled `downes` binary
 - Do NOT reopen upstream issue #12016 (custom logo config, closed).
 - Brand assets (wordmark, splash, theme palette `downes.json`) drafted by
   us, approved before the series is cut.
-- Rebase drill: `git rebase --onto <newtag> v1.18.18 downes/v1 && bun install
+- Rebase drill: `git rebase --onto <newtag> v1.18.18 develop && bun install
   && bun run typecheck`; time it; target ≤20 min; monthly.
 - GUI surfaces (the v2 Tauri wrapper, web exports) style with startr.style
   (mobile-first) and startr.swap; the TUI keeps its theme palette.

@@ -17,7 +17,7 @@ RAD rules: advisor reviews after every checkpoint, go/no-go at every gate,
 CI on commit, one-line test green daily, timeboxes ÷20 agent-crewed.
 
 Published 2026-08-22: both repos public on Sage-is — `AI-Education-Downes`
-(AGPL, this repo) and `ai-ui-mini` (MIT fork, branch `downes/v1`), the fork
+(AGPL, this repo) and `ai-ui-mini` (MIT fork, branch `develop`), the fork
 tracked here as a **submodule**. Fresh clones need `--recurse-submodules`.
 
 Long-form narration behind these cards is internal and lives in
