@@ -13,7 +13,7 @@
 #   mini    the bare Sage.is AI-UI mini platform. No curriculum, MIT only.
 #
 # Usage:  scripts/package_macos.sh [arm64|x64] [downes|mini]
-# Output: dist/<product>-<version>-darwin-<arch>.tar.gz + its sha256
+# Output: dist/<product>-<version>-darwin-<arch>.{tar.gz,dmg} + their sha256
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -55,8 +55,19 @@ echo "==> $APP_NAME $VERSION, darwin-$ARCH"
 # that was the branch at the time, and a build on develop produced "develop".
 export OPENCODE_CHANNEL="${OPENCODE_CHANNEL:-downes/v1}"
 
+# Rebuild when missing OR older than any engine source. The channel check below
+# catches a wrong channel, not old code: v0.1.13 nearly shipped the v0.1.12
+# engine, without the import-cycle fix it was cut to carry. The studio is
+# pruned; it is the shell, and has its own freshness check below.
+ENGINE_WHY=""
 if [ ! -x "$ENGINE" ]; then
-  echo "==> building engine (not found at $ENGINE), channel $OPENCODE_CHANNEL"
+  ENGINE_WHY="not found at $ENGINE"
+elif [ -n "$(find "$FORK/packages" \( -name node_modules -o -name dist -o -path "$STUDIO_PKG" \) -prune \
+             -o -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.json' \) -newer "$ENGINE" -print -quit)" ]; then
+  ENGINE_WHY="sources are newer than the engine"
+fi
+if [ -n "$ENGINE_WHY" ]; then
+  echo "==> building engine ($ENGINE_WHY), channel $OPENCODE_CHANNEL"
   (cd "$FORK/packages/opencode" && bun run script/build.ts)
 fi
 [ -x "$ENGINE" ] || { echo "engine missing after build: $ENGINE" >&2; exit 1; }
@@ -236,6 +247,15 @@ TARBALL="$OUT/$PRODUCT-$VERSION-darwin-$ARCH.tar.gz"
 echo "==> writing $TARBALL"
 tar -czf "$TARBALL" -C "$STAGE" .
 
+# --- dmg -------------------------------------------------------------------
+# The same staged, signed, self-contained bundle, for people without Homebrew.
+# Not `tauri build --bundles dmg`: that packages the unstaged bundle, which
+# carries no engine. The Applications link makes it drag-to-install.
+DMG="$OUT/$PRODUCT-$VERSION-darwin-$ARCH.dmg"
+echo "==> writing $DMG"
+ln -s /Applications "$STAGE/Applications"
+hdiutil create -quiet -volname "$APP_NAME" -srcfolder "$STAGE" -format UDZO -ov "$DMG"
+
 # Unregister before deleting. macOS registers every .app it sees, so both the
 # staged copy and the one `tauri build` leaves in target/release/bundle/macos
 # end up in Launch Services -- and Spotlight then offers a bundle that carries
@@ -248,9 +268,9 @@ if [ -x "$LSREG" ]; then
 fi
 rm -rf "$STAGE"
 
-SHA="$(shasum -a 256 "$TARBALL" | awk '{print $1}')"
-SIZE="$(du -h "$TARBALL" | awk '{print $1}')"
-echo
-echo "  $TARBALL"
-echo "  size   $SIZE"
-echo "  sha256 $SHA"
+for f in "$TARBALL" "$DMG"; do
+  echo
+  echo "  $f"
+  echo "  size   $(du -h "$f" | awk '{print $1}')"
+  echo "  sha256 $(shasum -a 256 "$f" | awk '{print $1}')"
+done
