@@ -1,0 +1,4 @@
+# Shell scripts keep LF on every checkout. With core.autocrlf=true, Windows
+# gets CRLF, and bash reads the \r as part of each line -- scripts/package_windows.sh
+# is only ever run there, from Git Bash.
+*.sh text eol=lf
