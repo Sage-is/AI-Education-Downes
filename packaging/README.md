@@ -1,6 +1,7 @@
 # Packaging
 
-Two install paths for v1. Apple notarization is backlogged (see TODO.md).
+Two install paths for v1 on macOS, plus a Windows installer. Apple
+notarization is backlogged (see TODO.md).
 
 ## Homebrew tap (primary)
 
@@ -55,6 +56,26 @@ Do not put that command in the caveats a user reads. The casks already run it in
 `postflight`, where it applies to the one app being installed; printing it as
 advice teaches a general Gatekeeper bypass to people who are not blocked. The
 signed, notarized DMG is the backlog item that removes the step entirely.
+
+## Windows installer
+
+```bash
+scripts/package_windows.sh    # from Git Bash, on Windows
+```
+
+Writes `dist/downes-<version>-windows-<arch>-setup.exe`, a per-user NSIS
+installer. It needs the MSVC Rust toolchain, bun, and the WebView2 runtime.
+
+The fork can build mini for Windows on its own. Downes is that shell plus the
+curriculum template, which is AGPL and stays out of the MIT fork, so this
+script stages the template and hands it to the fork's `tauri build` as extra
+bundle resources. That is what makes the app open on the Downes agent: without
+the template the shell writes mini's bare config and opencode falls back to
+Build.
+
+Unsigned, so SmartScreen warns on first run. The installer's side and header
+art is still mini's; the fork's `make-installer-art.py` draws only that mark.
+There is no containment on Windows (`docs/decisions/windows-sandbox.md`).
 
 ## Updates
 
