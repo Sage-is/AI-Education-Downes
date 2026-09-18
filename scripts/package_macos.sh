@@ -55,6 +55,13 @@ echo "==> $APP_NAME $VERSION, darwin-$ARCH"
 # that was the branch at the time, and a build on develop produced "develop".
 export OPENCODE_CHANNEL="${OPENCODE_CHANNEL:-downes/v1}"
 
+# Report a real version. Left unset, the build script stamps 0.0.0-<channel>-
+# <timestamp> for any channel but "latest", and 0.0.0 fails every provider gate
+# that asks for a minimum opencode version. The number is upstream's, with our
+# studio version as build metadata; the fork keeps the one derivation, so a
+# Windows build stamps exactly what a macOS build does.
+export OPENCODE_VERSION="${OPENCODE_VERSION:-$(bun "$STUDIO_PKG/scripts/engine-version.ts")}"
+
 # Rebuild when missing OR older than any engine source. The channel check below
 # catches a wrong channel, not old code: v0.1.13 nearly shipped the v0.1.12
 # engine, without the import-cycle fix it was cut to carry. The studio is
@@ -65,6 +72,10 @@ if [ ! -x "$ENGINE" ]; then
 elif [ -n "$(find "$FORK/packages" \( -name node_modules -o -name dist -o -path "$STUDIO_PKG" \) -prune \
              -o -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.json' \) -newer "$ENGINE" -print -quit)" ]; then
   ENGINE_WHY="sources are newer than the engine"
+elif [ "$("$ENGINE" --version 2>/dev/null)" != "$OPENCODE_VERSION" ]; then
+  # A version bump touches no engine source, so the mtime check above cannot
+  # see it. Without this the engine keeps reporting the previous release.
+  ENGINE_WHY="engine reports $("$ENGINE" --version 2>/dev/null), want $OPENCODE_VERSION"
 fi
 if [ -n "$ENGINE_WHY" ]; then
   echo "==> building engine ($ENGINE_WHY), channel $OPENCODE_CHANNEL"
@@ -72,15 +83,15 @@ if [ -n "$ENGINE_WHY" ]; then
 fi
 [ -x "$ENGINE" ] || { echo "engine missing after build: $ENGINE" >&2; exit 1; }
 
-# The engine must agree with the channel we asked for, or the database name and
-# the version string are someone else's accident.
+# The engine must report exactly what we asked for. The channel is compiled in
+# separately and names the database file, so a mismatch here means the binary is
+# someone else's build or an older one.
 ENGINE_V="$("$ENGINE" --version 2>/dev/null || true)"
-case "$ENGINE_V" in
-  *"$OPENCODE_CHANNEL"*) : ;;
-  *) echo "engine reports '$ENGINE_V', expected channel '$OPENCODE_CHANNEL'." >&2
-     echo "  Delete $FORK/packages/opencode/dist and re-run to rebuild it." >&2
-     exit 1 ;;
-esac
+if [ "$ENGINE_V" != "$OPENCODE_VERSION" ]; then
+  echo "engine reports '$ENGINE_V', expected '$OPENCODE_VERSION'." >&2
+  echo "  Delete $FORK/packages/opencode/dist and re-run to rebuild it." >&2
+  exit 1
+fi
 
 # --- app -------------------------------------------------------------------
 # Tauri names the release bundle by productName, not by arch.
