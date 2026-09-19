@@ -54,6 +54,36 @@ state under `.downes`, and apply the same sandbox.
 
 Uninstall keeps your courses. Add `--zap` to also remove our state. Neither deletes your work.
 
+### Changing settings
+
+`~/Downes/opencode.json` is ours. The app rewrites it on every launch, so an
+edit there lasts until the next start.
+
+Your settings go in `~/Downes/opencode.local.json`, which we never create and
+never touch. It is read last, so it wins, and it survives upgrades. A file with
+one setting in it is a complete file:
+
+```json
+{ "model": "github-copilot/claude-sonnet-4.6" }
+```
+
+The curriculum agent cannot run shell commands. That is the default, and it is
+why the studio is safe to hand to a class. To lift it, ask for approval on each
+command:
+
+```json
+{ "agent": { "downes": { "permission": { "bash": "ask" } } } }
+```
+
+`"allow"` skips the approval and lets the agent run commands on its own. Use it
+only on a machine where that is acceptable.
+
+You can also ask Downes to write this file for you. It will show you the change
+and ask before saving, because the file decides what it is allowed to do.
+
+Courses you download cannot bring settings of their own. This file is the only
+one that counts.
+
 ---
 ---
 

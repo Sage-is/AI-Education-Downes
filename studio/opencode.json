@@ -19,7 +19,10 @@
       "prompt": "{file:.downes/prompts/downes.md}",
       "steps": 60,
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "pwd": "allow"
+        },
         "edit": "allow"
       }
     },
@@ -52,7 +55,8 @@
     "edit": {
       "*": "deny",
       "courses/**": "allow",
-      ".downes/**": "allow"
+      ".downes/**": "allow",
+      "opencode.local.json": "ask"
     },
     "bash": {
       "*": "ask",
