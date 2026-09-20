@@ -46,6 +46,12 @@ echo "==> Downes $VERSION, windows-$ARCH"
 # channel, the version string and the database filename would all be empty.
 export OPENCODE_CHANNEL="${OPENCODE_CHANNEL:-downes/v1}"
 
+# The fork now reports upstream's version plainly (packages/studio/scripts/
+# engine-version.ts); the channel survives only in the database filename and
+# the User-Agent. Unset, build.ts stamps 0.0.0-<channel>-<timestamp>, which
+# the fork's stage-payload.ts refuses and provider gates reject outright.
+export OPENCODE_VERSION="${OPENCODE_VERSION:-$(cd "$FORK" && bun packages/studio/scripts/engine-version.ts)}"
+
 ENGINE_WHY=""
 if [ ! -f "$ENGINE" ]; then
   ENGINE_WHY="not found at $ENGINE"
@@ -59,13 +65,15 @@ if [ -n "$ENGINE_WHY" ]; then
 fi
 [ -f "$ENGINE" ] || { echo "engine missing after build: $ENGINE" >&2; exit 1; }
 
+# Match on the version, not the channel. The engine used to embed the channel
+# in its version string, so a substring test could stand in for both; it now
+# reports the bare upstream number, and that test could never pass again.
 ENGINE_V="$("$ENGINE" --version 2>/dev/null || true)"
-case "$ENGINE_V" in
-  *"$OPENCODE_CHANNEL"*) : ;;
-  *) echo "engine reports '$ENGINE_V', expected channel '$OPENCODE_CHANNEL'." >&2
-     echo "  Delete $FORK/packages/opencode/dist and re-run to rebuild it." >&2
-     exit 1 ;;
-esac
+if [ "$ENGINE_V" != "$OPENCODE_VERSION" ]; then
+  echo "engine reports '$ENGINE_V', expected '$OPENCODE_VERSION'." >&2
+  echo "  Delete $FORK/packages/opencode/dist and re-run to rebuild it." >&2
+  exit 1
+fi
 
 # --- stage -----------------------------------------------------------------
 echo "==> staging"
